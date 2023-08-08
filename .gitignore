@@ -22,3 +22,4 @@ wear/.settings/org.eclipse.buildship.core.prefs
 app/nsclient/*
 app/nsclient2/*
 app/pumpcontrol/*
+apk/

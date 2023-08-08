@@ -24,7 +24,9 @@ class Objective0(injector: HasAndroidInjector) : Objective(injector, "config", R
     init {
         tasks.add(object : Task(this, R.string.objectives_bgavailableinns) {
             override fun isCompleted(): Boolean {
-                return sp.getBoolean(info.nightscout.core.utils.R.string.key_objectives_bg_is_available_in_ns, false) || tidepoolPlugin?.hasWritePermission == true
+                // don't require Nightscout or Tidepool
+                //return sp.getBoolean(info.nightscout.core.utils.R.string.key_objectives_bg_is_available_in_ns, false) || tidepoolPlugin?.hasWritePermission == true
+                return true
             }
         })
         tasks.add(object : Task(this, R.string.synchaswritepermission) {
@@ -34,17 +36,23 @@ class Objective0(injector: HasAndroidInjector) : Objective(injector, "config", R
         })
         tasks.add(object : Task(this, info.nightscout.core.ui.R.string.virtualpump_uploadstatus_title) {
             override fun isCompleted(): Boolean {
-                return sp.getBoolean(info.nightscout.core.utils.R.string.key_virtual_pump_upload_status, false) || tidepoolPlugin?.hasWritePermission == true
+                // don't require Nightscout or Tidepool
+                //return sp.getBoolean(info.nightscout.core.utils.R.string.key_virtual_pump_upload_status, false) || tidepoolPlugin?.hasWritePermission == true
+                return true
             }
 
             override fun shouldBeIgnored(): Boolean {
-                return !virtualPumpPlugin.isEnabled()
+                // don't require Nightscout or Tidepool
+                //return !virtualPumpPlugin.isEnabled()
+                return true
             }
         })
         tasks.add(
             object : Task(this, R.string.objectives_pumpstatusavailableinns) {
                 override fun isCompleted(): Boolean {
-                    return sp.getBoolean(info.nightscout.core.utils.R.string.key_objectives_pump_status_is_available_in_ns, false) || tidepoolPlugin?.hasWritePermission == true
+                    // don't require Nightscout or Tidepool
+                    //return sp.getBoolean(info.nightscout.core.utils.R.string.key_objectives_pump_status_is_available_in_ns, false) || tidepoolPlugin?.hasWritePermission == true
+                    return true
                 }
             }.learned(Learned(R.string.objectives_0_learned))
         )
