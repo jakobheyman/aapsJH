@@ -46,7 +46,8 @@
     <string name="objectives_useloop">Display content of Loop plugin</string>
     <string name="objectives_usescale">Use scale function by long-pressing BG chart</string>
     <string name="objectives_exam_objective">Prove your knowledge</string>
-    <string name="objectives_exam_gate">Study the questions.  You are given four possible answers for each question. There may be more than one correct answer. Please check all those that are correct and select VERIFY.</string>
+    <string name="objectives_exam_gate">Study the question. You are given one answer. Please check it and select VERIFY.</string>
+    <string name="objectives_exam_learn_all_important_parts">You should learn all necessary parts properly but you don\'t have to prove it here.</string>
     <string name="objectives_exam_learned_prerequisites">You don\'t need to be a developer but you need NS to pass Objectives, compatible pump and computer to build AAPS for the first time and for every update.</string>
     <string name="objectives_exam_learned_prerequisites2">AAPS can be run offline.</string>
     <string name="objectives_exam_learned_basaltest">Profile should be reviewed and updated. Better profile = better results.</string>

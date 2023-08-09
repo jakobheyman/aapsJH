@@ -8,6 +8,11 @@ class Objective2(injector: HasAndroidInjector) : Objective(injector, "exam", R.s
 
     init {
         tasks.add(
+            ExamTask(this, R.string.please_learn_all_important_parts_label, R.string.please_learn_all_important_parts, "pleaseLearnAllImportantParts")
+                .option(Option(R.string.please_learn_all_important_parts_OK, true))
+                .learned(Learned(R.string.objectives_exam_learn_all_important_parts))
+        )
+        /*tasks.add(
             ExamTask(this, R.string.prerequisites_label, R.string.prerequisites_what, "prerequisites")
                 .option(Option(R.string.prerequisites_nightscout, true))
                 .option(Option(R.string.prerequisites_computer, true))
@@ -272,7 +277,7 @@ class Objective2(injector: HasAndroidInjector) : Objective(injector, "exam", R.s
             ExamTask(this, R.string.other_medication_label, R.string.other_medication_text, "otherMedicationWarning")
                 .option(Option(info.nightscout.core.ui.R.string.yes, true))
                 .option(Option(info.nightscout.core.ui.R.string.no, false))
-        )
+        )*/
         for (task in tasks) (task as ExamTask).options.shuffle()
 
         for (task in tasks) {

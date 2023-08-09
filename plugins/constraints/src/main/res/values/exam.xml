@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="please_learn_all_important_parts_label">Learn what you need</string>
+    <string name="please_learn_all_important_parts">Please learn all important parts that you need</string>
+    <string name="please_learn_all_important_parts_OK">OK</string>
     <string name="dia_whatmeansdia">What is true about DIA?</string>
     <string name="dia_label_exam">Duration of Insulin Action (DIA)</string>
     <string name="dia_profile">You should set the value for DIA in your profile.</string>

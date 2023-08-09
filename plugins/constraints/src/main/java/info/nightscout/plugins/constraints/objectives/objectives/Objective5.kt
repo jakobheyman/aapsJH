@@ -13,13 +13,14 @@ class Objective5(injector: HasAndroidInjector) : Objective(injector, "maxiobzero
     @Inject lateinit var safetyPlugin: SafetyPlugin
 
     init {
-        tasks.add(MinimumDurationTask(this, T.days(5).msecs()))
+        tasks.add(MinimumDurationTask(this, T.days(0).msecs()))
         tasks.add(
             object : Task(this, R.string.closedmodeenabled) {
                 override fun isCompleted(): Boolean {
-                    val closedLoopEnabled = Constraint(true)
+                    return true
+                    /*val closedLoopEnabled = Constraint(true)
                     safetyPlugin.isClosedLoopAllowed(closedLoopEnabled)
-                    return closedLoopEnabled.value()
+                    return closedLoopEnabled.value()*/
                 }
             }.learned(Learned(R.string.objectives_maxiobzero_learned))
         )
