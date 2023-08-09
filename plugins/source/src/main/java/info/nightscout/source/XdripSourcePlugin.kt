@@ -44,7 +44,8 @@ class XdripSourcePlugin @Inject constructor(
 
     override fun shouldUploadToNs(glucoseValue: GlucoseValue): Boolean  = false
 
-    override fun advancedFilteringSupported(): Boolean = advancedFiltering
+    override fun advancedFilteringSupported(): Boolean = true
+    //override fun advancedFilteringSupported(): Boolean = advancedFiltering
 
     private fun detectSource(glucoseValue: GlucoseValue) {
         advancedFiltering = arrayOf(
