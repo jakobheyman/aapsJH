@@ -131,14 +131,16 @@ class BgQualityCheckPlugin @Inject constructor(
         when (state) {
             BgQualityCheck.State.UNKNOWN       -> 0
             BgQualityCheck.State.FIVE_MIN_DATA -> 0
-            BgQualityCheck.State.RECALCULATED  -> R.drawable.ic_baseline_warning_24_yellow
+            BgQualityCheck.State.RECALCULATED  -> 0
+            // Don't display the yellow recalculated warning
+            //BgQualityCheck.State.RECALCULATED  -> R.drawable.ic_baseline_warning_24_yellow
             BgQualityCheck.State.DOUBLED       -> R.drawable.ic_baseline_warning_24_red
             BgQualityCheck.State.FLAT          -> R.drawable.ic_baseline_trending_flat_24
         }
 
     override fun stateDescription(): String =
         when (state) {
-            BgQualityCheck.State.RECALCULATED -> rh.gs(R.string.a11y_bg_quality_recalculated)
+            //BgQualityCheck.State.RECALCULATED -> rh.gs(R.string.a11y_bg_quality_recalculated)
             BgQualityCheck.State.DOUBLED      -> rh.gs(R.string.a11y_bg_quality_doubles)
             BgQualityCheck.State.FLAT         -> rh.gs(R.string.a11y_bg_quality_flat)
             else                              -> ""
