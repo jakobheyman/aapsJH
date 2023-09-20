@@ -35,6 +35,7 @@ import info.nightscout.interfaces.sync.Sync
 import info.nightscout.interfaces.ui.UiInteraction
 import info.nightscout.interfaces.utils.DecimalFormatter
 import info.nightscout.plugins.sync.R
+import info.nightscout.plugins.sync.nsShared.NSAlarmObject
 import info.nightscout.plugins.sync.nsShared.NSClientFragment
 import info.nightscout.plugins.sync.nsShared.NsIncomingDataProcessor
 import info.nightscout.plugins.sync.nsShared.events.EventConnectivityOptionChanged
@@ -72,7 +73,10 @@ import info.nightscout.rx.events.EventNSClientNewLog
 import info.nightscout.rx.events.EventNewHistoryData
 import info.nightscout.rx.events.EventOfflineChange
 import info.nightscout.rx.events.EventPreferenceChange
+import info.nightscout.rx.events.EventProfileStoreChanged
+import info.nightscout.rx.events.EventProfileSwitchChanged
 import info.nightscout.rx.events.EventSWSyncStatus
+import info.nightscout.rx.events.EventTempTargetChange
 import info.nightscout.rx.events.EventTherapyEventChange
 import info.nightscout.rx.logging.AAPSLogger
 import info.nightscout.rx.logging.LTag
@@ -170,7 +174,7 @@ class NSClientV3Plugin @Inject constructor(
     private val isAllowed get() = receiverDelegate.allowed
     private val blockingReason get() = receiverDelegate.blockingReason
 
-    val maxAge = T.days(77).msecs()
+    val maxAge = T.days(100).msecs()
     internal var newestDataOnServer: LastModified? = null // timestamp of last modification for every collection provided by server
     internal var lastLoadedSrvModified = LastModified(LastModified.Collections()) // max srvLastModified timestamp of last fetched data for every collection
     internal var firstLoadContinueTimestamp = LastModified(LastModified.Collections()) // timestamp of last fetched data for every collection during initial load
@@ -229,6 +233,14 @@ class NSClientV3Plugin @Inject constructor(
             .observeOn(aapsSchedulers.io)
             .subscribe({ executeUpload("NEW_DATA", forceNew = false) }, fabricPrivacy::logException)
         disposable += rxBus
+            .toObservable(EventTempTargetChange::class.java)
+            .observeOn(aapsSchedulers.io)
+            .subscribe({ executeUpload("EventTempTargetChange", forceNew = false) }, fabricPrivacy::logException)
+        disposable += rxBus
+            .toObservable(EventProfileSwitchChanged::class.java)
+            .observeOn(aapsSchedulers.io)
+            .subscribe({ executeUpload("EventProfileSwitchChanged", forceNew = false) }, fabricPrivacy::logException)
+        disposable += rxBus
             .toObservable(EventDeviceStatusChange::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ executeUpload("EventDeviceStatusChange", forceNew = false) }, fabricPrivacy::logException)
@@ -240,6 +252,10 @@ class NSClientV3Plugin @Inject constructor(
             .toObservable(EventOfflineChange::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ executeUpload("EventOfflineChange", forceNew = false) }, fabricPrivacy::logException)
+        disposable += rxBus
+            .toObservable(EventProfileStoreChanged::class.java)
+            .observeOn(aapsSchedulers.io)
+            .subscribe({ executeUpload("EventProfileStoreChanged", forceNew = false) }, fabricPrivacy::logException)
 
         runLoop = Runnable {
             var refreshInterval = T.mins(5).msecs()
@@ -510,7 +526,7 @@ class NSClientV3Plugin @Inject constructor(
         rxBus.send(EventNSClientNewLog("◄ ANNOUNCEMENT", data.optString("message")))
         aapsLogger.debug(LTag.NSCLIENT, data.toString())
         if (sp.getBoolean(info.nightscout.core.utils.R.string.key_ns_announcements, config.NSCLIENT))
-            uiInteraction.addNotificationWithAction(injector, NSAlarm(data))
+            uiInteraction.addNotificationWithAction(injector, NSAlarmObject(data))
     }
     private val onAlarm = Emitter.Listener { args ->
 
@@ -533,7 +549,7 @@ class NSClientV3Plugin @Inject constructor(
         if (sp.getBoolean(info.nightscout.core.utils.R.string.key_ns_alarms, config.NSCLIENT)) {
             val snoozedTo = sp.getLong(rh.gs(info.nightscout.core.utils.R.string.key_snoozed_to) + data.optString("level"), 0L)
             if (snoozedTo == 0L || System.currentTimeMillis() > snoozedTo)
-                uiInteraction.addNotificationWithAction(injector, NSAlarm(data))
+                uiInteraction.addNotificationWithAction(injector, NSAlarmObject(data))
         }
     }
 
@@ -544,7 +560,7 @@ class NSClientV3Plugin @Inject constructor(
         if (sp.getBoolean(info.nightscout.core.utils.R.string.key_ns_alarms, config.NSCLIENT)) {
             val snoozedTo = sp.getLong(rh.gs(info.nightscout.core.utils.R.string.key_snoozed_to) + data.optString("level"), 0L)
             if (snoozedTo == 0L || System.currentTimeMillis() > snoozedTo)
-                uiInteraction.addNotificationWithAction(injector, NSAlarm(data))
+                uiInteraction.addNotificationWithAction(injector, NSAlarmObject(data))
         }
     }
 
@@ -580,7 +596,10 @@ class NSClientV3Plugin @Inject constructor(
      **********************/
 
     override fun resend(reason: String) {
-        if (sp.getBoolean(info.nightscout.core.utils.R.string.key_ns_use_ws, true))
+        // If WS is enabled, download is triggered by changes in NS. Thus uploadOnly
+        // Exception is after reset to full sync (initialLoadFinished == false), where
+        // older data must be loaded directly and then continue over WS
+        if (sp.getBoolean(info.nightscout.core.utils.R.string.key_ns_use_ws, true) && initialLoadFinished)
             executeUpload("START $reason", forceNew = true)
         else
             executeLoop("START $reason", forceNew = true)
