@@ -1,21 +1,21 @@
 package info.nightscout.plugins.constraints.versionChecker
 
+import app.aaps.core.interfaces.configuration.Config
+import app.aaps.core.interfaces.constraints.Constraint
+import app.aaps.core.interfaces.constraints.PluginConstraints
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.notifications.Notification
+import app.aaps.core.interfaces.plugin.PluginBase
+import app.aaps.core.interfaces.plugin.PluginDescription
+import app.aaps.core.interfaces.plugin.PluginType
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.sharedPreferences.SP
+import app.aaps.core.interfaces.ui.UiInteraction
+import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.versionChecker.VersionCheckerUtils
 import dagger.android.HasAndroidInjector
-import info.nightscout.interfaces.Config
-import info.nightscout.interfaces.constraints.Constraint
-import info.nightscout.interfaces.constraints.Constraints
-import info.nightscout.interfaces.notifications.Notification
-import info.nightscout.interfaces.plugin.PluginBase
-import info.nightscout.interfaces.plugin.PluginDescription
-import info.nightscout.interfaces.plugin.PluginType
-import info.nightscout.interfaces.ui.UiInteraction
-import info.nightscout.interfaces.versionChecker.VersionCheckerUtils
 import info.nightscout.plugins.constraints.R
-import info.nightscout.rx.bus.RxBus
-import info.nightscout.rx.logging.AAPSLogger
-import info.nightscout.shared.interfaces.ResourceHelper
-import info.nightscout.shared.sharedPreferences.SP
-import info.nightscout.shared.utils.DateUtil
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,7 +40,7 @@ class VersionCheckerPlugin @Inject constructor(
         .showInList(false)
         .pluginName(R.string.version_checker),
     aapsLogger, rh, injector
-), Constraints {
+), PluginConstraints {
 
     enum class GracePeriod(val warning: Long, val old: Long, val veryOld: Long) {
         RELEASE(30, 60, 90),
@@ -64,16 +64,16 @@ class VersionCheckerPlugin @Inject constructor(
         checkWarning()
         versionCheckerUtils.triggerCheckVersion()
         if (lastCheckOlderThan(gracePeriod.veryOld.daysToMillis()))
-            value.set(aapsLogger, false, rh.gs(R.string.very_old_version), this)
+            value.set(false, rh.gs(R.string.very_old_version), this)
         val endDate = sp.getLong(rh.gs(info.nightscout.core.utils.R.string.key_app_expiration) + "_" + config.VERSION_NAME, 0)
         if (endDate != 0L && dateUtil.now() > endDate)
-            value.set(aapsLogger, false, rh.gs(R.string.application_expired), this)
+            value.set(false, rh.gs(R.string.application_expired), this)
         return value
     }
 
     override fun applyMaxIOBConstraints(maxIob: Constraint<Double>): Constraint<Double> =
         if (lastCheckOlderThan(gracePeriod.old.daysToMillis()))
-            maxIob.set(aapsLogger, 0.0, rh.gs(R.string.old_version), this)
+            maxIob.set(0.0, rh.gs(R.string.old_version), this)
         else
             maxIob
 

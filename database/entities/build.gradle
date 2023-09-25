@@ -11,7 +11,10 @@ apply from: "${project.rootDir}/core/main/test_dependencies.gradle"
 
 android {
 
-    namespace 'info.nightscout.database.entities'
+    namespace 'app.aaps.database.entities'
+    defaultConfig {
+        minSdkVersion 26  // for wear
+    }
 
     buildFeatures {
         buildConfig = false

@@ -1,16 +1,16 @@
 package info.nightscout.plugins.constraints.objectives.objectives
 
+import app.aaps.core.interfaces.aps.ApsMode
+import app.aaps.core.interfaces.constraints.ConstraintsChecker
+import app.aaps.core.interfaces.utils.T
 import dagger.android.HasAndroidInjector
-import info.nightscout.interfaces.ApsMode
-import info.nightscout.interfaces.constraints.Constraints
 import info.nightscout.plugins.constraints.R
-import info.nightscout.shared.utils.T
 import javax.inject.Inject
 
 @Suppress("SpellCheckingInspection")
 class Objective6(injector: HasAndroidInjector) : Objective(injector, "maxiob", R.string.objectives_maxiob_objective, R.string.objectives_maxiob_gate) {
 
-    @Inject lateinit var constraintChecker: Constraints
+    @Inject lateinit var constraintChecker: ConstraintsChecker
 
     init {
         tasks.add(MinimumDurationTask(this, T.days(0).msecs()))

@@ -1,21 +1,24 @@
 package info.nightscout.plugins.constraints.objectives
 
+import app.aaps.core.interfaces.configuration.Config
+import app.aaps.core.interfaces.constraints.Constraint
+import app.aaps.core.interfaces.constraints.Objectives
+import app.aaps.core.interfaces.constraints.Objectives.Companion.AUTOSENS_OBJECTIVE
+import app.aaps.core.interfaces.constraints.Objectives.Companion.AUTO_OBJECTIVE
+import app.aaps.core.interfaces.constraints.Objectives.Companion.DYN_ISF_OBJECTIVE
+import app.aaps.core.interfaces.constraints.Objectives.Companion.FIRST_OBJECTIVE
+import app.aaps.core.interfaces.constraints.Objectives.Companion.MAXBASAL_OBJECTIVE
+import app.aaps.core.interfaces.constraints.Objectives.Companion.MAXIOB_ZERO_CL_OBJECTIVE
+import app.aaps.core.interfaces.constraints.Objectives.Companion.SMB_OBJECTIVE
+import app.aaps.core.interfaces.constraints.PluginConstraints
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.plugin.ActivePlugin
+import app.aaps.core.interfaces.plugin.PluginBase
+import app.aaps.core.interfaces.plugin.PluginDescription
+import app.aaps.core.interfaces.plugin.PluginType
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.sharedPreferences.SP
 import dagger.android.HasAndroidInjector
-import info.nightscout.interfaces.Config
-import info.nightscout.interfaces.constraints.Constraint
-import info.nightscout.interfaces.constraints.Constraints
-import info.nightscout.interfaces.constraints.Objectives
-import info.nightscout.interfaces.constraints.Objectives.Companion.AUTOSENS_OBJECTIVE
-import info.nightscout.interfaces.constraints.Objectives.Companion.AUTO_OBJECTIVE
-import info.nightscout.interfaces.constraints.Objectives.Companion.DYN_ISF_OBJECTIVE
-import info.nightscout.interfaces.constraints.Objectives.Companion.FIRST_OBJECTIVE
-import info.nightscout.interfaces.constraints.Objectives.Companion.MAXBASAL_OBJECTIVE
-import info.nightscout.interfaces.constraints.Objectives.Companion.MAXIOB_ZERO_CL_OBJECTIVE
-import info.nightscout.interfaces.constraints.Objectives.Companion.SMB_OBJECTIVE
-import info.nightscout.interfaces.plugin.ActivePlugin
-import info.nightscout.interfaces.plugin.PluginBase
-import info.nightscout.interfaces.plugin.PluginDescription
-import info.nightscout.interfaces.plugin.PluginType
 import info.nightscout.plugins.constraints.R
 import info.nightscout.plugins.constraints.objectives.objectives.Objective
 import info.nightscout.plugins.constraints.objectives.objectives.Objective0
@@ -29,9 +32,6 @@ import info.nightscout.plugins.constraints.objectives.objectives.Objective5
 import info.nightscout.plugins.constraints.objectives.objectives.Objective6
 import info.nightscout.plugins.constraints.objectives.objectives.Objective7
 import info.nightscout.plugins.constraints.objectives.objectives.Objective9
-import info.nightscout.rx.logging.AAPSLogger
-import info.nightscout.shared.interfaces.ResourceHelper
-import info.nightscout.shared.sharedPreferences.SP
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,12 +49,12 @@ class ObjectivesPlugin @Inject constructor(
         .fragmentClass(ObjectivesFragment::class.qualifiedName)
         .alwaysEnabled(config.APS)
         .showInList(config.APS)
-        .pluginIcon(info.nightscout.core.ui.R.drawable.ic_graduation)
-        .pluginName(info.nightscout.core.ui.R.string.objectives)
+        .pluginIcon(app.aaps.core.ui.R.drawable.ic_graduation)
+        .pluginName(app.aaps.core.ui.R.string.objectives)
         .shortName(R.string.objectives_shortname)
         .description(R.string.description_objectives),
     aapsLogger, rh, injector
-), Constraints, Objectives {
+), PluginConstraints, Objectives {
 
     var objectives: MutableList<Objective> = ArrayList()
 
@@ -112,49 +112,49 @@ class ObjectivesPlugin @Inject constructor(
      */
     override fun isLoopInvocationAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[FIRST_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, FIRST_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, FIRST_OBJECTIVE + 1), this)
         return value
     }
 
     override fun isLgsAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[MAXBASAL_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, MAXBASAL_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, MAXBASAL_OBJECTIVE + 1), this)
         return value
     }
 
     override fun isClosedLoopAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[MAXIOB_ZERO_CL_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, MAXIOB_ZERO_CL_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, MAXIOB_ZERO_CL_OBJECTIVE + 1), this)
         return value
     }
 
     override fun isAutosensModeEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[AUTOSENS_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, AUTOSENS_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, AUTOSENS_OBJECTIVE + 1), this)
         return value
     }
 
     override fun isSMBModeEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[SMB_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, SMB_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, SMB_OBJECTIVE + 1), this)
         return value
     }
 
     override fun isDynIsfModeEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[DYN_ISF_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, DYN_ISF_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, DYN_ISF_OBJECTIVE + 1), this)
         return value
     }
 
     override fun applyMaxIOBConstraints(maxIob: Constraint<Double>): Constraint<Double> {
         if (objectives[MAXIOB_ZERO_CL_OBJECTIVE].isStarted && !objectives[MAXIOB_ZERO_CL_OBJECTIVE].isAccomplished)
-            maxIob.set(aapsLogger, 0.0, rh.gs(R.string.objectivenotfinished, MAXIOB_ZERO_CL_OBJECTIVE + 1), this)
+            maxIob.set(0.0, rh.gs(R.string.objectivenotfinished, MAXIOB_ZERO_CL_OBJECTIVE + 1), this)
         return maxIob
     }
 
     override fun isAutomationEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
         if (!objectives[AUTO_OBJECTIVE].isStarted)
-            value.set(aapsLogger, false, rh.gs(R.string.objectivenotstarted, AUTO_OBJECTIVE + 1), this)
+            value.set(false, rh.gs(R.string.objectivenotstarted, AUTO_OBJECTIVE + 1), this)
         return value
     }
 

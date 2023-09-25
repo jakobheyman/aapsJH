@@ -1,26 +1,26 @@
 package info.nightscout.plugins.aps.openAPSAMA
 
+import app.aaps.core.main.extensions.convertedToAbsolute
+import app.aaps.core.main.extensions.getPassedDurationToTimeInMinutes
+import app.aaps.core.main.extensions.plannedRemainingMinutes
+import app.aaps.core.interfaces.aps.DetermineBasalAdapter
+import app.aaps.core.interfaces.aps.SMBDefaults
+import app.aaps.core.interfaces.constraints.ConstraintsChecker
+import app.aaps.core.interfaces.db.GlucoseUnit
+import app.aaps.core.interfaces.iob.GlucoseStatus
+import app.aaps.core.interfaces.iob.IobCobCalculator
+import app.aaps.core.interfaces.iob.IobTotal
+import app.aaps.core.interfaces.iob.MealData
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.profile.Profile
+import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.sharedPreferences.SP
 import dagger.android.HasAndroidInjector
-import info.nightscout.core.extensions.convertedToAbsolute
-import info.nightscout.core.extensions.getPassedDurationToTimeInMinutes
-import info.nightscout.core.extensions.plannedRemainingMinutes
-import info.nightscout.interfaces.GlucoseUnit
-import info.nightscout.interfaces.aps.DetermineBasalAdapter
-import info.nightscout.interfaces.aps.SMBDefaults
-import info.nightscout.interfaces.constraints.Constraints
-import info.nightscout.interfaces.iob.GlucoseStatus
-import info.nightscout.interfaces.iob.IobCobCalculator
-import info.nightscout.interfaces.iob.IobTotal
-import info.nightscout.interfaces.iob.MealData
-import info.nightscout.interfaces.profile.Profile
-import info.nightscout.interfaces.profile.ProfileFunction
 import info.nightscout.plugins.aps.APSResultObject
 import info.nightscout.plugins.aps.R
 import info.nightscout.plugins.aps.logger.LoggerCallback
 import info.nightscout.plugins.aps.utils.ScriptReader
-import info.nightscout.rx.logging.AAPSLogger
-import info.nightscout.rx.logging.LTag
-import info.nightscout.shared.sharedPreferences.SP
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -43,7 +43,7 @@ class DetermineBasalAdapterAMAJS internal constructor(scriptReader: ScriptReader
     private val injector: HasAndroidInjector
 
     @Inject lateinit var aapsLogger: AAPSLogger
-    @Inject lateinit var constraintChecker: Constraints
+    @Inject lateinit var constraintChecker: ConstraintsChecker
     @Inject lateinit var sp: SP
     @Inject lateinit var profileFunction: ProfileFunction
     @Inject lateinit var iobCobCalculator: IobCobCalculator
@@ -107,7 +107,8 @@ class DetermineBasalAdapterAMAJS internal constructor(scriptReader: ScriptReader
                     makeParam(profile, rhino, scope),
                     makeParam(autosensData, rhino, scope),
                     makeParam(mealData, rhino, scope),
-                    setTempBasalFunctionsObj)
+                    setTempBasalFunctionsObj
+                )
                 val jsResult = determineBasalObj.call(rhino, scope, scope, params) as NativeObject
                 scriptDebug = LoggerCallback.scriptDebug
 

@@ -1,11 +1,11 @@
 package info.nightscout.plugins.constraints.objectives.objectives
 
+import app.aaps.core.main.constraints.ConstraintObject
+import app.aaps.core.interfaces.constraints.PluginConstraints
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.plugin.ActivePlugin
+import app.aaps.core.interfaces.profile.ProfileFunction
 import dagger.android.HasAndroidInjector
-import info.nightscout.interfaces.Constants
-import info.nightscout.interfaces.constraints.Constraint
-import info.nightscout.interfaces.constraints.Constraints
-import info.nightscout.interfaces.plugin.ActivePlugin
-import info.nightscout.interfaces.profile.ProfileFunction
 import info.nightscout.plugins.constraints.R
 import javax.inject.Inject
 
@@ -14,13 +14,15 @@ class Objective4(injector: HasAndroidInjector) : Objective(injector, "maxbasal",
 
     @Inject lateinit var profileFunction: ProfileFunction
     @Inject lateinit var activePlugin: ActivePlugin
+    @Inject lateinit var aapsLogger: AAPSLogger
+
     init {
         tasks.add(
             object : Task(this, R.string.objectives_maxbasal_gate) {
                 override fun isCompleted(): Boolean {
                     return true
                     /*val profile = profileFunction.getProfile() ?: return false
-                    val maxBasalSet = (activePlugin.activeAPS as Constraints).applyBasalConstraints(Constraint(Constants.REALLYHIGHBASALRATE), profile)
+                    val maxBasalSet = (activePlugin.activeAPS as PluginConstraints).applyBasalConstraints(ConstraintObject(Double.MAX_VALUE, aapsLogger), profile)
                     val maxDailyBasal = profile.getMaxDailyBasal()
                     return maxBasalSet.value() > 2.8 * maxDailyBasal*/
                 }

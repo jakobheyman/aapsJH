@@ -3,21 +3,22 @@ package info.nightscout.source
 import android.content.Context
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import app.aaps.core.interfaces.configuration.Constants
+import app.aaps.core.interfaces.db.GlucoseUnit
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.plugin.PluginBase
+import app.aaps.core.interfaces.plugin.PluginDescription
+import app.aaps.core.interfaces.plugin.PluginType
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.source.BgSource
+import app.aaps.core.main.utils.worker.LoggingWorker
+import app.aaps.core.utils.JsonHelper.safeGetString
+import app.aaps.database.entities.GlucoseValue
+import app.aaps.database.transactions.TransactionGlucoseValue
 import dagger.android.HasAndroidInjector
-import info.nightscout.core.utils.JsonHelper.safeGetString
-import info.nightscout.core.utils.worker.LoggingWorker
-import info.nightscout.database.entities.GlucoseValue
 import info.nightscout.database.impl.AppRepository
 import info.nightscout.database.impl.transactions.CgmSourceTransaction
-import info.nightscout.database.transactions.TransactionGlucoseValue
-import info.nightscout.interfaces.Constants
-import info.nightscout.interfaces.plugin.PluginBase
-import info.nightscout.interfaces.plugin.PluginDescription
-import info.nightscout.interfaces.plugin.PluginType
-import info.nightscout.interfaces.source.BgSource
-import info.nightscout.rx.logging.AAPSLogger
-import info.nightscout.rx.logging.LTag
-import info.nightscout.shared.interfaces.ResourceHelper
 import kotlinx.coroutines.Dispatchers
 import org.json.JSONArray
 import org.json.JSONException
@@ -33,7 +34,7 @@ class PoctechPlugin @Inject constructor(
     PluginDescription()
         .mainType(PluginType.BGSOURCE)
         .fragmentClass(BGSourceFragment::class.java.name)
-        .pluginIcon(info.nightscout.core.main.R.drawable.ic_poctech)
+        .pluginIcon(app.aaps.core.main.R.drawable.ic_poctech)
         .preferencesId(R.xml.pref_bgsource)
         .pluginName(R.string.poctech)
         .description(R.string.description_source_poctech),
@@ -63,7 +64,7 @@ class PoctechPlugin @Inject constructor(
                     val json = jsonArray.getJSONObject(i)
                     glucoseValues += TransactionGlucoseValue(
                         timestamp = json.getLong("date"),
-                        value = if (safeGetString(json, "units", Constants.MGDL) == "mmol/L") json.getDouble("current") * Constants.MMOLL_TO_MGDL
+                        value = if (safeGetString(json, "units", GlucoseUnit.MGDL.asText) == "mmol/L") json.getDouble("current") * Constants.MMOLL_TO_MGDL
                         else json.getDouble("current"),
                         raw = json.getDouble("raw"),
                         noise = null,

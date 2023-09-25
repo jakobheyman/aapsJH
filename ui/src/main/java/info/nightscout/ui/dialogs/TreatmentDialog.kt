@@ -7,32 +7,32 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import app.aaps.core.interfaces.configuration.Config
+import app.aaps.core.interfaces.constraints.ConstraintsChecker
+import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.logging.UserEntryLogger
+import app.aaps.core.interfaces.plugin.ActivePlugin
+import app.aaps.core.interfaces.protection.ProtectionCheck
+import app.aaps.core.interfaces.pump.DetailedBolusInfo
+import app.aaps.core.interfaces.queue.Callback
+import app.aaps.core.interfaces.queue.CommandQueue
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.ui.UiInteraction
+import app.aaps.core.interfaces.utils.DecimalFormatter
+import app.aaps.core.interfaces.utils.SafeParse
+import app.aaps.core.main.constraints.ConstraintObject
+import app.aaps.core.main.utils.extensions.formatColor
+import app.aaps.core.ui.dialogs.OKDialog
+import app.aaps.core.ui.toast.ToastUtils
+import app.aaps.core.utils.HtmlHelper
+import app.aaps.database.entities.UserEntry
+import app.aaps.database.entities.ValueWithUnit
 import com.google.common.base.Joiner
-import info.nightscout.core.ui.dialogs.OKDialog
-import info.nightscout.core.ui.toast.ToastUtils
-import info.nightscout.core.utils.HtmlHelper
-import info.nightscout.core.utils.extensions.formatColor
-import info.nightscout.database.entities.UserEntry
-import info.nightscout.database.entities.ValueWithUnit
+import dagger.android.HasAndroidInjector
 import info.nightscout.database.impl.AppRepository
-import info.nightscout.interfaces.Config
-import info.nightscout.interfaces.constraints.Constraint
-import info.nightscout.interfaces.constraints.Constraints
-import info.nightscout.interfaces.db.PersistenceLayer
-import info.nightscout.interfaces.logging.UserEntryLogger
-import info.nightscout.interfaces.plugin.ActivePlugin
-import info.nightscout.interfaces.protection.ProtectionCheck
-import info.nightscout.interfaces.pump.DetailedBolusInfo
-import info.nightscout.interfaces.queue.Callback
-import info.nightscout.interfaces.queue.CommandQueue
-import info.nightscout.interfaces.ui.UiInteraction
-import info.nightscout.interfaces.utils.DecimalFormatter
-import info.nightscout.rx.logging.LTag
-import info.nightscout.shared.SafeParse
-import info.nightscout.shared.interfaces.ResourceHelper
 import info.nightscout.ui.R
 import info.nightscout.ui.databinding.DialogTreatmentBinding
-import io.reactivex.rxjava3.disposables.CompositeDisposable
 import java.text.DecimalFormat
 import java.util.LinkedList
 import javax.inject.Inject
@@ -40,7 +40,7 @@ import kotlin.math.abs
 
 class TreatmentDialog : DialogFragmentWithDate() {
 
-    @Inject lateinit var constraintChecker: Constraints
+    @Inject lateinit var constraintChecker: ConstraintsChecker
     @Inject lateinit var rh: ResourceHelper
     @Inject lateinit var activePlugin: ActivePlugin
     @Inject lateinit var commandQueue: CommandQueue
@@ -52,9 +52,9 @@ class TreatmentDialog : DialogFragmentWithDate() {
     @Inject lateinit var uiInteraction: UiInteraction
     @Inject lateinit var persistenceLayer: PersistenceLayer
     @Inject lateinit var decimalFormatter: DecimalFormatter
+    @Inject lateinit var injector: HasAndroidInjector
 
     private var queryingProtection = false
-    private val disposable = CompositeDisposable()
     private var _binding: DialogTreatmentBinding? = null
 
     // This property is only valid between onCreateView and onDestroyView.
@@ -138,37 +138,36 @@ class TreatmentDialog : DialogFragmentWithDate() {
         val carbs = SafeParse.stringToInt(binding.carbs.text)
         val recordOnlyChecked = binding.recordOnly.isChecked
         val actions: LinkedList<String?> = LinkedList()
-        val insulinAfterConstraints = constraintChecker.applyBolusConstraints(Constraint(insulin)).value()
-        val carbsAfterConstraints = constraintChecker.applyCarbsConstraints(Constraint(carbs)).value()
+        val insulinAfterConstraints = constraintChecker.applyBolusConstraints(ConstraintObject(insulin, aapsLogger)).value()
+        val carbsAfterConstraints = constraintChecker.applyCarbsConstraints(ConstraintObject(carbs, aapsLogger)).value()
 
         if (insulinAfterConstraints > 0) {
             actions.add(
-                rh.gs(info.nightscout.core.ui.R.string.bolus) + ": " + decimalFormatter.toPumpSupportedBolus(insulinAfterConstraints, activePlugin.activePump.pumpDescription.bolusStep)
+                rh.gs(app.aaps.core.ui.R.string.bolus) + ": " + decimalFormatter.toPumpSupportedBolus(insulinAfterConstraints, activePlugin.activePump.pumpDescription.bolusStep)
                     .formatColor(
                         context, rh,
-                        info.nightscout.core.ui.R.attr.bolusColor
+                        app.aaps.core.ui.R.attr.bolusColor
                     )
             )
             if (recordOnlyChecked)
-                actions.add(rh.gs(info.nightscout.core.ui.R.string.bolus_recorded_only).formatColor(context, rh, info.nightscout.core.ui.R.attr.warningColor))
+                actions.add(rh.gs(app.aaps.core.ui.R.string.bolus_recorded_only).formatColor(context, rh, app.aaps.core.ui.R.attr.warningColor))
             if (abs(insulinAfterConstraints - insulin) > pumpDescription.pumpType.determineCorrectBolusStepSize(insulinAfterConstraints))
                 actions.add(
-                    rh.gs(info.nightscout.core.ui.R.string.bolus_constraint_applied_warn, insulin, insulinAfterConstraints).formatColor(context, rh, info.nightscout.core.ui.R.attr.warningColor)
+                    rh.gs(app.aaps.core.ui.R.string.bolus_constraint_applied_warn, insulin, insulinAfterConstraints).formatColor(context, rh, app.aaps.core.ui.R.attr.warningColor)
                 )
         }
         if (carbsAfterConstraints > 0) {
             actions.add(
-                rh.gs(info.nightscout.core.ui.R.string.carbs) + ": " + rh.gs(info.nightscout.core.main.R.string.format_carbs, carbsAfterConstraints).formatColor(
-                    context, rh, info.nightscout
-                        .core.ui.R.attr.carbsColor
+                rh.gs(app.aaps.core.ui.R.string.carbs) + ": " + rh.gs(app.aaps.core.main.R.string.format_carbs, carbsAfterConstraints).formatColor(
+                    context, rh, app.aaps.core.ui.R.attr.carbsColor
                 )
             )
             if (carbsAfterConstraints != carbs)
-                actions.add(rh.gs(R.string.carbs_constraint_applied).formatColor(context, rh, info.nightscout.core.ui.R.attr.warningColor))
+                actions.add(rh.gs(R.string.carbs_constraint_applied).formatColor(context, rh, app.aaps.core.ui.R.attr.warningColor))
         }
         if (insulinAfterConstraints > 0 || carbsAfterConstraints > 0) {
             activity?.let { activity ->
-                OKDialog.showConfirmation(activity, rh.gs(info.nightscout.core.ui.R.string.overview_treatment_label), HtmlHelper.fromHtml(Joiner.on("<br/>").join(actions)), {
+                OKDialog.showConfirmation(activity, rh.gs(app.aaps.core.ui.R.string.overview_treatment_label), HtmlHelper.fromHtml(Joiner.on("<br/>").join(actions)), {
                     val action = when {
                         insulinAfterConstraints.equals(0.0) -> UserEntry.Action.CARBS
                         carbsAfterConstraints == 0          -> UserEntry.Action.BOLUS
@@ -181,9 +180,9 @@ class TreatmentDialog : DialogFragmentWithDate() {
                     detailedBolusInfo.carbs = carbsAfterConstraints.toDouble()
                     detailedBolusInfo.context = context
                     if (recordOnlyChecked) {
-                        uel.log(action, UserEntry.Sources.TreatmentDialog, if (insulinAfterConstraints != 0.0) rh.gs(info.nightscout.core.ui.R.string.record) else "",
+                        uel.log(action, UserEntry.Sources.TreatmentDialog, if (insulinAfterConstraints != 0.0) rh.gs(app.aaps.core.ui.R.string.record) else "",
                                 ValueWithUnit.Timestamp(detailedBolusInfo.timestamp).takeIf { eventTimeChanged },
-                                ValueWithUnit.SimpleString(rh.gsNotLocalised(info.nightscout.core.ui.R.string.record)).takeIf { insulinAfterConstraints != 0.0 },
+                                ValueWithUnit.SimpleString(rh.gsNotLocalised(app.aaps.core.ui.R.string.record)).takeIf { insulinAfterConstraints != 0.0 },
                                 ValueWithUnit.Insulin(insulinAfterConstraints).takeIf { insulinAfterConstraints != 0.0 },
                                 ValueWithUnit.Gram(carbsAfterConstraints).takeIf { carbsAfterConstraints != 0 })
                         if (detailedBolusInfo.insulin > 0)
@@ -198,7 +197,7 @@ class TreatmentDialog : DialogFragmentWithDate() {
                             commandQueue.bolus(detailedBolusInfo, object : Callback() {
                                 override fun run() {
                                     if (!result.success) {
-                                        uiInteraction.runAlarm(result.comment, rh.gs(info.nightscout.core.ui.R.string.treatmentdeliveryerror), info.nightscout.core.ui.R.raw.boluserror)
+                                        uiInteraction.runAlarm(result.comment, rh.gs(app.aaps.core.ui.R.string.treatmentdeliveryerror), app.aaps.core.ui.R.raw.boluserror)
                                     }
                                 }
                             })
@@ -213,7 +212,7 @@ class TreatmentDialog : DialogFragmentWithDate() {
             }
         } else
             activity?.let { activity ->
-                OKDialog.show(activity, rh.gs(info.nightscout.core.ui.R.string.overview_treatment_label), rh.gs(info.nightscout.core.ui.R.string.no_action_selected))
+                OKDialog.show(activity, rh.gs(app.aaps.core.ui.R.string.overview_treatment_label), rh.gs(app.aaps.core.ui.R.string.no_action_selected))
             }
         return true
     }

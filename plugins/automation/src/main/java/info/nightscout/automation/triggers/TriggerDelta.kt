@@ -1,6 +1,9 @@
 package info.nightscout.automation.triggers
 
 import android.widget.LinearLayout
+import app.aaps.core.interfaces.db.GlucoseUnit
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.utils.JsonHelper
 import com.google.common.base.Optional
 import dagger.android.HasAndroidInjector
 import info.nightscout.automation.R
@@ -10,10 +13,6 @@ import info.nightscout.automation.elements.InputDelta.DeltaType
 import info.nightscout.automation.elements.LabelWithElement
 import info.nightscout.automation.elements.LayoutBuilder
 import info.nightscout.automation.elements.StaticLabel
-import info.nightscout.core.utils.JsonHelper
-import info.nightscout.interfaces.Constants
-import info.nightscout.interfaces.GlucoseUnit
-import info.nightscout.rx.logging.LTag
 import org.json.JSONObject
 import java.text.DecimalFormat
 
@@ -94,7 +93,7 @@ class TriggerDelta(injector: HasAndroidInjector) : Trigger(injector) {
 
     override fun fromJSON(data: String): Trigger {
         val d = JSONObject(data)
-        units = GlucoseUnit.fromText(JsonHelper.safeGetString(d, "units", Constants.MGDL))
+        units = GlucoseUnit.fromText(JsonHelper.safeGetString(d, "units", GlucoseUnit.MGDL.asText))
         val type = DeltaType.valueOf(JsonHelper.safeGetString(d, "deltaType", ""))
         val value = JsonHelper.safeGetDouble(d, "value")
         delta =

@@ -2,20 +2,20 @@ package info.nightscout.plugins.constraints.storage
 
 import android.os.Environment
 import android.os.StatFs
+import app.aaps.annotations.OpenForTesting
+import app.aaps.core.interfaces.configuration.Constants
+import app.aaps.core.interfaces.constraints.Constraint
+import app.aaps.core.interfaces.constraints.PluginConstraints
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.notifications.Notification
+import app.aaps.core.interfaces.plugin.PluginBase
+import app.aaps.core.interfaces.plugin.PluginDescription
+import app.aaps.core.interfaces.plugin.PluginType
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.ui.UiInteraction
 import dagger.android.HasAndroidInjector
-import info.nightscout.annotations.OpenForTesting
-import info.nightscout.interfaces.Constants
-import info.nightscout.interfaces.constraints.Constraint
-import info.nightscout.interfaces.constraints.Constraints
-import info.nightscout.interfaces.notifications.Notification
-import info.nightscout.interfaces.plugin.PluginBase
-import info.nightscout.interfaces.plugin.PluginDescription
-import info.nightscout.interfaces.plugin.PluginType
-import info.nightscout.interfaces.ui.UiInteraction
 import info.nightscout.plugins.constraints.R
-import info.nightscout.rx.logging.AAPSLogger
-import info.nightscout.rx.logging.LTag
-import info.nightscout.shared.interfaces.ResourceHelper
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,13 +34,13 @@ class StorageConstraintPlugin @Inject constructor(
         .showInList(false)
         .pluginName(R.string.storage),
     aapsLogger, rh, injector
-), Constraints {
+), PluginConstraints {
 
     override fun isClosedLoopAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
         val diskFree = availableInternalMemorySize()
         if (diskFree < Constants.MINIMUM_FREE_SPACE) {
             aapsLogger.debug(LTag.CONSTRAINTS, "Closed loop disabled. Internal storage free (Mb):$diskFree")
-            value.set(aapsLogger, false, rh.gs(R.string.disk_full, Constants.MINIMUM_FREE_SPACE), this)
+            value.set(false, rh.gs(R.string.disk_full, Constants.MINIMUM_FREE_SPACE), this)
             activeNames.addNotification(Notification.DISK_FULL, rh.gs(R.string.disk_full, Constants.MINIMUM_FREE_SPACE), Notification.NORMAL)
         }
         return value
