@@ -33,9 +33,9 @@ object Constants {
     const val defaultHypoTTDuration = 60 // min
     const val defaultHypoTTmgdl = 160.0
     const val defaultHypoTTmmol = 8.0
-    const val MIN_TT_MGDL = 72.0
+    const val MIN_TT_MGDL = 54.0
     const val MAX_TT_MGDL = 180.0
-    const val MIN_TT_MMOL = 4.0
+    const val MIN_TT_MMOL = 3.0
     const val MAX_TT_MMOL = 10.0
 
     //NSClientInternal
