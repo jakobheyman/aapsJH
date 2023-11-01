@@ -6,12 +6,12 @@ interface HardLimits {
         // Very Hard Limits Ranges
         // First value is the Lowest and second value is the Highest a Limit can define
         val VERY_HARD_LIMIT_MIN_BG = doubleArrayOf(54.0, 180.0)
-        val VERY_HARD_LIMIT_MAX_BG = doubleArrayOf(81.0, 200.0)
+        val VERY_HARD_LIMIT_MAX_BG = doubleArrayOf(54.0, 200.0)
         val VERY_HARD_LIMIT_TARGET_BG = doubleArrayOf(54.0, 200.0)
 
         // Very Hard Limits Ranges for Temp Targets
         val VERY_HARD_LIMIT_TEMP_MIN_BG = intArrayOf(54, 180)
-        val VERY_HARD_LIMIT_TEMP_MAX_BG = intArrayOf(81, 270)
+        val VERY_HARD_LIMIT_TEMP_MAX_BG = intArrayOf(54, 270)
         val VERY_HARD_LIMIT_TEMP_TARGET_BG = intArrayOf(54, 200)
         val MIN_DIA = doubleArrayOf(5.0, 5.0, 5.0, 5.0, 5.0)
         val MAX_DIA = doubleArrayOf(9.0, 9.0, 9.0, 9.0, 10.0)
