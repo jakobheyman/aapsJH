@@ -120,7 +120,7 @@
             android:singleLine="true"
             android:title="@string/smb_interval_summary"
             validate:maxNumber="10"
-            validate:minNumber="1"
+            validate:minNumber="0"
             validate:testType="numericRange" />
 
         <app.aaps.core.validators.ValidatingEditTextPreference

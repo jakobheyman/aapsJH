@@ -1103,8 +1103,8 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
             }
             rT.reason += ". ";
 
-            //allow SMBs every 3 minutes by default
-            var SMBInterval = 3;
+            //allow SMBs every 0 minutes by default
+            var SMBInterval = 0;
             if (profile.SMBInterval) {
                 // allow SMBIntervals between 1 and 10 minutes
                 SMBInterval = Math.min(10,Math.max(1,profile.SMBInterval));

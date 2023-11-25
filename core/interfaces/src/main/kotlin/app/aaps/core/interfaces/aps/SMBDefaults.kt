@@ -57,7 +57,7 @@ object SMBDefaults {
     // *** WARNING *** DO NOT USE enableSMB_always or enableSMB_after_carbs with xDrip+, Libre, or similar
     //public final static boolean enableSMB_after_carbs = false; // enable supermicrobolus for 6h after carbs, even with 0 COB
     //public final static boolean allowSMB_with_high_temptarget = false; // allow supermicrobolus (if otherwise enabled) even with high temp targets
-    const val SMBInterval = 3 // minimum interval between SMBs, in minutes. (limited between 1 and 10 min)
+    const val SMBInterval = 0 // minimum interval between SMBs, in minutes. (limited between 0 and 10 min)
     const val maxSMBBasalMinutes = 30 // maximum minutes of basal that can be delivered as a single SMB with uncovered COB
     const val maxUAMSMBBasalMinutes = 30 // maximum minutes of basal that can be delivered as a single SMB when IOB exceeds COB
 
