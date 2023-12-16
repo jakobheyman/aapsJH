@@ -7,7 +7,6 @@ import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.pump.VirtualPump
 import app.aaps.core.interfaces.sync.Tidepool
-import app.aaps.database.ValueWrapper
 import app.aaps.plugins.constraints.R
 import dagger.android.HasAndroidInjector
 import javax.inject.Inject
@@ -73,10 +72,8 @@ class Objective0(injector: HasAndroidInjector) : Objective(injector, "config", R
             }
         })
         tasks.add(object : Task(this, app.aaps.core.ui.R.string.activate_profile) {
-            override fun isCompleted(): Boolean {
-                return true
-                //return persistenceLayer.getEffectiveProfileSwitchActiveAt(dateUtil.now()).blockingGet() is ValueWrapper.Existing
-            }
+            override fun isCompleted(): Boolean = true
+            //override fun isCompleted(): Boolean = persistenceLayer.getEffectiveProfileSwitchActiveAt(dateUtil.now()) != null
         })
     }
 }
