@@ -39,7 +39,7 @@ class SingleFragmentActivity : DaggerAppCompatActivityWithResult() {
         // Add menu items without overriding methods in the Activity
         addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                if (plugin?.preferencesId != -1) menuInflater.inflate(R.menu.menu_single_fragment, menu)
+                if ((plugin?.preferencesId ?: return) > 0) menuInflater.inflate(R.menu.menu_single_fragment, menu)
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
@@ -53,7 +53,7 @@ class SingleFragmentActivity : DaggerAppCompatActivityWithResult() {
                         protectionCheck.queryProtection(this@SingleFragmentActivity, ProtectionCheck.Protection.PREFERENCES, {
                             val i = Intent(this@SingleFragmentActivity, uiInteraction.preferencesActivity)
                                 .setAction("app.aaps.plugins.configuration.activities.SingleFragmentActivity")
-                                .putExtra("id", plugin?.preferencesId)
+                                .putExtra(UiInteraction.PLUGIN_NAME, plugin?.javaClass?.simpleName)
                             startActivity(i)
                         }, null)
                         true
