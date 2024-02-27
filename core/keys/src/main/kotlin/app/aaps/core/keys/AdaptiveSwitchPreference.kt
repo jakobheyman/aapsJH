@@ -11,9 +11,9 @@ import javax.inject.Inject
 class AdaptiveSwitchPreference(
     ctx: Context,
     attrs: AttributeSet? = null,
-    booleanKey: BooleanKey?,
+    booleanKey: BooleanPreferenceKey?,
     @StringRes summary: Int? = null,
-    @StringRes title: Int?,
+    @StringRes title: Int?
 ) : SwitchPreference(ctx, attrs) {
 
     @Inject lateinit var preferences: Preferences
@@ -29,7 +29,7 @@ class AdaptiveSwitchPreference(
         summary?.let { setSummary(it) }
         title?.let { this.title = context.getString(it) }
 
-        val preferenceKey = booleanKey ?: preferences.get(key) as BooleanKey
+        val preferenceKey = booleanKey ?: preferences.get(key) as BooleanPreferenceKey
         if (preferences.simpleMode && preferenceKey.defaultedBySM) isVisible = false
         if (preferences.apsMode && !preferenceKey.showInApsMode) {
             isVisible = false; isEnabled = false
@@ -40,12 +40,12 @@ class AdaptiveSwitchPreference(
         if (preferences.pumpControlMode && !preferenceKey.showInPumpControlMode) {
             isVisible = false; isEnabled = false
         }
-        if (preferenceKey.dependency != 0) {
-            if (!sharedPrefs.getBoolean(context.getString(preferenceKey.dependency), false))
+        preferenceKey.dependency?.let {
+            if (!sharedPrefs.getBoolean(context.getString(it.key), false))
                 isVisible = false
         }
-        if (preferenceKey.negativeDependency != 0) {
-            if (sharedPrefs.getBoolean(context.getString(preferenceKey.negativeDependency), false))
+        preferenceKey.negativeDependency?.let {
+            if (sharedPrefs.getBoolean(context.getString(it.key), false))
                 isVisible = false
         }
         setDefaultValue(preferenceKey.defaultValue)
@@ -54,7 +54,7 @@ class AdaptiveSwitchPreference(
     override fun onAttached() {
         super.onAttached()
         // PreferenceScreen is final so we cannot extend and modify behavior
-        val preferenceKey = preferences.get(key) as BooleanKey
+        val preferenceKey = preferences.get(key) as BooleanPreferenceKey
         if (preferenceKey.hideParentScreenIfHidden) {
             parent?.isVisible = isVisible
             parent?.isEnabled = isEnabled

@@ -11,6 +11,7 @@ import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.profiling.Profiler
 import app.aaps.core.interfaces.stats.TddCalculator
 import app.aaps.core.interfaces.ui.UiInteraction
+import app.aaps.core.keys.AdaptiveIntentPreference
 import app.aaps.core.keys.AdaptiveSwitchPreference
 import app.aaps.core.validators.AdaptiveDoublePreference
 import app.aaps.core.validators.AdaptiveIntPreference
@@ -29,15 +30,12 @@ class OpenAPSSMBPluginTest : TestBaseWithProfile() {
     @Mock lateinit var persistenceLayer: PersistenceLayer
     @Mock lateinit var glucoseStatusProvider: GlucoseStatusProvider
     @Mock lateinit var determineBasalSMB: DetermineBasalSMB
-    @Mock lateinit var theme: Theme
-    @Mock lateinit var typedArray: TypedArray
     @Mock lateinit var sharedPrefs: SharedPreferences
     @Mock lateinit var bgQualityCheck: BgQualityCheck
     @Mock lateinit var tddCalculator: TddCalculator
     @Mock lateinit var uiInteraction: UiInteraction
     @Mock lateinit var profiler: Profiler
     private lateinit var openAPSSMBPlugin: OpenAPSSMBPlugin
-    private lateinit var preferenceManager: PreferenceManager
 
     init {
         addInjector {
@@ -52,6 +50,10 @@ class OpenAPSSMBPluginTest : TestBaseWithProfile() {
                 it.sharedPrefs = sharedPrefs
                 it.config = config
             }
+            if (it is AdaptiveIntentPreference) {
+                it.preferences = preferences
+                it.sharedPrefs = sharedPrefs
+            }
             if (it is AdaptiveUnitPreference) {
                 it.profileUtil = profileUtil
                 it.preferences = preferences
@@ -65,14 +67,11 @@ class OpenAPSSMBPluginTest : TestBaseWithProfile() {
     }
 
     @BeforeEach fun prepare() {
-        preferenceManager = PreferenceManager(context)
         openAPSSMBPlugin = OpenAPSSMBPlugin(
             injector, aapsLogger, rxBus, constraintChecker, rh, profileFunction, profileUtil, config, activePlugin,
             iobCobCalculator, hardLimits, preferences, dateUtil, processedTbrEbData, persistenceLayer, glucoseStatusProvider,
             tddCalculator, bgQualityCheck, uiInteraction, determineBasalSMB, profiler
         )
-        `when`(context.theme).thenReturn(theme)
-        `when`(context.obtainStyledAttributes(anyObject(), any(), any(), any())).thenReturn(typedArray)
     }
 
     @Test
@@ -88,7 +87,7 @@ class OpenAPSSMBPluginTest : TestBaseWithProfile() {
     @Test
     fun preferenceScreenTest() {
         val screen = preferenceManager.createPreferenceScreen(context)
-        openAPSSMBPlugin.addPreferenceScreen(preferenceManager, screen, context)
+        openAPSSMBPlugin.addPreferenceScreen(preferenceManager, screen, context, null)
         assertThat(screen.preferenceCount).isGreaterThan(0)
     }
 }
