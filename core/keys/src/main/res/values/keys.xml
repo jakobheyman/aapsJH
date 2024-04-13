@@ -100,6 +100,7 @@
     <string name="key_openaps_max_daily_safety_multiplier" translatable="false">openapsama_max_daily_safety_multiplier</string>
     <string name="key_openaps_current_basal_safety_multiplier" translatable="false">openapsama_current_basal_safety_multiplier</string>
     <string name="key_dynamic_isf_adjustment_factor" translatable="false">DynISFAdjust</string>
+    <string name="key_maximum_tdd_for_dynamic_isf" translatable="false">MaxTDD</string>
     <string name="key_dynamic_isf_lgs_threshold" translatable="false">lgsThreshold</string>
     <string name="key_dynamic_isf_adjust_sensitivity" translatable="false">dynisf_adjust_sensitivity</string>
     <string name="key_openaps_ama_bolus_snooze_dia_divisor" translatable="false">bolussnooze_dia_divisor</string>

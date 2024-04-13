@@ -76,6 +76,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.floor
 import kotlin.math.ln
+import kotlin.math.min
 
 @Singleton
 open class OpenAPSSMBPlugin @Inject constructor(
@@ -215,7 +216,10 @@ open class OpenAPSSMBPlugin @Inject constructor(
         }
         val tddStatus = TddStatus(tdd1D, tdd7D, tddLast24H, tddLast4H, tddLast8to4H)
         val tddWeightedFromLast8H = ((1.4 * tddStatus.tddLast4H) + (0.6 * tddStatus.tddLast8to4H)) * 3
-        val tdd = (tddWeightedFromLast8H * 0.33) + (tddStatus.tdd7D * 0.34) + (tddStatus.tdd1D * 0.33) * preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
+        // aapsJH: limit tdd values to a maximum value that can be set in preferences
+        val maxTdd = preferences.get(IntKey.ApsMaxTddForDynIsf).toDouble()
+        val tdd = (min(tddWeightedFromLast8H, maxTdd) * 0.33) + (min(tddStatus.tdd7D, maxTdd) * 0.34) + (min(tddStatus.tdd1D, maxTdd) * 0.33) * preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
+        //val tdd = (tddWeightedFromLast8H * 0.33) + (tddStatus.tdd7D * 0.34) + (tddStatus.tdd1D * 0.33) * preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
 
         val sensitivity = Round.roundTo(1800 / (tdd * (ln((glucose / insulinDivisor) + 1))), 0.1)
         //aapsLogger.debug("calculateVariableIsf $caller CAL ${dateUtil.dateAndTimeAndSecondsString(timestamp)} $sensitivity")
@@ -320,7 +324,10 @@ open class OpenAPSSMBPlugin @Inject constructor(
                 uiInteraction.dismissNotification(Notification.SMB_FALLBACK)
                 tddStatus = TddStatus(tdd1D, tdd7D.data.totalAmount, tddLast24H.totalAmount, tddLast4H, tddLast8to4H)
                 val tddWeightedFromLast8H = ((1.4 * tddStatus.tddLast4H) + (0.6 * tddStatus.tddLast8to4H)) * 3
-                tdd = ((tddWeightedFromLast8H * 0.33) + (tddStatus.tdd7D * 0.34) + (tddStatus.tdd1D * 0.33)) * preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
+                // aapsJH: limit tdd values to a maximum value that can be set in preferences
+                val maxTdd = preferences.get(IntKey.ApsMaxTddForDynIsf).toDouble()
+                tdd = ((min(tddWeightedFromLast8H, maxTdd) * 0.33) + (min(tddStatus.tdd7D, maxTdd) * 0.34) + (min(tddStatus.tdd1D, maxTdd) * 0.33)) * preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
+                //tdd = ((tddWeightedFromLast8H * 0.33) + (tddStatus.tdd7D * 0.34) + (tddStatus.tdd1D * 0.33)) * preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
                 variableSensitivity = Round.roundTo(1800 / (tdd * (ln((glucoseStatus.glucose / insulinDivisor) + 1))), 0.1)
 
                 // Compare insulin consumption of last 24h with last 7 days average
@@ -510,11 +517,13 @@ open class OpenAPSSMBPlugin @Inject constructor(
         JSONObject()
             .put(BooleanKey.ApsUseDynamicSensitivity, preferences, rh)
             .put(IntKey.ApsDynIsfAdjustmentFactor, preferences, rh)
+            .put(IntKey.ApsMaxTddForDynIsf, preferences, rh)
 
     override fun applyConfiguration(configuration: JSONObject) {
         configuration
             .store(BooleanKey.ApsUseDynamicSensitivity, preferences, rh)
             .store(IntKey.ApsDynIsfAdjustmentFactor, preferences, rh)
+            .store(IntKey.ApsMaxTddForDynIsf, preferences, rh)
     }
 
     override fun addPreferenceScreen(preferenceManager: PreferenceManager, parent: PreferenceScreen, context: Context, requiredKey: String?) {
@@ -530,6 +539,7 @@ open class OpenAPSSMBPlugin @Inject constructor(
             addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsUseDynamicSensitivity, summary = R.string.use_dynamic_sensitivity_summary, title = R.string.use_dynamic_sensitivity_title))
             addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsUseAutosens, title = R.string.openapsama_use_autosens))
             addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.ApsDynIsfAdjustmentFactor, dialogMessage = R.string.dyn_isf_adjust_summary, title = R.string.dyn_isf_adjust_title))
+            addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.ApsMaxTddForDynIsf, dialogMessage = R.string.max_tdd_for_dyn_isf_summary, title = R.string.max_tdd_for_dyn_isf_title))
             addPreference(AdaptiveUnitPreference(ctx = context, unitKey = UnitDoubleKey.ApsLgsThreshold, dialogMessage = R.string.lgs_threshold_summary, title = R.string.lgs_threshold_title))
             addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsDynIsfAdjustSensitivity, summary = R.string.dynisf_adjust_sensitivity_summary, title = R.string.dynisf_adjust_sensitivity))
             addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsSensitivityRaisesTarget, summary = R.string.sensitivity_raises_target_summary, title = R.string.sensitivity_raises_target_title))
