@@ -171,8 +171,11 @@ function loop_smb(microBolusAllowed, profile, iob_data, iobTH_reduction_ratio) {
 function interpolate(xdata, profile, type)
 {   // interpolate ISF behaviour based on polygons defining nonlinear functions defined by value pairs for ...
     //  ...         <---------------  glucose  ------------------->
-    var polyX_bg = [  50,   60,   80,   90, 100, 110, 150, 180, 200];    // later, hand it over
-    var polyY_bg = [-0.5, -0.5, -0.3, -0.2, 0.0, 0.0, 0.5, 0.7, 0.7];    // later, hand it over
+    // aapsJH: modified bg polygons
+    var polyX_bg = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250];
+    var polyY_bg = [-0.5, -0.5, -0.375, -0.25, -0.125, 0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.75];
+    // var polyX_bg = [  50,   60,   80,   90, 100, 110, 150, 180, 200];    // later, hand it over
+    // var polyY_bg = [-0.5, -0.5, -0.3, -0.2, 0.0, 0.0, 0.5, 0.7, 0.7];    // later, hand it over
     //  ...            <-----  delta  ------->
     var polyX_delta = [  2,   7,  12,  16,  20];                         // later, hand it over
     var polyY_delta = [0.0, 0.0, 0.4, 0.7, 0.7];                         // later, hand it over
