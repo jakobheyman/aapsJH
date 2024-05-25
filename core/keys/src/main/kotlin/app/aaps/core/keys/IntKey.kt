@@ -52,7 +52,6 @@ enum class IntKey(
     ApsAutoIsfPpIsfHours(R.string.key_openapsama_pp_ISF_hours, 3, 1, 10, defaultedBySM = true),
     ApsAutoIsfIobThPercent(R.string.key_openapsama_iob_threshold_percent, 100, 10, 100, defaultedBySM = true),
     ApsDynIsfAdjustmentFactor(R.string.key_dynamic_isf_adjustment_factor, 100, 1, 300, dependency = BooleanKey.ApsUseDynamicSensitivity),
-    ApsMaxTddForDynIsf(R.string.key_maximum_tdd_for_dynamic_isf, 500, 1, 500, dependency = BooleanKey.ApsUseDynamicSensitivity),
     AutosensPeriod(R.string.key_openapsama_autosens_period, 24, 4, 24, calculatedDefaultValue = true),
     MaintenanceLogsAmount(R.string.key_maintenance_logs_amount, 2, 1, 10, defaultedBySM = true),
     AlertsStaleDataThreshold(R.string.key_missed_bg_readings_threshold_minutes, 30, 15, 10000, defaultedBySM = true),

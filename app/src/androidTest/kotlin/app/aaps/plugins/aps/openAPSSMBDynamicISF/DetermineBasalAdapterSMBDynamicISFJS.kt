@@ -47,7 +47,6 @@ import java.nio.charset.StandardCharsets
 import java.security.InvalidParameterException
 import javax.inject.Inject
 import kotlin.math.ln
-import kotlin.math.min
 
 class DetermineBasalAdapterSMBDynamicISFJS(private val scriptReader: ScriptReader, private val injector: HasAndroidInjector) : DetermineBasalAdapter {
 
@@ -317,10 +316,7 @@ class DetermineBasalAdapterSMBDynamicISFJS(private val scriptReader: ScriptReade
         }
 
         val tddWeightedFromLast8H = ((1.4 * tddLast4H) + (0.6 * tddLast8to4H)) * 3
-        // aapsJH: limit tdd values to a maximum value that can be set in preferences
-        val maxTdd = preferences.get(IntKey.ApsMaxTddForDynIsf).toDouble()
-        var tdd = (min(tddWeightedFromLast8H, maxTdd) * 0.33) + (min(tdd7D, maxTdd) * 0.34) + (min(tdd1D, maxTdd) * 0.33)
-        //var tdd = (tddWeightedFromLast8H * 0.33) + (tdd7D * 0.34) + (tdd1D * 0.33)
+        var tdd = (tddWeightedFromLast8H * 0.33) + (tdd7D * 0.34) + (tdd1D * 0.33)
         val dynISFadjust = preferences.get(IntKey.ApsDynIsfAdjustmentFactor) / 100.0
         tdd *= dynISFadjust
 
