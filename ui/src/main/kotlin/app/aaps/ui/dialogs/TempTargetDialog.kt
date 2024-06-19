@@ -74,7 +74,7 @@ class TempTargetDialog : DialogFragmentWithDate() {
 
         binding.duration.setParams(
             savedInstanceState?.getDouble("duration")
-                ?: 0.0, 0.0, Constants.MAX_PROFILE_SWITCH_DURATION, 10.0, DecimalFormat("0"), false, binding.okcancel.ok
+                ?: 60.0, 0.0, Constants.MAX_PROFILE_SWITCH_DURATION, 10.0, DecimalFormat("0"), false, binding.okcancel.ok
         )
 
         if (profileUtil.units == GlucoseUnit.MMOL)
