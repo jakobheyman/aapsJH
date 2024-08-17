@@ -86,7 +86,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     rh: ResourceHelper,
     private val profileFunction: ProfileFunction,
     private val profileUtil: ProfileUtil,
-    config: Config,
+    private val config: Config,
     private val activePlugin: ActivePlugin,
     private val iobCobCalculator: IobCobCalculator,
     private val hardLimits: HardLimits,
@@ -117,19 +117,16 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     override val algorithm = APSResult.Algorithm.AUTO_ISF
     override var lastAPSResult: DetermineBasalResult? = null
     private var consoleError = mutableListOf<String>()
-    val autoIsfVersion = "3.0"
+    private var consoleLog = mutableListOf<String>()
+    val autoIsfVersion = "3.0.1"
     val autoIsfWeights; get() = preferences.get(BooleanKey.ApsUseAutoIsfWeights)
     private val autoISF_max; get() = preferences.get(DoubleKey.ApsAutoIsfMax)
     private val autoISF_min; get() = preferences.get(DoubleKey.ApsAutoIsfMin)
     private val bgAccel_ISF_weight; get() = preferences.get(DoubleKey.ApsAutoIsfBgAccelWeight)
     private val bgBrake_ISF_weight; get() = preferences.get(DoubleKey.ApsAutoIsfBgBrakeWeight)
-    private val enable_pp_ISF_always; get() = preferences.get(BooleanKey.ApsAutoIsfPpAlways)
-    private val pp_ISF_hours; get() = preferences.get(IntKey.ApsAutoIsfPpIsfHours)
     private val pp_ISF_weight; get() = preferences.get(DoubleKey.ApsAutoIsfPpWeight)
-    private val delta_ISFrange_weight; get() = preferences.get(DoubleKey.ApsAutoIsfDeltaWeight)
     private val lower_ISFrange_weight; get() = preferences.get(DoubleKey.ApsAutoIsfLowBgWeight)
     private val higher_ISFrange_weight; get() = preferences.get(DoubleKey.ApsAutoIsfHighBgWeight)
-    private val enable_dura_ISF_with_COB; get() = preferences.get(BooleanKey.ApsAutoIsfDuraAfterCarbs)
     private val dura_ISF_weight; get() = preferences.get(DoubleKey.ApsAutoIsfDuraWeight)
     private val smb_delivery_ratio; get() = preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatio)
     private val smb_delivery_ratio_min; get() = preferences.get(DoubleKey.ApsAutoIsfSmbDeliveryRatioMin)
@@ -137,8 +134,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     private val smb_delivery_ratio_bg_range
         get() = if (preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange) < 10.0) preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange) * GlucoseUnit.MMOLL_TO_MGDL else preferences.get(UnitDoubleKey.ApsAutoIsfSmbDeliveryRatioBgRange)
     val smbMaxRangeExtension; get() = preferences.get(DoubleKey.ApsAutoIsfSmbMaxRangeExtension)
-    private val enableSMB_EvenOn_OddOff; get() = preferences.get(BooleanKey.ApsAutoIsfSmbOnEvenTt) // for TT
-    private val enableSMB_EvenOn_OddOff_always; get() = preferences.get(BooleanKey.ApsAutoIsfSmbOnEvenPt) // for profile target
+    private val enableSMB_EvenOn_OddOff_always; get() = preferences.get(BooleanKey.ApsAutoIsfSmbOnEvenTarget) // for profile target
     val iobThresholdPercent; get() = preferences.get(IntKey.ApsAutoIsfIobThPercent)
     private val exerciseMode; get() = SMBDefaults.exercise_mode
     private val highTemptargetRaisesSensitivity; get() = preferences.get(BooleanKey.ApsAutoIsfHighTtRaisesSens)
@@ -161,12 +157,13 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     }
 
     override fun specialEnableCondition(): Boolean {
-        return try {
-            activePlugin.activePump.pumpDescription.isTempBasalCapable
-        } catch (ignored: Exception) {
-            // may fail during initialization
-            true
-        }
+        return config.isEngineeringMode() && config.isDev() &&
+            try {
+                activePlugin.activePump.pumpDescription.isTempBasalCapable
+            } catch (ignored: Exception) {
+                // may fail during initialization
+                true
+            }
     }
 
     override fun specialShowInListCondition(): Boolean {
@@ -290,6 +287,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
 
         if (autoIsfMode) {
             consoleError = mutableListOf()
+            consoleLog = mutableListOf()
             variableSensitivity = autoISF(now, profile)
         }
         val oapsProfile = OapsProfileAutoIsf(
@@ -340,20 +338,15 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             autoISF_min = autoISF_min,
             bgAccel_ISF_weight = bgAccel_ISF_weight,
             bgBrake_ISF_weight = bgBrake_ISF_weight,
-            enable_pp_ISF_always = enable_pp_ISF_always,
-            pp_ISF_hours = pp_ISF_hours,
             pp_ISF_weight = pp_ISF_weight,
-            delta_ISFrange_weight = delta_ISFrange_weight,
             lower_ISFrange_weight = lower_ISFrange_weight,
             higher_ISFrange_weight = higher_ISFrange_weight,
-            enable_dura_ISF_with_COB = enable_dura_ISF_with_COB,
             dura_ISF_weight = dura_ISF_weight,
             smb_delivery_ratio = smb_delivery_ratio,
             smb_delivery_ratio_min = smb_delivery_ratio_min,
             smb_delivery_ratio_max = smb_delivery_ratio_max,
             smb_delivery_ratio_bg_range = smb_delivery_ratio_bg_range,
             smb_max_range_extension = smbMaxRangeExtension,
-            enableSMB_EvenOn_OddOff = enableSMB_EvenOn_OddOff,
             enableSMB_EvenOn_OddOff_always = enableSMB_EvenOn_OddOff_always,
             iob_threshold_percent = iobThresholdPercent,
             profile_percentage = profile_percentage
@@ -417,7 +410,8 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             smb_ratio = smbRatio,
             smb_max_range_extension = smbMaxRangeExtension,
             iob_threshold_percent = iobThresholdPercent,
-            auto_isf_console = consoleError
+            auto_isf_consoleError = consoleError,
+            auto_isf_consoleLog = consoleLog
         ).also {
             val determineBasalResult = DetermineBasalResult(injector, it)
             // Preserve input data
@@ -521,10 +515,8 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
     fun autoISF(currentTime: Long, profile: Profile): Double {
         val sens = profile.getProfileIsfMgdl()
         val glucose_status = glucoseStatusProvider.glucoseStatusData
-        // val autoIsfMode = preferences.get(BooleanKey.ApsUseAutoIsf)
 
         val high_temptarget_raises_sensitivity = exerciseMode || highTemptargetRaisesSensitivity
-        val meal_data = iobCobCalculator.getMealDataWithWaitingForCalculationFinish()
         var target_bg = hardLimits.verifyHardLimits(profile.getTargetMgdl(), app.aaps.core.ui.R.string.temp_target_value, HardLimits.LIMIT_TARGET_BG[0], HardLimits.LIMIT_TARGET_BG[1])
         var isTempTarget = false
         persistenceLayer.getTemporaryTargetActiveAt(dateUtil.now())?.let { tempTarget ->
@@ -588,7 +580,6 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
         val maxISFReduction: Double = autoISF_max
         var sens_modified = false
         var pp_ISF = 1.0
-        var delta_ISF = 1.0
         var acce_ISF = 1.0
         var acce_weight = 1.0
         val bg_off = target_bg + 10.0 - glucose_status.glucose                      // move from central BG=100 to target+10 as virtual BG'=100
@@ -608,7 +599,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                 consoleError.add("Parabolic fit extrapolates a minimum of ${convert_bg(minmax_value)} in about $minmax_delta minutes")
                 if (minmax_delta <= 30 && minmax_value < target_bg) {   // start braking
                     acce_weight = -bgBrake_ISF_weight
-                    consoleError.add("extrapolation below target soon: use bgBrake_ISF_weight of ${-acce_weight}")
+                    consoleError.add("extrapolation below target soon: use bgBrake_ISF_weight instead")
                 }
             }
         }
@@ -626,7 +617,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                 } else if (bg_acce < 0) {
                     acce_weight = bgAccel_ISF_weight
                 }
-            } else if (acce_weight == 1.0) {                                       // above target acce goes away from target
+            } else if (acce_weight == 1.0) {                                 // above target acce goes away from target
                 if (bg_acce < 0.0) {
                     acce_weight = bgBrake_ISF_weight
                 } else if (bg_acce > 0.0) {
@@ -640,7 +631,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             }
         }
 
-        val bg_ISF = 1 + interpolate(100 - bg_off, "bg")
+        val bg_ISF = 1 + interpolate(100 - bg_off)
         consoleError.add("bg_ISF adaptation is ${round(bg_ISF, 2)}")
         var liftISF: Double
         var final_ISF: Double
@@ -657,12 +648,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
         }
 
         val bg_delta = glucose_status.delta
-        val deltaType: String
-        deltaType = if (enable_pp_ISF_always || pp_ISF_hours >= (currentTime - meal_data.lastCarbTime) / 1000 / 3600) {
-            "pp"
-        } else {
-            "delta"
-        }
+        val deltaType = "pp"
         when {
             bg_off > 0.0                     -> {
                 consoleError.add(deltaType + "_ISF adaptation by-passed as average glucose < $target_bg+10")
@@ -672,7 +658,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                 consoleError.add(deltaType + "_ISF adaptation by-passed as no rise or too short lived")
             }
 
-            deltaType == "pp"                -> {
+            else                             -> {
                 pp_ISF = 1.0 + max(0.0, bg_delta * pp_ISF_weight)
                 consoleError.add("pp_ISF adaptation is ${round(pp_ISF, 2)}")
                 if (pp_ISF != 1.0) {
@@ -680,29 +666,11 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                 }
 
             }
-
-            else                             -> {
-                delta_ISF = interpolate(bg_delta, "delta")
-                //  mod V14d: halve the effect below target_bg+30
-                if (bg_off > -20.0) {
-                    delta_ISF = 0.5 * delta_ISF
-                }
-                delta_ISF = 1.0 + delta_ISF
-                consoleError.add("delta_ISF adaptation is ${round(delta_ISF, 2)}")
-
-                if (delta_ISF != 1.0) {
-                    sens_modified = true
-                }
-            }
         }
 
         var dura_ISF = 1.0
         val weightISF: Double = dura_ISF_weight
         when {
-            meal_data.mealCOB > 0 && !enable_dura_ISF_with_COB -> {
-                consoleError.add("dura_ISF by-passed; preferences disabled mealCOB of ${round(meal_data.mealCOB, 1)}")
-            }
-
             dura05 < 10.0                                      -> {
                 consoleError.add("dura_ISF by-passed; bg is only $dura05 m at level $avg05")
             }
@@ -721,11 +689,11 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             }
         }
         if (sens_modified) {
-            liftISF = max(dura_ISF, max(bg_ISF, max(delta_ISF, max(acce_ISF, pp_ISF))))
-            if (acce_ISF < 1.0) {                                                                           // 13.JAN.2022 brakes on for otherwise stronger or stable ISF
+            liftISF = max(dura_ISF, max(bg_ISF, max(acce_ISF, pp_ISF)))
+            if (acce_ISF < 1.0) {
                 consoleError.add("strongest autoISF factor ${round(liftISF, 2)} weakened to ${round(liftISF * acce_ISF, 2)} as bg decelerates already")
-                liftISF = liftISF * acce_ISF                                                               // brakes on for otherwise stronger or stable ISF
-            }                                                                                               // brakes on for otherwise stronger or stable ISF
+                liftISF = liftISF * acce_ISF
+            }
             final_ISF = withinISFlimits(liftISF, autoISF_min, maxISFReduction, sensitivityRatio, origin_sens, isTempTarget, high_temptarget_raises_sensitivity, target_bg, normalTarget)
             return round(sens / final_ISF, 1)
         }
@@ -735,21 +703,13 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
         return round(sens / sensitivityRatio, 1)     // nothing changed
     }
 
-    fun interpolate(xdata: Double, type: String): Double {   // interpolate ISF behaviour based on polygons defining nonlinear functions defined by value pairs for ...
-        val polyX: Array<Double>
-        val polyY: Array<Double>
-        if (type == "bg") {
+    fun interpolate(xdata: Double): Double {   // interpolate ISF behaviour based on polygons defining nonlinear functions defined by value pairs for ...
             //  ...         <----------------------  glucose  ---------------------->
-            // aapsJH: modified bg polygons
-            polyX = arrayOf(50.0, 60.0, 100.0, 240.0, 250.0)
-            polyY = arrayOf(-0.5, -0.5, 0.0, 1.75, 1.75)
-            // polyX = arrayOf(50.0, 60.0, 80.0, 90.0, 100.0, 110.0, 150.0, 180.0, 200.0)
-            // polyY = arrayOf(-0.5, -0.5, -0.3, -0.2, 0.0, 0.0, 0.5, 0.7, 0.7)
-        } else {
-            //  ...         <-------  delta  -------->
-            polyX = arrayOf(2.0, 7.0, 12.0, 16.0, 20.0)
-            polyY = arrayOf(0.0, 0.0, 0.4, 0.7, 0.7)
-        }
+        //val polyX = arrayOf(50.0, 60.0, 80.0, 90.0, 100.0, 110.0, 150.0, 180.0, 200.0)
+        //val polyY = arrayOf(-0.5, -0.5, -0.3, -0.2, 0.0, 0.0, 0.5, 0.7, 0.7)
+        // aapsJH: modified bg polygons
+        val polyX = arrayOf(50.0, 60.0, 100.0, 240.0, 250.0)
+        val polyY = arrayOf(-0.5, -0.5, 0.0, 2.5, 2.5)
         val polymax: Int = polyX.size - 1
         var step = polyX[0]
         var sVal = polyY[0]
@@ -804,15 +764,12 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                 lowLabl = step
             }
         }
-        newVal = if (type == "delta") {
-            newVal * delta_ISFrange_weight
-        }      // delta range
-        else if (xdata > 100) {
+        newVal = if (xdata > 100) {
             newVal * higher_ISFrange_weight
-        }     // higher BG range
+        }
         else {
             newVal * lower_ISFrange_weight
-        }      // lower BG range
+        }
         return newVal
     }
 
@@ -835,12 +792,14 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             originSensFinal = " including exercise mode impact"
         } else if (liftISFlimited >= 1) {
             finalISF = max(liftISFlimited, sensitivityRatio)
-            if (liftISFlimited >= sensitivityRatio) originSensFinal = ""        // autoISF dominates
+            originSensFinal = if (liftISFlimited >= sensitivityRatio) "" else "from low TT modifier"
         } else {
             finalISF = min(liftISFlimited, sensitivityRatio)
-            if (liftISFlimited <= sensitivityRatio) originSensFinal = ""        // autoISF dominates
+            if (liftISFlimited <= sensitivityRatio) {
+                originSensFinal = ""                                        // low TT lowers sensitivity dominates
+            }
         }
-        consoleError.add("final ISF factor is ${round(finalISF, 2)}" + originSensFinal)
+        consoleError.add("final ISF factor is ${round(finalISF, 2)} " + originSensFinal)
         consoleError.add("----------------------------------")
         consoleError.add("end AutoISF")
         consoleError.add("----------------------------------")
@@ -851,19 +810,14 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
         if (!microBolusAllowed) {
             return "AAPS"                                                 // see message in enable_smb
         }
-        if (profile.temptargetSet && enableSMB_EvenOn_OddOff || profile.min_bg == profile.max_bg && enableSMB_EvenOn_OddOff_always && !profile.temptargetSet) {
+        if (enableSMB_EvenOn_OddOff_always) {
             //TODO: cleaner conversion back to original mmol/L if applicable
             var target = convert_bg_to_units(profile.target_bg, profile)
-            val msgType: String
+            // val msgType: String
             val evenTarget: Boolean
             val msgUnits: String
             val msgTail: String
             val msgEven: String
-            msgType = if (profile.temptargetSet) {
-                "TempTarget"
-            } else {
-                "profile target"
-            }
             if (profile.out_units == "mmol/L") {
                 evenTarget = (target.toDouble() * 10.0).toInt() % 2 == 0
                 msgUnits = "has"
@@ -883,38 +837,38 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             if (useIobTh) {
                 val iobThPercent = round(iobThEffective / profile.max_iob * 100.0, 0)
                 if (iobThPercent == iobThUser.toDouble()) {
-                    consoleError.add("User setting iobTH=$iobThUser% not modulated")
+                    consoleLog.add("User setting iobTH=$iobThUser% not modulated")
                 } else {
-                    consoleError.add("User setting iobTH=$iobThUser% modulated to ${iobThPercent.toInt()}% or ${round(iobThEffective, 2)}U")
-                    consoleError.add("  due to profile %, exercise mode or similar")
+                    consoleLog.add("User setting iobTH=$iobThUser% modulated to ${iobThPercent.toInt()}% or ${round(iobThEffective, 2)}U")
+                    consoleLog.add("  due to profile %, exercise mode or similar")
                 }
             } else {
-                consoleError.add("User setting iobTH=100% disables iobTH method")
+                consoleLog.add("User setting iobTH=100% disables iobTH method")
             }
 
             if (!evenTarget) {
-                consoleError.add("SMB disabled; $msgType $target $msgUnits $msgEven $msgTail")
-                consoleError.add("Loop allows minimal power")
+                consoleLog.add("SMB disabled; current target $target $msgUnits $msgEven $msgTail")
+                consoleLog.add("Loop allows minimal power")
                 return "blocked"
             } else if (profile.max_iob == 0.0) {
-                consoleError.add("SMB disabled because of max_iob=0")
+                consoleLog.add("SMB disabled because of max_iob=0")
                 return "blocked"
             } else if (useIobTh && iobThEffective < iob_data_iob) {
-                consoleError.add("SMB disabled by Full Loop logic: iob ${iob_data_iob} is above effective iobTH $iobThEffective")
-                consoleError.add("Full Loop capped")
+                consoleLog.add("SMB disabled by Full Loop logic: iob ${iob_data_iob} is above effective iobTH $iobThEffective")
+                consoleLog.add("Loop power level temporarily capped")
                 return "iobTH"
             } else {
-                consoleError.add("SMB enabled; $msgType $target $msgUnits $msgEven $msgTail")
+                consoleLog.add("SMB enabled; current target $target $msgUnits $msgEven $msgTail")
                 return if (profile.target_bg < 100) {     // indirect assessment; later set it in GUI
-                    consoleError.add("Loop allows full power")
+                    consoleLog.add("Loop allows maximum power")
                     "fullLoop"                                      // even number
                 } else {
-                    consoleError.add("Loop allows medium power")
+                    consoleLog.add("Loop allows medium power")
                     "enforced"                                      // even number
                 }
             }
         }
-        consoleError.add("Loop allows APS power level")
+        consoleLog.add("Loop allows APS power level")
         return "AAPS"                                                      // leave it to standard AAPS
     }
 
@@ -929,23 +883,23 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
             new_SMB = max(lower_SMB, min(higher_SMB, new_SMB))   // cap if outside target_bg--higher_bg
         }
         if (loop_wanted_smb == "fullLoop") {                                // go for max impact
-            consoleError.add("SMB delivery ratio set to ${max(fix_SMB, new_SMB)} as max of fixed and interpolated values")
+            consoleLog.add("SMB delivery ratio set to ${round(max(fix_SMB, new_SMB), 2)} as max of fixed and interpolated values")
             return max(fix_SMB, new_SMB)
         }
 
         if (smb_delivery_ratio_bg_range == 0.0) {                     // deactivated in SMB extended menu
-            consoleError.add("SMB delivery ratio set to fixed value $fix_SMB")
+            consoleLog.add("SMB delivery ratio set to fixed value ${round(fix_SMB, 2)}")
             return fix_SMB
         }
         if (bg <= target_bg) {
-            consoleError.add("SMB delivery ratio limited by minimum value $lower_SMB")
+            consoleLog.add("SMB delivery ratio limited by minimum value ${round(lower_SMB, 2)}")
             return lower_SMB
         }
         if (bg >= higher_bg) {
-            consoleError.add("SMB delivery ratio limited by maximum value $higher_SMB")
+            consoleLog.add("SMB delivery ratio limited by maximum value ${round(higher_SMB, 2)}")
             return higher_SMB
         }
-        consoleError.add("SMB delivery ratio set to interpolated value $new_SMB")
+        consoleLog.add("SMB delivery ratio set to interpolated value ${round(new_SMB, 2)}")
         return new_SMB
     }
 
@@ -953,13 +907,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
         if (requiredKey != null &&
             requiredKey != "absorption_smb_advanced" &&
             requiredKey != "auto_isf_settings" &&
-            requiredKey != "acce_ISF_settings" &&
-            requiredKey != "bg_ISF_settings" &&
-            requiredKey != "pp_ISF_settings" &&
-            requiredKey != "delta_ISF_settings" &&
-            requiredKey != "dura_ISF_settings" &&
-            requiredKey != "smb_delivery_settings" &&
-            requiredKey != "full_loop_settings"
+            requiredKey != "smb_delivery_settings"
         ) return
         val category = PreferenceCategory(context)
         parent.addPreference(category)
@@ -1009,49 +957,20 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                     )
                 )
             })
-            // addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsUseAutoIsf, summary = R.string.use_autoISF_extensions_summary, title = R.string.use_autoISF_extensions_title))
             addPreference(preferenceManager.createPreferenceScreen(context).apply {
                 key = "auto_isf_settings"
                 title = rh.gs(R.string.autoISF_settings_title)
-                summary = ""    //rh.gs(R.string.autoISF_settings_summary)
+                summary = rh.gs(R.string.autoISF_settings_summary)
                 addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsUseAutoIsfWeights, summary = R.string.openapsama_enable_autoISF, title = R.string.openapsama_enable_autoISF))
                 addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfMin, dialogMessage = R.string.openapsama_autoISF_min_summary, title = R.string.openapsama_autoISF_min))
                 addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfMax, dialogMessage = R.string.openapsama_autoISF_max_summary, title = R.string.openapsama_autoISF_max))
-                addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                    key = "acce_ISF_settings"
-                    title = rh.gs(R.string.acce_ISF_settings_title)
-                    summary = rh.gs(R.string.acce_ISF_settings_summary)
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfBgAccelWeight, dialogMessage = R.string.openapsama_bgAccel_ISF_weight_summary, title = R.string.openapsama_bgAccel_ISF_weight))
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfBgBrakeWeight, dialogMessage = R.string.openapsama_bgBrake_ISF_weight_summary, title = R.string.openapsama_bgBrake_ISF_weight))
-                })
-                addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                    key = "bg_ISF_settings"
-                    title = rh.gs(R.string.bg_ISF_settings_title)
-                    summary = rh.gs(R.string.bg_ISF_settings_summary)
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfLowBgWeight, dialogMessage = R.string.openapsama_lower_ISFrange_weight_summary, title = R.string.openapsama_lower_ISFrange_weight))
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfHighBgWeight, dialogMessage = R.string.openapsama_higher_ISFrange_weight_summary, title = R.string.openapsama_higher_ISFrange_weight))
-                })
-                addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                    key = "pp_ISF_settings"
-                    title = rh.gs(R.string.pp_ISF_settings_title)
-                    summary = rh.gs(R.string.pp_ISF_settings_summary)
-                    addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsAutoIsfPpAlways, summary = R.string.enable_postprandial_ISF_always_summary, title = R.string.enable_postprandial_ISF_always))
-                    addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.ApsAutoIsfPpIsfHours, dialogMessage = R.string.openapsama_pp_ISF_hours_summary, title = R.string.openapsama_pp_ISF_hours))
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfPpWeight, dialogMessage = R.string.openapsama_pp_ISF_weight_summary, title = R.string.openapsama_pp_ISF_weight))
-                })
-                addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                    key = "delta_ISF_settings"
-                    title = rh.gs(R.string.delta_ISF_settings_title)
-                    summary = rh.gs(R.string.delta_ISF_settings_summary)
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfDeltaWeight, dialogMessage = R.string.openapsama_delta_ISFrange_weight_summary, title = R.string.openapsama_delta_ISFrange_weight))
-                })
-                addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                    key = "dura_ISF_settings"
-                    title = rh.gs(R.string.dura_ISF_settings_title)
-                    summary = rh.gs(R.string.dura_ISF_settings_summary)
-                    addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsAutoIsfDuraAfterCarbs, summary = R.string.enableautoISFwithcob_summary, title = R.string.enableautoISFwithcob))
-                    addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfDuraWeight, dialogMessage = R.string.openapsama_dura_ISF_weight_summary, title = R.string.openapsama_dura_ISF_weight))
-                })
+                addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfBgAccelWeight, dialogMessage = R.string.openapsama_bgAccel_ISF_weight_summary, title = R.string.openapsama_bgAccel_ISF_weight))
+                addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfBgBrakeWeight, dialogMessage = R.string.openapsama_bgBrake_ISF_weight_summary, title = R.string.openapsama_bgBrake_ISF_weight))
+                addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfLowBgWeight, dialogMessage = R.string.openapsama_lower_ISFrange_weight_summary, title = R.string.openapsama_lower_ISFrange_weight))
+                addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfHighBgWeight, dialogMessage = R.string.openapsama_higher_ISFrange_weight_summary, title = R.string.openapsama_higher_ISFrange_weight))
+                addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfPpWeight, dialogMessage = R.string.openapsama_pp_ISF_weight_summary, title = R.string.openapsama_pp_ISF_weight))
+                addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfDuraWeight, dialogMessage = R.string.openapsama_dura_ISF_weight_summary, title = R.string.openapsama_dura_ISF_weight))
+                addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.ApsAutoIsfIobThPercent, dialogMessage = R.string.openapsama_iob_threshold_percent_summary, title = R.string.openapsama_iob_threshold_percent))
                 addPreference(preferenceManager.createPreferenceScreen(context).apply {
                     key = "smb_delivery_settings"
                     title = rh.gs(R.string.smb_delivery_settings_title)
@@ -1068,14 +987,7 @@ open class OpenAPSAutoISFPlugin @Inject constructor(
                         )
                     )
                     addPreference(AdaptiveDoublePreference(ctx = context, doubleKey = DoubleKey.ApsAutoIsfSmbMaxRangeExtension, dialogMessage = R.string.openapsama_smb_max_range_extension_summary, title = R.string.openapsama_smb_max_range_extension))
-                    addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsAutoIsfSmbOnEvenTt, summary = R.string.enableSMB_EvenOn_OddOff_summary, title = R.string.enableSMB_EvenOn_OddOff))
-                    addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsAutoIsfSmbOnEvenPt, summary = R.string.enableSMB_EvenOn_OddOff_always_summary, title = R.string.enableSMB_EvenOn_OddOff_always))
-                })
-                addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                    key = "full_loop_settings"
-                    title = rh.gs(R.string.full_loop_settings_title)
-                    summary = rh.gs(R.string.full_loop_settings_summary)
-                    addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.ApsAutoIsfIobThPercent, dialogMessage = R.string.openapsama_iob_threshold_percent_summary, title = R.string.openapsama_iob_threshold_percent))
+                    addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.ApsAutoIsfSmbOnEvenTarget, summary = R.string.enableSMB_EvenOn_OddOff_always_summary, title = R.string.enableSMB_EvenOn_OddOff_always))
                 })
             })
         }
