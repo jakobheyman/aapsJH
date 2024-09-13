@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.LongSparseArray
+import androidx.core.util.forEach
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
@@ -45,7 +46,6 @@ import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.interfaces.utils.Round
-import app.aaps.core.keys.AdaptiveIntentPreference
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
@@ -61,10 +61,11 @@ import app.aaps.core.objects.extensions.put
 import app.aaps.core.objects.extensions.store
 import app.aaps.core.objects.extensions.target
 import app.aaps.core.utils.MidnightUtils
-import app.aaps.core.validators.AdaptiveDoublePreference
-import app.aaps.core.validators.AdaptiveIntPreference
-import app.aaps.core.validators.AdaptiveSwitchPreference
-import app.aaps.core.validators.AdaptiveUnitPreference
+import app.aaps.core.validators.preferences.AdaptiveDoublePreference
+import app.aaps.core.validators.preferences.AdaptiveIntPreference
+import app.aaps.core.validators.preferences.AdaptiveIntentPreference
+import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
+import app.aaps.core.validators.preferences.AdaptiveUnitPreference
 import app.aaps.plugins.aps.OpenAPSFragment
 import app.aaps.plugins.aps.R
 import app.aaps.plugins.aps.events.EventOpenAPSUpdateGui
@@ -115,6 +116,21 @@ open class OpenAPSSMBPlugin @Inject constructor(
     aapsLogger, rh
 ), APS, PluginConstraints {
 
+    override fun onStart() {
+        super.onStart()
+        var count = 0
+        val apsResults = persistenceLayer.getApsResults(dateUtil.now() - T.days(1).msecs(), dateUtil.now())
+        apsResults.forEach {
+            val glucose = it.glucoseStatus?.glucose ?: return@forEach
+            val variableSens = it.variableSens ?: return@forEach
+            val timestamp = it.date
+            val key = timestamp - timestamp % T.mins(30).msecs() + glucose.toLong()
+            if (variableSens > 0) dynIsfCache.put(key, variableSens)
+            count++
+        }
+        aapsLogger.debug(LTag.APS, "Loaded $count variable sensitivity values from database")
+    }
+
     // last values
     override var lastAPSRun: Long = 0
     override val algorithm = APSResult.Algorithm.SMB
@@ -135,11 +151,19 @@ open class OpenAPSSMBPlugin @Inject constructor(
         return sensitivity.second?.let { it * multiplier }
     }
 
-    override fun getIsfMgdl(timestamp: Long, bg: Double, multiplier: Double, timeShift: Int, caller: String): Double? {
-        val start = dateUtil.now()
-        val sensitivity = calculateVariableIsf(timestamp, bg)
-        profiler.log(LTag.APS, String.format("getIsfMgdl() %s %f %s %s", sensitivity.first, sensitivity.second, dateUtil.dateAndTimeAndSecondsString(timestamp), caller), start)
-        return sensitivity.second?.let { it * multiplier }
+    override fun getAverageIsfMgdl(timestamp: Long, caller: String): Double? {
+        var count = 0
+        var sum = 0.0
+        val start = timestamp - T.hours(24).msecs()
+        dynIsfCache.forEach { key, value ->
+            if (key in start..timestamp) {
+                count++
+                sum += value
+            }
+        }
+        val sensitivity = if (count == 0) null else sum / count
+        aapsLogger.debug(LTag.APS, "getAverageIsfMgdl() $sensitivity from $count values ${dateUtil.dateAndTimeAndSecondsString(timestamp)} $caller")
+        return sensitivity
     }
 
     override fun specialEnableCondition(): Boolean {
@@ -174,15 +198,16 @@ open class OpenAPSSMBPlugin @Inject constructor(
         } else {
             preferences.get(BooleanKey.ApsUseAutosens)
         }
-        preferenceFragment.findPreference<SwitchPreference>(rh.gs(app.aaps.core.keys.R.string.key_openaps_allow_smb_with_COB))?.isVisible = !smbAlwaysEnabled || !advancedFiltering
-        preferenceFragment.findPreference<SwitchPreference>(rh.gs(app.aaps.core.keys.R.string.key_openaps_allow_smb_with_low_temp_target))?.isVisible = !smbAlwaysEnabled || !advancedFiltering
-        preferenceFragment.findPreference<SwitchPreference>(rh.gs(app.aaps.core.keys.R.string.key_openaps_enable_smb_after_carbs))?.isVisible = !smbAlwaysEnabled || !advancedFiltering
-        preferenceFragment.findPreference<SwitchPreference>(rh.gs(app.aaps.core.keys.R.string.key_openaps_resistance_lowers_target))?.isVisible = autoSensOrDynIsfSensEnabled
-        preferenceFragment.findPreference<SwitchPreference>(rh.gs(app.aaps.core.keys.R.string.key_openaps_sensitivity_raises_target))?.isVisible = autoSensOrDynIsfSensEnabled
-        preferenceFragment.findPreference<AdaptiveIntPreference>(rh.gs(app.aaps.core.keys.R.string.key_openaps_uam_smb_max_minutes))?.isVisible = uamEnabled
+        preferenceFragment.findPreference<SwitchPreference>(BooleanKey.ApsUseSmbWithCob.key)?.isVisible = !smbAlwaysEnabled || !advancedFiltering
+        preferenceFragment.findPreference<SwitchPreference>(BooleanKey.ApsUseSmbWithLowTt.key)?.isVisible = !smbAlwaysEnabled || !advancedFiltering
+        preferenceFragment.findPreference<SwitchPreference>(BooleanKey.ApsUseSmbAfterCarbs.key)?.isVisible = !smbAlwaysEnabled || !advancedFiltering
+        preferenceFragment.findPreference<SwitchPreference>(BooleanKey.ApsResistanceLowersTarget.key)?.isVisible = autoSensOrDynIsfSensEnabled
+        preferenceFragment.findPreference<SwitchPreference>(BooleanKey.ApsSensitivityRaisesTarget.key)?.isVisible = autoSensOrDynIsfSensEnabled
+        preferenceFragment.findPreference<AdaptiveIntPreference>(IntKey.ApsUamMaxMinutesOfBasalToLimitSmb.key)?.isVisible = uamEnabled
     }
 
     private val dynIsfCache = LongSparseArray<Double>()
+
     @Synchronized
     private fun calculateVariableIsf(timestamp: Long, bg: Double?): Pair<String, Double?> {
         if (!preferences.get(BooleanKey.ApsUseDynamicSensitivity)) return Pair("OFF", null)
@@ -508,13 +533,13 @@ open class OpenAPSSMBPlugin @Inject constructor(
 
     override fun configuration(): JSONObject =
         JSONObject()
-            .put(BooleanKey.ApsUseDynamicSensitivity, preferences, rh)
-            .put(IntKey.ApsDynIsfAdjustmentFactor, preferences, rh)
+            .put(BooleanKey.ApsUseDynamicSensitivity, preferences)
+            .put(IntKey.ApsDynIsfAdjustmentFactor, preferences)
 
     override fun applyConfiguration(configuration: JSONObject) {
         configuration
-            .store(BooleanKey.ApsUseDynamicSensitivity, preferences, rh)
-            .store(IntKey.ApsDynIsfAdjustmentFactor, preferences, rh)
+            .store(BooleanKey.ApsUseDynamicSensitivity, preferences)
+            .store(IntKey.ApsDynIsfAdjustmentFactor, preferences)
     }
 
     override fun addPreferenceScreen(preferenceManager: PreferenceManager, parent: PreferenceScreen, context: Context, requiredKey: String?) {
