@@ -124,7 +124,7 @@ class NSClientV3Plugin @Inject constructor(
         .mainType(PluginType.SYNC)
         .fragmentClass(NSClientFragment::class.java.name)
         .pluginIcon(app.aaps.core.ui.R.drawable.ic_nightscout_syncs)
-        .pluginName(R.string.ns_client_v3)
+        .pluginName(R.string.ns_client_v3_title)
         .shortName(R.string.ns_client_v3_short_name)
         .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .description(R.string.description_ns_client_v3),
@@ -141,7 +141,7 @@ class NSClientV3Plugin @Inject constructor(
 
     private val disposable = CompositeDisposable()
     private lateinit var runLoop: Runnable
-    private val handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
+    private var handler: Handler? = null
     override val listLog: MutableList<EventNSClientNewLog> = ArrayList()
     override val dataSyncSelector: DataSyncSelector get() = dataSyncSelectorV3
     override val status
@@ -187,6 +187,7 @@ class NSClientV3Plugin @Inject constructor(
 
     override fun onStart() {
         super.onStart()
+        handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
 
         lastLoadedSrvModified = Json.decodeFromString(
             sp.getString(
@@ -289,14 +290,14 @@ class NSClientV3Plugin @Inject constructor(
                 executeLoop("MAIN_LOOP", forceNew = true)
             else
                 rxBus.send(EventNSClientNewLog("● TICK", ""))
-            handler.postDelayed(runLoop, refreshInterval)
+            handler?.postDelayed(runLoop, refreshInterval)
         }
-        handler.postDelayed(runLoop, T.mins(2).msecs())
+        handler?.postDelayed(runLoop, T.mins(2).msecs())
     }
 
     fun scheduleIrregularExecution(refreshToken: Boolean = false) {
         if (refreshToken) {
-            handler.post { executeLoop("REFRESH TOKEN", forceNew = true) }
+            handler?.post { executeLoop("REFRESH TOKEN", forceNew = true) }
             return
         }
         if (config.NSCLIENT || nsClientSource.isEnabled()) {
@@ -308,19 +309,20 @@ class NSClientV3Plugin @Inject constructor(
                 origin = "1_MIN_OLD_DATA"
                 forceNew = false
             }
-            handler.postDelayed({ executeLoop(origin, forceNew = forceNew) }, toTime - dateUtil.now())
+            handler?.postDelayed({ executeLoop(origin, forceNew = forceNew) }, toTime - dateUtil.now())
             rxBus.send(EventNSClientNewLog("● NEXT", dateUtil.dateAndTimeAndSecondsString(toTime)))
         }
     }
 
     override fun onStop() {
-        handler.removeCallbacksAndMessages(null)
+        handler?.removeCallbacksAndMessages(null)
+        handler = null
         disposable.clear()
         stopService()
         super.onStop()
     }
 
-    override val hasWritePermission: Boolean get() = nsAndroidClient?.lastStatus?.apiPermissions?.isFull() ?: false
+    override val hasWritePermission: Boolean get() = nsAndroidClient?.lastStatus?.apiPermissions?.isFull() == true
     override val connected: Boolean get() = nsAndroidClient?.lastStatus != null
     private fun addToLog(ev: EventNSClientNewLog) {
         synchronized(listLog) {
@@ -356,7 +358,7 @@ class NSClientV3Plugin @Inject constructor(
     private fun stopService() {
         try {
             if (nsClientV3Service != null) context.unbindService(serviceConnection)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             nsClientV3Service = null
         }
     }
@@ -440,16 +442,17 @@ class NSClientV3Plugin @Inject constructor(
 
                     else -> {
                         rxBus.send(EventNSClientNewLog("◄ ERROR", "${result.errorResponse}"))
-                        return true
+                        return config.ignoreNightscoutV3Errors()
                     }
                 }
                 slowDown()
+                return true
             }
         } catch (e: Exception) {
             aapsLogger.error(LTag.NSCLIENT, "Upload exception", e)
             return false
         }
-        return true
+        return false
     }
 
     private suspend fun dbOperationDeviceStatus(collection: String = "devicestatus", dataPair: DataSyncSelector.PairDeviceStatus, progress: String): Boolean {
@@ -464,20 +467,22 @@ class NSClientV3Plugin @Inject constructor(
 
                     else -> {
                         rxBus.send(EventNSClientNewLog("◄ ERROR", "${result.errorResponse} "))
-                        return true
+                        return config.ignoreNightscoutV3Errors()
                     }
                 }
                 result.identifier?.let {
                     dataPair.value.ids.nightscoutId = it
-                    storeDataForDb.nsIdDeviceStatuses.add(dataPair.value)
+                    storeDataForDb.addToNsIdDeviceStatuses(dataPair.value)
                     sp.putBoolean(app.aaps.core.utils.R.string.key_objectives_pump_status_is_available_in_ns, true)
                 }
+                slowDown()
+                return true
             }
         } catch (e: Exception) {
             aapsLogger.error(LTag.NSCLIENT, "Upload exception", e)
             return false
         }
-        return true
+        return false
     }
 
     private suspend fun dbOperationEntries(collection: String = "entries", dataPair: DataSyncSelector.PairGlucoseValue, progress: String, operation: Operation): Boolean {
@@ -509,20 +514,21 @@ class NSClientV3Plugin @Inject constructor(
 
                     else -> {
                         rxBus.send(EventNSClientNewLog("◄ ERROR", "${result.errorResponse} "))
-                        return true
+                        return config.ignoreNightscoutV3Errors()
                     }
                 }
                 result.identifier?.let {
                     dataPair.value.ids.nightscoutId = it
-                    storeDataForDb.nsIdGlucoseValues.add(dataPair.value)
+                    storeDataForDb.addToNsIdGlucoseValues(dataPair.value)
                 }
                 slowDown()
+                return true
             }
         } catch (e: Exception) {
             aapsLogger.error(LTag.NSCLIENT, "Upload exception", e)
             return false
         }
-        return true
+        return false
     }
 
     private suspend fun dbOperationFood(collection: String = "food", dataPair: DataSyncSelector.PairFood, progress: String, operation: Operation): Boolean {
@@ -554,20 +560,21 @@ class NSClientV3Plugin @Inject constructor(
 
                     else -> {
                         rxBus.send(EventNSClientNewLog("◄ ERROR", "${result.errorResponse} "))
-                        return true
+                        return config.ignoreNightscoutV3Errors()
                     }
                 }
                 result.identifier?.let {
                     dataPair.value.ids.nightscoutId = it
-                    storeDataForDb.nsIdFoods.add(dataPair.value)
+                    storeDataForDb.addToNsIdFoods(dataPair.value)
                 }
                 slowDown()
+                return true
             }
         } catch (e: Exception) {
             aapsLogger.error(LTag.NSCLIENT, "Upload exception", e)
             return false
         }
-        return true
+        return false
     }
 
     private suspend fun dbOperationTreatments(collection: String = "treatments", dataPair: DataSyncSelector.DataPair, progress: String, operation: Operation, profile: Profile?): Boolean {
@@ -620,59 +627,59 @@ class NSClientV3Plugin @Inject constructor(
 
                         else -> {
                             rxBus.send(EventNSClientNewLog("◄ ERROR", "${result.errorResponse} "))
-                            return true
+                            return config.ignoreNightscoutV3Errors()
                         }
                     }
                     result.identifier?.let {
                         when (dataPair) {
                             is DataSyncSelector.PairBolus                  -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdBoluses.add(dataPair.value)
+                                storeDataForDb.addToNsIdBoluses(dataPair.value)
                             }
 
                             is DataSyncSelector.PairCarbs                  -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdCarbs.add(dataPair.value)
+                                storeDataForDb.addToNsIdCarbs(dataPair.value)
                             }
 
                             is DataSyncSelector.PairBolusCalculatorResult  -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdBolusCalculatorResults.add(dataPair.value)
+                                storeDataForDb.addToNsIdBolusCalculatorResults(dataPair.value)
                             }
 
                             is DataSyncSelector.PairTemporaryTarget        -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdTemporaryTargets.add(dataPair.value)
+                                storeDataForDb.addToNsIdTemporaryTargets(dataPair.value)
                             }
 
                             is DataSyncSelector.PairTherapyEvent           -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdTherapyEvents.add(dataPair.value)
+                                storeDataForDb.addToNsIdTherapyEvents(dataPair.value)
                             }
 
                             is DataSyncSelector.PairTemporaryBasal         -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdTemporaryBasals.add(dataPair.value)
+                                storeDataForDb.addToNsIdTemporaryBasals(dataPair.value)
                             }
 
                             is DataSyncSelector.PairExtendedBolus          -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdExtendedBoluses.add(dataPair.value)
+                                storeDataForDb.addToNsIdExtendedBoluses(dataPair.value)
                             }
 
                             is DataSyncSelector.PairProfileSwitch          -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdProfileSwitches.add(dataPair.value)
+                                storeDataForDb.addToNsIdProfileSwitches(dataPair.value)
                             }
 
                             is DataSyncSelector.PairEffectiveProfileSwitch -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdEffectiveProfileSwitches.add(dataPair.value)
+                                storeDataForDb.addToNsIdEffectiveProfileSwitches(dataPair.value)
                             }
 
                             is DataSyncSelector.PairOfflineEvent           -> {
                                 dataPair.value.ids.nightscoutId = it
-                                storeDataForDb.nsIdOfflineEvents.add(dataPair.value)
+                                storeDataForDb.addToNsIdOfflineEvents(dataPair.value)
                             }
 
                             else                                           -> {
@@ -681,6 +688,7 @@ class NSClientV3Plugin @Inject constructor(
                         }
                     }
                     slowDown()
+                    return true
                 }
             } catch (e: Exception) {
                 rxBus.send(EventNSClientNewLog("◄ ERROR", e.localizedMessage))
@@ -688,7 +696,7 @@ class NSClientV3Plugin @Inject constructor(
                 return false
             }
         }
-        return true
+        return false
     }
 
     private suspend fun dbOperation(collection: String, dataPair: DataSyncSelector.DataPair, progress: String, operation: Operation, profile: Profile?): Boolean =
@@ -777,7 +785,7 @@ class NSClientV3Plugin @Inject constructor(
         parent.addPreference(category)
         category.apply {
             key = "ns_client_settings"
-            title = rh.gs(R.string.ns_client_internal_title)
+            title = rh.gs(R.string.ns_client_v3_title)
             initialExpandedChildrenCount = 0
             addPreference(
                 AdaptiveStringPreference(
@@ -787,7 +795,7 @@ class NSClientV3Plugin @Inject constructor(
             )
             addPreference(
                 AdaptiveStringPreference(
-                    ctx = context, stringKey = StringKey.NsClientAccessToken, dialogMessage = R.string.nsclient_token_dialog_title, title = R.string.nsclient_token_title,
+                    ctx = context, stringKey = StringKey.NsClientAccessToken, dialogMessage = R.string.nsclient_token_dialog_message, title = R.string.nsclient_token_title,
                     validatorParams = DefaultEditTextValidator.Parameters(testType = EditTextValidator.TEST_MIN_LENGTH, minLength = 17)
                 )
             )

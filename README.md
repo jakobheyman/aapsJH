@@ -5,4 +5,4 @@
 * Objectives modified/disabled
 * SMB allowed with xDrip as bg source
 * Various limits modified
-* AutoISF added with modified bg ISF polygon
+* Modified AutoISF bg polygon

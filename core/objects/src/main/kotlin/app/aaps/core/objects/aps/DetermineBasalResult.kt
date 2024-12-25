@@ -64,6 +64,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
     override var carbsReq = 0
     override var carbsReqWithin = 0
     override var variableSens: Double? = null
+    override var isfMgdlForCarbs: Double? = null // used only to pass to AAPS client
     override var scriptDebug: List<String>? = null
     var eventualBG = 0.0
     var snoozeBG = 0.0
@@ -110,6 +111,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
         targetBG = result.targetBG ?: 0.0
         deliverAt = result.deliverAt ?: 0L
         variableSens = result.variable_sens
+        isfMgdlForCarbs = result.isfMgdlForCarbs
         scriptDebug = result.consoleError
     }
 
@@ -122,10 +124,9 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
             // rate
             var ret: String = if (rate == 0.0 && duration == 0) "${rh.gs(R.string.cancel_temp)} "
             else if (rate == -1.0) "${rh.gs(R.string.let_temp_basal_run)}\n"
-            else if (usePercent) "${rh.gs(R.string.rate)}: ${decimalFormatter.to2Decimal(percent.toDouble())}% (${decimalFormatter.to2Decimal(percent * pump.baseBasalRate / 100.0)} U/h) " +
-                "${rh.gs(R.string.duration)}: ${decimalFormatter.to2Decimal(duration.toDouble())} min "
-            else "${rh.gs(R.string.rate)}: ${decimalFormatter.to2Decimal(rate)} U/h (${decimalFormatter.to2Decimal(rate / pump.baseBasalRate * 100)}%) " +
-                "${rh.gs(R.string.duration)}: ${decimalFormatter.to2Decimal(duration.toDouble())} min "
+            else if (usePercent) "${rh.gs(R.string.percent_rate_duration, percent.toDouble(), percent * pump.baseBasalRate / 100.0, duration)} "
+            else "${rh.gs(R.string.rate_percent_duration, rate, rate / pump.baseBasalRate * 100.0, duration)} "
+
             // smb
             if (smb != 0.0) ret += "SMB: ${decimalFormatter.toPumpSupportedBolus(smb, activePlugin.activePump.pumpDescription.bolusStep)} "
             if (isCarbsRequired) {
@@ -148,12 +149,8 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
             var ret: String =
                 if (rate == 0.0 && duration == 0) rh.gs(R.string.cancel_temp) + "<br>"
                 else if (rate == -1.0) rh.gs(R.string.let_temp_basal_run) + "<br>"
-                else if (usePercent) "<b>" + rh.gs(R.string.rate) + "</b>: " + decimalFormatter.to2Decimal(percent.toDouble()) + "% " +
-                    "(" + decimalFormatter.to2Decimal(percent * pump.baseBasalRate / 100.0) + " U/h)<br>" +
-                    "<b>" + rh.gs(R.string.duration) + "</b>: " + decimalFormatter.to2Decimal(duration.toDouble()) + " min<br>"
-                else "<b>" + rh.gs(R.string.rate) + "</b>: " + decimalFormatter.to2Decimal(rate) + " U/h " +
-                    "(" + decimalFormatter.to2Decimal(rate / pump.baseBasalRate * 100.0) + "%) <br>" +
-                    "<b>" + rh.gs(R.string.duration) + "</b>: " + decimalFormatter.to2Decimal(duration.toDouble()) + " min<br>"
+                else if (usePercent) rh.gs(R.string.percent_rate_duration_formatted, percent.toDouble(), percent * pump.baseBasalRate / 100.0, duration)
+                else rh.gs(R.string.rate_percent_duration_formatted, rate, rate / pump.baseBasalRate * 100.0, duration)
 
             // smb
             if (smb != 0.0) ret += "<b>" + "SMB" + "</b>: " + decimalFormatter.toPumpSupportedBolus(smb, activePlugin.activePump.pumpDescription.bolusStep) + "<br>"
@@ -301,7 +298,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
                 }
                 // always report high temp
                 if (pump.pumpDescription.tempBasalStyle == PumpDescription.PERCENT) {
-                    val pumpLimit = pump.pumpDescription.pumpType.tbrSettings?.maxDose ?: 0.0
+                    val pumpLimit = pump.pumpDescription.pumpType.tbrSettings()?.maxDose ?: 0.0
                     if (percent.toDouble() == pumpLimit) {
                         aapsLogger.debug(LTag.APS, "TRUE: Pump limit")
                         return true
@@ -337,7 +334,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
                 }
                 // always report high temp
                 if (pump.pumpDescription.tempBasalStyle == PumpDescription.ABSOLUTE) {
-                    val pumpLimit = pump.pumpDescription.pumpType.tbrSettings?.maxDose ?: 0.0
+                    val pumpLimit = pump.pumpDescription.pumpType.tbrSettings()?.maxDose ?: 0.0
                     if (rate == pumpLimit) {
                         aapsLogger.debug(LTag.APS, "TRUE: Pump limit")
                         return true

@@ -1,6 +1,5 @@
 package app.aaps.pump.danars.services
 
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
@@ -198,7 +197,7 @@ class DanaRSService : DaggerService() {
             val instant = DateTime.now().millis
             val offsetInMilliseconds = tz.getOffset(instant).toLong()
             val offset = TimeUnit.MILLISECONDS.toHours(offsetInMilliseconds).toInt()
-            if (abs(timeDiff) > 3 || danaPump.usingUTC && offset != danaPump.zoneOffset) {
+            if (bleComm.isConnected && (abs(timeDiff) > 3 || danaPump.usingUTC && offset != danaPump.zoneOffset)) {
                 if (abs(timeDiff) > 60 * 60 * 1.5) {
                     aapsLogger.debug(LTag.PUMPCOMM, "Pump time difference: $timeDiff seconds - large difference")
                     //If time-diff is very large, warn user until we can synchronize history readings properly
@@ -520,7 +519,7 @@ class DanaRSService : DaggerService() {
             SystemClock.sleep(200)
             sendMessage(DanaRSPacketGeneralSetHistoryUploadMode(injector, 0))
         }
-        result.success = msg?.success() ?: false
+        result.success = msg?.success() == true
         return result
     }
 
@@ -535,7 +534,7 @@ class DanaRSService : DaggerService() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        return Service.START_STICKY
+        return START_STICKY
     }
 
     private fun waitForWholeMinute() {

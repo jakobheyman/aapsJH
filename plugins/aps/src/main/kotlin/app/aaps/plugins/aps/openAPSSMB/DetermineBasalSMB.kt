@@ -10,6 +10,7 @@ import app.aaps.core.interfaces.aps.OapsProfile
 import app.aaps.core.interfaces.aps.Predictions
 import app.aaps.core.interfaces.aps.RT
 import app.aaps.core.interfaces.profile.ProfileUtil
+import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import java.text.DecimalFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -23,7 +24,8 @@ import kotlin.math.roundToInt
 
 @Singleton
 class DetermineBasalSMB @Inject constructor(
-    private val profileUtil: ProfileUtil
+    private val profileUtil: ProfileUtil,
+    private val fabricPrivacy: FabricPrivacy
 ) {
 
     private val consoleError = mutableListOf<String>()
@@ -491,7 +493,7 @@ class DetermineBasalSMB @Inject constructor(
         }
         val acid = max(0.0, meal_data.mealCOB * csf / aci)
         // duration (hours) = duration (5m) * 5 / 60 * 2 (to account for linear decay)
-        consoleError.add("Carb Impact: ${ci} mg/dL per 5m; CI Duration: ${round(cid * 5 / 60 * 2, 1)} hours; remaining CI (~2h peak): ${round(remainingCIpeak, 1)} mg/dL per 5m")
+        consoleError.add("Carb Impact: $ci mg/dL per 5m; CI Duration: ${round(cid * 5 / 60 * 2, 1)} hours; remaining CI (~2h peak): ${round(remainingCIpeak, 1)} mg/dL per 5m")
         //console.error("Accel. Carb Impact:",aci,"mg/dL per 5m; ACI Duration:",round(acid*5/60*2,1),"hours");
         var minIOBPredBG = 999.0
         var minCOBPredBG = 999.0
@@ -527,6 +529,9 @@ class DetermineBasalSMB @Inject constructor(
                 if (dynIsfMode) round((-iobTick.activity * (1800 / (profile.TDD * (ln((max(IOBpredBGs[IOBpredBGs.size - 1], 39.0) / profile.insulinDivisor) + 1)))) * 5), 2)
                 else predBGI
             iobTick.iobWithZeroTemp ?: error("iobTick.iobWithZeroTemp missing")
+            // try to find where is crashing https://console.firebase.google.com/u/0/project/androidaps-c34f8/crashlytics/app/android:info.nightscout.androidaps/issues/950cdbaf63d545afe6d680281bb141e5?versions=3.3.0-dev-d%20(1500)&time=last-thirty-days&types=crash&sessionEventKey=673BF7DD032300013D4704707A053273_2017608123846397475
+            if (iobTick.iobWithZeroTemp!!.activity.isNaN() || sens.isNaN())
+                fabricPrivacy.logCustom("iobTick.iobWithZeroTemp!!.activity=${iobTick.iobWithZeroTemp!!.activity} sens=$sens")
             val predZTBGI =
                 if (dynIsfMode) round((-iobTick.iobWithZeroTemp!!.activity * (1800 / (profile.TDD * (ln((max(ZTpredBGs[ZTpredBGs.size - 1], 39.0) / profile.insulinDivisor) + 1)))) * 5), 2)
                 else round((-iobTick.iobWithZeroTemp!!.activity * sens * 5), 2)
@@ -1088,20 +1093,20 @@ class DetermineBasalSMB @Inject constructor(
                 // allow SMBIntervals between 1 and 10 minutes
                 val SMBInterval = min(10, max(1, profile.SMBInterval)) * 60.0   // in seconds
                 //console.error(naive_eventualBG, insulinReq, worstCaseInsulinReq, durationReq);
-                consoleError.add("naive_eventualBG $naive_eventualBG,${durationReq}m ${smbLowTempReq}U/h temp needed; last bolus ${round(lastBolusAge/60.0,1)}m ago; maxBolus: $maxBolus")
+                consoleError.add("naive_eventualBG $naive_eventualBG,${durationReq}m ${smbLowTempReq}U/h temp needed; last bolus ${round(lastBolusAge / 60.0, 1)}m ago; maxBolus: $maxBolus")
                 if (lastBolusAge > SMBInterval - 6.0) {   // 6s tolerance
                     if (microBolus > 0) {
                         rT.units = microBolus
                         rT.reason.append("Microbolusing ${microBolus}U. ")
                     }
                 } else {
-                    val nextBolusMins = (SMBInterval-lastBolusAge) / 60.0
+                    val nextBolusMins = (SMBInterval - lastBolusAge) / 60.0
                     val nextBolusSeconds = (SMBInterval - lastBolusAge) % 60
-                    val waitingSeconds = round(nextBolusSeconds,0) % 60
-                    val waitingMins = round(nextBolusMins-waitingSeconds/60.0, 0)
-                    rT.reason.append( "Waiting ${waitingMins.withoutZeros()}m ${waitingSeconds.withoutZeros()}s to microbolus again.")
+                    val waitingSeconds = round(nextBolusSeconds, 0) % 60
+                    val waitingMins = round(nextBolusMins - waitingSeconds / 60.0, 0)
+                    rT.reason.append("Waiting ${waitingMins.withoutZeros()}m ${waitingSeconds.withoutZeros()}s to microbolus again.")
                 }
-               //rT.reason += ". ";
+                //rT.reason += ". ";
 
                 // if no zero temp is required, don't return yet; allow later code to set a high temp
                 if (durationReq > 0) {

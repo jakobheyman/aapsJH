@@ -209,7 +209,7 @@ abstract class AbstractDanaRPlugin protected constructor(
             return result
         }
         val durationInHours = max(durationInMinutes / 60, 1)
-        val connectionOK = executionService?.tempBasal(percentReq, durationInHours) ?: false
+        val connectionOK = executionService?.tempBasal(percentReq, durationInHours) == true
         if (connectionOK && danaPump.isTempBasalInProgress && danaPump.tempBasalPercent == percentReq) {
             result.enacted(true)
                 .success(true)
@@ -262,7 +262,7 @@ abstract class AbstractDanaRPlugin protected constructor(
                 return result
             }
         }
-        val connectionOK = executionService?.extendedBolus(insulinReq, durationInHalfHours) ?: false
+        val connectionOK = executionService?.extendedBolus(insulinReq, durationInHalfHours) == true
         if (connectionOK && danaPump.isExtendedInProgress && abs(danaPump.extendedBolusAmount - insulinReq) < pumpDescription.extendedBolusStep) {
             result.enacted(true)
                 .success(true)

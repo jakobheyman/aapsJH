@@ -16,7 +16,6 @@ import androidx.preference.PreferenceManager
 import androidx.preference.PreferenceScreen
 import androidx.preference.size
 import app.aaps.R
-import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.plugin.ActivePlugin
@@ -39,8 +38,8 @@ import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.Preferences
 import app.aaps.core.keys.StringKey
-import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.ui.dialogs.OKDialog
+import app.aaps.core.utils.extensions.safeGetSerializable
 import app.aaps.core.validators.DefaultEditTextValidator
 import app.aaps.core.validators.EditTextValidator
 import app.aaps.core.validators.preferences.AdaptiveClickPreference
@@ -55,8 +54,6 @@ import app.aaps.plugins.configuration.maintenance.MaintenancePlugin
 import app.aaps.plugins.main.general.smsCommunicator.SmsCommunicatorPlugin
 import app.aaps.plugins.main.skins.SkinProvider
 import dagger.android.support.AndroidSupportInjection
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.util.Vector
 import javax.inject.Inject
 
@@ -94,8 +91,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
     override fun setArguments(args: Bundle?) {
         super.setArguments(args)
         pluginName = args?.getString(UiInteraction.PLUGIN_NAME)
-        @Suppress("DEPRECATION")
-        customPreference = args?.getSerializable(UiInteraction.PREFERENCE) as UiInteraction.Preferences?
+        customPreference = args?.safeGetSerializable(UiInteraction.PREFERENCE, UiInteraction.Preferences::class.java)
         filter = args?.getString("filter") ?: ""
     }
 
@@ -127,8 +123,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         (savedInstanceState ?: arguments)?.let { bundle ->
             pluginName = bundle.getString(UiInteraction.PLUGIN_NAME)
-            @Suppress("DEPRECATION")
-            customPreference = bundle.getSerializable(UiInteraction.PREFERENCE) as UiInteraction.Preferences?
+            customPreference = bundle.safeGetSerializable(UiInteraction.PREFERENCE, UiInteraction.Preferences::class.java)
             filter = bundle.getString(FILTER, "")
         }
         if (pluginName != null) {
@@ -136,11 +131,11 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreferencesIfEnabled(plugin, rootKey)
         } else if (customPreference != null) {
             when (customPreference!!) {
-                UiInteraction.Preferences.PROTECTION -> addProtectionScreen()
+                UiInteraction.Preferences.PROTECTION -> addProtectionScreen(rootKey)
             }
         } else {
-            addGeneralScreen()
-            addProtectionScreen()
+            addGeneralScreen(rootKey)
+            addProtectionScreen(rootKey)
             addPreferencesIfEnabled(activePlugin.activeOverview as PluginBase, rootKey)
             addPreferencesIfEnabled(activePlugin.activeSafety as PluginBase, rootKey)
             addPreferencesIfEnabled(activePlugin.activeBgSource as PluginBase, rootKey)
@@ -148,13 +143,13 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreferencesIfEnabled(activePlugin.activeAPS as PluginBase, rootKey, config.APS)
             addPreferencesIfEnabled(activePlugin.activeSensitivity as PluginBase, rootKey)
             addPreferencesIfEnabled(activePlugin.activePump as PluginBase, rootKey)
-            addPumpScreen()
+            addPumpScreen(rootKey)
             addPreferencesIfEnabled(activePlugin.activeInsulin as PluginBase, rootKey)
             activePlugin.getSpecificPluginsList(PluginType.SYNC).forEach { addPreferencesIfEnabled(it, rootKey) }
             addPreferencesIfEnabled(smsCommunicatorPlugin, rootKey)
             addPreferencesIfEnabled(automationPlugin, rootKey)
             addPreferencesIfEnabled(autotunePlugin, rootKey)
-            addAlertScreen()
+            addAlertScreen(rootKey)
             addPreferencesIfEnabled(maintenancePlugin, rootKey)
         }
         initSummary(preferenceScreen, pluginName != null)
@@ -229,7 +224,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
     }
 
     private fun addPreferencesIfEnabled(p: PluginBase, rootKey: String?, enabled: Boolean = true) {
-        if (preferences.simpleMode && !p.pluginDescription.preferencesVisibleInSimpleMode) return
+        if (preferences.simpleMode && !p.pluginDescription.preferencesVisibleInSimpleMode && !config.isDev()) return
         if (enabled && p.isEnabled() && p.preferencesId == PluginDescription.PREFERENCE_SCREEN)
             addPreferencesFromScreen(p, rootKey)
         if (enabled && p.isEnabled() && p.preferencesId > 0)
@@ -305,13 +300,6 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
                 }
             }
 
-            is UnitDoubleKey -> {
-                // convert preferences values to current units
-                val value = profileUtil.valueInCurrentUnitsDetect(preferences.get(keyDefinition)).toString()
-                val precision = if (profileUtil.units == GlucoseUnit.MGDL) 0 else 1
-                val converted = BigDecimal(value).setScale(precision, RoundingMode.HALF_UP)
-                pref.summary = converted.toPlainString()
-            }
         }
         for (plugin in activePlugin.getPluginsList()) pref.key?.let { plugin.updatePreferenceSummary(pref) }
     }
@@ -335,10 +323,11 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
         preferenceManager?.preferenceScreen?.let { updateFilterVisibility(filter, it) }
     }
 
-    private fun addGeneralScreen() {
+    private fun addGeneralScreen(rootKey: String?) {
+        if (rootKey != null) return
 
-        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(requireContext()).also { preferenceScreen = it }
         val context = requireContext()
+        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(context).also { preferenceScreen = it }
 
         val unitsEntries = arrayOf<CharSequence>("mg/dL", "mmol/L")
         val unitsValues = arrayOf<CharSequence>("mg/dl", "mmol")
@@ -421,10 +410,11 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
         }
     }
 
-    private fun addProtectionScreen() {
+    private fun addProtectionScreen(rootKey: String?) {
+        if (rootKey != null) return
 
-        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(requireContext()).also { preferenceScreen = it }
         val context = requireContext()
+        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(context).also { preferenceScreen = it }
 
         val protectionTypeEntries = arrayOf<CharSequence>(
             rh.gs(app.aaps.core.ui.R.string.noprotection),
@@ -444,8 +434,8 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionMasterPassword, title = app.aaps.core.ui.R.string.master_password,
                                         onPreferenceClickListener = {
-                                            passwordCheck.queryPassword(requireContext(), app.aaps.plugins.configuration.R.string.current_master_password, StringKey.ProtectionMasterPassword.key, {
-                                                passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.master_password, StringKey.ProtectionMasterPassword.key)
+                                            passwordCheck.queryPassword(context, app.aaps.plugins.configuration.R.string.current_master_password, StringKey.ProtectionMasterPassword.key, {
+                                                passwordCheck.setPassword(context, app.aaps.core.ui.R.string.master_password, StringKey.ProtectionMasterPassword.key)
                                             })
                                             true
                                         }
@@ -455,7 +445,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionSettingsPassword, title = app.aaps.core.ui.R.string.settings_password,
                                         onPreferenceClickListener = {
-                                            passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.settings_password, StringKey.ProtectionSettingsPassword.key)
+                                            passwordCheck.setPassword(context, app.aaps.core.ui.R.string.settings_password, StringKey.ProtectionSettingsPassword.key)
                                             true
                                         },
                                         calculatedVisibility = { preferences.get(IntKey.ProtectionTypeSettings) == CUSTOM_PASSWORD.ordinal })
@@ -463,7 +453,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionSettingsPin, title = app.aaps.core.ui.R.string.settings_pin,
                                         onPreferenceClickListener = {
-                                            passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.settings_pin, StringKey.ProtectionSettingsPin.key, pinInput = true)
+                                            passwordCheck.setPassword(context, app.aaps.core.ui.R.string.settings_pin, StringKey.ProtectionSettingsPin.key, pinInput = true)
                                             true
                                         },
                                         calculatedVisibility = { preferences.get(IntKey.ProtectionTypeSettings) == CUSTOM_PIN.ordinal })
@@ -472,7 +462,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionApplicationPassword, title = app.aaps.core.ui.R.string.application_password,
                                         onPreferenceClickListener = {
-                                            passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.application_password, StringKey.ProtectionApplicationPassword.key)
+                                            passwordCheck.setPassword(context, app.aaps.core.ui.R.string.application_password, StringKey.ProtectionApplicationPassword.key)
                                             true
                                         },
                                         calculatedVisibility = { preferences.get(IntKey.ProtectionTypeApplication) == CUSTOM_PASSWORD.ordinal })
@@ -480,7 +470,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionApplicationPin, title = app.aaps.core.ui.R.string.application_pin,
                                         onPreferenceClickListener = {
-                                            passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.application_pin, StringKey.ProtectionApplicationPin.key, pinInput = true)
+                                            passwordCheck.setPassword(context, app.aaps.core.ui.R.string.application_pin, StringKey.ProtectionApplicationPin.key, pinInput = true)
                                             true
                                         },
                                         calculatedVisibility = { preferences.get(IntKey.ProtectionTypeApplication) == CUSTOM_PIN.ordinal })
@@ -489,7 +479,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionBolusPassword, title = app.aaps.core.ui.R.string.bolus_password,
                                         onPreferenceClickListener = {
-                                            passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.bolus_password, StringKey.ProtectionBolusPassword.key)
+                                            passwordCheck.setPassword(context, app.aaps.core.ui.R.string.bolus_password, StringKey.ProtectionBolusPassword.key)
                                             true
                                         },
                                         calculatedVisibility = { preferences.get(IntKey.ProtectionTypeBolus) == CUSTOM_PASSWORD.ordinal })
@@ -497,7 +487,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
             addPreference(
                 AdaptiveClickPreference(ctx = context, stringKey = StringKey.ProtectionBolusPin, title = app.aaps.core.ui.R.string.bolus_pin,
                                         onPreferenceClickListener = {
-                                            passwordCheck.setPassword(requireContext(), app.aaps.core.ui.R.string.bolus_pin, StringKey.ProtectionBolusPin.key, pinInput = true)
+                                            passwordCheck.setPassword(context, app.aaps.core.ui.R.string.bolus_pin, StringKey.ProtectionBolusPin.key, pinInput = true)
                                             true
                                         },
                                         calculatedVisibility = { preferences.get(IntKey.ProtectionTypeBolus) == CUSTOM_PIN.ordinal })
@@ -506,10 +496,11 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
         }
     }
 
-    private fun addPumpScreen() {
+    private fun addPumpScreen(rootKey: String?) {
+        if (rootKey != null) return
 
-        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(requireContext()).also { preferenceScreen = it }
         val context = requireContext()
+        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(context).also { preferenceScreen = it }
 
         val category = PreferenceCategory(context)
         rootScreen.addPreference(category)
@@ -521,10 +512,11 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
         }
     }
 
-    private fun addAlertScreen() {
+    private fun addAlertScreen(rootKey: String?) {
+        if (rootKey != null) return
 
-        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(requireContext()).also { preferenceScreen = it }
         val context = requireContext()
+        val rootScreen = preferenceScreen ?: preferenceManager.createPreferenceScreen(context).also { preferenceScreen = it }
 
         val category = PreferenceCategory(context)
         rootScreen.addPreference(category)
