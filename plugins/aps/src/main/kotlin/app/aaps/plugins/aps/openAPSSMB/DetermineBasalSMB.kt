@@ -1090,8 +1090,9 @@ class DetermineBasalSMB @Inject constructor(
                 // seconds since last bolus
                 val lastBolusAge = (systemTime - iob_data.lastBolusTime) / 1000.0
                 //console.error(lastBolusAge);
-                // allow SMBIntervals between 1 and 10 minutes
-                val SMBInterval = min(10, max(1, profile.SMBInterval)) * 60.0   // in seconds
+                // allow SMBIntervals between 0 and 10 minutes - aapsJH: changed 1 to 0
+                // val SMBInterval = min(10, max(1, profile.SMBInterval)) * 60.0   // in seconds
+                val SMBInterval = min(10, profile.SMBInterval) * 60.0   // in seconds
                 //console.error(naive_eventualBG, insulinReq, worstCaseInsulinReq, durationReq);
                 consoleError.add("naive_eventualBG $naive_eventualBG,${durationReq}m ${smbLowTempReq}U/h temp needed; last bolus ${round(lastBolusAge / 60.0, 1)}m ago; maxBolus: $maxBolus")
                 if (lastBolusAge > SMBInterval - 6.0) {   // 6s tolerance
