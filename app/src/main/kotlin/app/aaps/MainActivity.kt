@@ -298,8 +298,8 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
         passwordResetCheck(this)
         exportPasswordResetCheck(this)
 
-        // check if identification is set
-        if (config.isDev() && preferences.get(StringKey.MaintenanceIdentification).isBlank())
+        // check if identification is set - aapsJH: skip this
+        /*if (config.isDev() && preferences.get(StringKey.MaintenanceIdentification).isBlank())
             uiInteraction.addNotificationWithAction(
                 id = Notification.IDENTIFICATION_NOT_SET,
                 text = rh.gs(R.string.identification_not_set),
@@ -314,7 +314,7 @@ class MainActivity : DaggerAppCompatActivityWithResult() {
                     )
                 },
                 validityCheck = { config.isDev() && preferences.get(StringKey.MaintenanceIdentification).isBlank() }
-            )
+            )*/
 
         if (preferences.get(StringKey.ProtectionMasterPassword) == "")
             uiInteraction.addNotificationWithAction(
