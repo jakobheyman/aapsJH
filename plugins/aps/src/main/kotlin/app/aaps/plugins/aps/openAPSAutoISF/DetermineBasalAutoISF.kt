@@ -115,6 +115,12 @@ class DetermineBasalAutoISF @Inject constructor(
         if (rate < 0) rate = 0.0
         else if (rate > maxSafeBasal) rate = maxSafeBasal
 
+        // aapsJH: minimum basal = 0.1 U/h
+        if (rate < 0.1) {
+            reason(rT, "Minimum basal: 0.1 U/h")
+            rate = 0.1
+        }
+
         val suggestedRate = round_basal(rate)
         if (currenttemp.duration > (duration - 10) && currenttemp.duration <= 120 && suggestedRate <= currenttemp.rate * 1.2 && suggestedRate >= currenttemp.rate * 0.8 && duration > 0) {
             rT.reason.append(" ${currenttemp.duration}m left and ${currenttemp.rate.withoutZeros()} ~ req ${suggestedRate.withoutZeros()}U/hr: no temp required")
