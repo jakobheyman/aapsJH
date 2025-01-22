@@ -11,6 +11,7 @@ data class OapsProfile(
     var max_iob: Double,
     var max_daily_basal: Double,
     var max_basal: Double,
+    var min_basal: Double,
     var min_bg: Double,
     var max_bg: Double,
     var target_bg: Double,

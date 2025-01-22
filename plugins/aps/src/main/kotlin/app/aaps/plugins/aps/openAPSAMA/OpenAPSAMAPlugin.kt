@@ -191,6 +191,7 @@ class OpenAPSAMAPlugin @Inject constructor(
             max_iob = constraintsChecker.getMaxIOBAllowed().also { inputConstraints.copyReasons(it) }.value(),
             max_daily_basal = profile.getMaxDailyBasal(),
             max_basal = constraintsChecker.getMaxBasalAllowed(profile).also { inputConstraints.copyReasons(it) }.value(),
+            min_basal = 0, // not used
             min_bg = minBg,
             max_bg = maxBg,
             target_bg = targetBg,

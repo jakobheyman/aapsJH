@@ -49,6 +49,8 @@
     <string name="openapsama_use_autosens">Use Autosens feature</string>
     <string name="openapsma_max_basal_title">Max U/h a Temp Basal can be set to</string>
     <string name="openapsma_max_basal_summary">This value is called max basal in OpenAPS context</string>
+    <string name="openapssmb_min_basal_title">Min Basal [U/h]</string>
+    <string name="openapssmb_min_basal_summary">Minimum basal value (0-1 U/h)</string>
     <string name="openapsma_max_iob_title">Maximum basal IOB OpenAPS can deliver [U]</string>
     <string name="openapsma_max_iob_summary">This value is called Max IOB in OpenAPS context\nThis is maximal insulin in [U] APS can deliver at once.</string>
     <string name="openapsama_autosens_adjust_targets_summary">Default value: true\nThis is used to allow autosens to adjust BG targets, in addition to ISF and basals.</string>

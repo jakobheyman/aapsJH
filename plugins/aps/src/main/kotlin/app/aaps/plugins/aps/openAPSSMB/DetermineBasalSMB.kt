@@ -115,13 +115,13 @@ class DetermineBasalSMB @Inject constructor(
 
         val maxSafeBasal = getMaxSafeBasal(profile)
         var rate = _rate
-        if (rate < 0) rate = 0.0
-        else if (rate > maxSafeBasal) rate = maxSafeBasal
-
-        // aapsJH: minimum basal = 0.1 U/h
-        if (rate < 0.1) {
-            reason(rT, "Minimum basal: 0.1 U/h")
-            rate = 0.1
+        //if (rate < 0) rate = 0.0
+        //else if (rate > maxSafeBasal) rate = maxSafeBasal
+        // aapsJH: use minimum basal
+        if (rate < profile.min_basal) {
+            rate = profile.min_basal
+        } else if (rate > maxSafeBasal) {
+            rate = maxSafeBasal
         }
 
         val suggestedRate = round_basal(rate)
@@ -135,7 +135,8 @@ class DetermineBasalSMB @Inject constructor(
                 if (currenttemp.duration > 0) {
                     reason(rT, "Suggested rate is same as profile rate, a temp basal is active, canceling current temp")
                     rT.duration = 0
-                    rT.rate = 0.0
+                    //rT.rate = 0.0
+                    rT.rate = suggestedRate
                     return rT
                 } else {
                     reason(rT, "Suggested rate is same as profile rate, no temp basal is active, doing nothing")

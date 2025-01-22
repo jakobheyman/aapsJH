@@ -23,6 +23,7 @@ enum class DoubleKey(
     ActionsFillButton3("fill_button3", 0.0, 0.05, 20.0, defaultedBySM = true),
     SafetyMaxBolus("treatmentssafety_maxbolus", 3.0, 0.1, 60.0),
     ApsMaxBasal("openapsma_max_basal", 1.0, 0.1, 25.0, defaultedBySM = true, calculatedBySM = true),
+    ApsSmbMinBasal("openapssmb_min_basal", 0.0, 0.0, 1.0, defaultedBySM = true),
     ApsSmbMaxIob("openapsmb_max_iob", 3.0, 0.0, 70.0, defaultedBySM = true, calculatedBySM = true),
     ApsAmaMaxIob("openapsma_max_iob", 1.5, 0.0, 25.0, defaultedBySM = true, calculatedBySM = true),
     ApsMaxDailyMultiplier("openapsama_max_daily_safety_multiplier", 3.0, 1.0, 10.0, defaultedBySM = true),
