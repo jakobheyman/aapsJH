@@ -208,7 +208,9 @@ class DetermineBasalSMB @Inject constructor(
                 rT.reason.append(". Shortening " + currenttemp.duration + "m long zero temp to 30m. ")
                 rT.deliverAt = deliverAt
                 rT.duration = 30
-                rT.rate = 0.0
+                //rT.rate = 0.0
+                // aapsJH: use minimum basal
+                rT.rate = profile.min_basal
                 return rT
             } else { //do nothing.
                 rT.reason.append(". Temp ${currenttemp.rate} <= current basal ${round(basal, 2)}U/hr; doing nothing. ")
@@ -1079,7 +1081,9 @@ class DetermineBasalSMB @Inject constructor(
                     durationReq = 0
                 }
 
-                var smbLowTempReq = 0.0
+                // aapsJH: use minimum basal
+                //var smbLowTempReq = 0.0
+                var smbLowTempReq = profile.min_basal
                 if (durationReq <= 0) {
                     durationReq = 0
                     // don't set an SMB zero temp longer than 60 minutes
