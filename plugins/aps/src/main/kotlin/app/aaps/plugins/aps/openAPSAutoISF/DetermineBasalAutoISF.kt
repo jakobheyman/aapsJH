@@ -1094,7 +1094,9 @@ class DetermineBasalAutoISF @Inject constructor(
                     durationReq = min(60, max(0, durationReq))
                 } else {
                     // if SMB durationReq is less than 30m, set a nonzero low temp
-                    smbLowTempReq = round(basal * durationReq / 30.0, 2)
+                    // aapsJH: use minimum basal
+                    smbLowTempReq = round(Math.max(basal * durationReq / 30.0, profile.min_basal), 2)
+                    //smbLowTempReq = round(basal * durationReq / 30.0, 2)
                     durationReq = 30
                 }
                 rT.reason.append(" insulinReq $insulinReq")
