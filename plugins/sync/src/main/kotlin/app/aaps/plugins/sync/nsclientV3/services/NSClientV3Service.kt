@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.os.PowerManager
+import androidx.annotation.OpenForTesting
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
@@ -88,11 +89,12 @@ class NSClientV3Service : DaggerService() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int = START_STICKY
 
-    internal var storageSocket: Socket? = null
-    private var alarmSocket: Socket? = null
+    var storageSocket: Socket? = null
+    var alarmSocket: Socket? = null
     internal var wsConnected = false
 
-    private fun shutdownWebsockets() {
+    @OpenForTesting
+    fun shutdownWebsockets() {
         storageSocket?.on(Socket.EVENT_CONNECT, onConnectStorage)
         storageSocket?.on(Socket.EVENT_DISCONNECT, onDisconnectStorage)
         storageSocket?.on("create", onDataCreateUpdate)
@@ -112,7 +114,8 @@ class NSClientV3Service : DaggerService() {
     }
 
     @Suppress("SameParameterValue")
-    private fun initializeWebSockets(reason: String) {
+    @OpenForTesting
+    fun initializeWebSockets(reason: String) {
         if (preferences.get(StringKey.NsClientUrl).isEmpty()) return
         val urlStorage = preferences.get(StringKey.NsClientUrl).lowercase().replace(Regex("/$"), "") + "/storage"
         val urlAlarm = preferences.get(StringKey.NsClientUrl).lowercase().replace(Regex("/$"), "") + "/alarm"
