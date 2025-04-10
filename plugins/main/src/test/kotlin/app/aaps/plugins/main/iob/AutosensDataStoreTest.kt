@@ -7,9 +7,12 @@ import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.aps.AutosensData
+import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.implementation.iob.AutosensDataObject
+import app.aaps.implementation.iob.GlucoseStatusProviderImpl
 import app.aaps.plugins.main.iob.iobCobCalculator.data.AutosensDataStoreObject
 import app.aaps.shared.impl.utils.DateUtilImpl
 import app.aaps.shared.tests.TestBase
@@ -18,20 +21,26 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito
+import org.mockito.Mockito.`when`
 
 class AutosensDataStoreTest : TestBase() {
 
     @Mock lateinit var context: Context
     @Mock lateinit var preferences: Preferences
     @Mock lateinit var dateUtilMocked: DateUtil
+    @Mock lateinit var iobCobCalculator: IobCobCalculator
+    @Mock lateinit var decimalFormatter: DecimalFormatter
 
     private lateinit var dateUtil: DateUtil
 
     private val autosensDataStore = AutosensDataStoreObject()
+    private lateinit var glucoseStatusProvider: GlucoseStatusProviderImpl
 
     @BeforeEach
     fun mock() {
         dateUtil = DateUtilImpl(context)
+        glucoseStatusProvider = GlucoseStatusProviderImpl(aapsLogger, iobCobCalculator, dateUtilMocked, decimalFormatter)
+        `when`(iobCobCalculator.ads).thenReturn(autosensDataStore)
     }
 
     @Test
@@ -1501,6 +1510,30 @@ class AutosensDataStoreTest : TestBase() {
         assertThat(autosensDataStore.findPreviousTimeFromBucketedData(T.mins(6).msecs())).isEqualTo(T.mins(5).msecs())
         assertThat(autosensDataStore.findPreviousTimeFromBucketedData(T.mins(20).msecs())).isEqualTo(T.mins(20).msecs())
         assertThat(autosensDataStore.findPreviousTimeFromBucketedData(T.mins(25).msecs())).isEqualTo(T.mins(20).msecs())
+    }
+
+    @Test
+    fun threeMinDataWithRecalculation() {
+        val now = 1743937000000
+        `when`(dateUtilMocked.now()).thenReturn(now)
+        val list = mutableListOf<GV>()
+        list.add(GV(timestamp = now, value = 198.0, raw = 0.0, trendArrow = TrendArrow.FLAT, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(3).msecs(), value = 197.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(6).msecs(), value = 196.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(9).msecs(), value = 195.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(12).msecs(), value = 194.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(15).msecs(), value = 193.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(18).msecs(), value = 192.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(21).msecs(), value = 191.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(24).msecs(), value = 190.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(27).msecs(), value = 189.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        list.add(GV(timestamp = now - T.mins(30).msecs(), value = 188.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
+        autosensDataStore.bgReadings = list
+        autosensDataStore.createBucketedData(aapsLogger, dateUtil)
+        val glucoseStatus = glucoseStatusProvider.glucoseStatusData!!
+        assertThat(glucoseStatus.delta).isWithin(0.01).of(2.0)
+        assertThat(glucoseStatus.shortAvgDelta).isWithin(0.01).of(1.72)
+        assertThat(glucoseStatus.longAvgDelta).isWithin(0.01).of(1.67)
     }
 
     @Test

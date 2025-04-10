@@ -31,7 +31,6 @@ import app.aaps.core.ui.UIRunnable
 import app.aaps.core.ui.dialogs.OKDialog
 import app.aaps.pump.omnipod.common.databinding.OmnipodCommonOverviewButtonsBinding
 import app.aaps.pump.omnipod.common.databinding.OmnipodCommonOverviewPodInfoBinding
-import app.aaps.pump.omnipod.common.keys.OmnipodBooleanPreferenceKey
 import app.aaps.pump.omnipod.common.queue.command.CommandHandleTimeChange
 import app.aaps.pump.omnipod.common.queue.command.CommandResumeDelivery
 import app.aaps.pump.omnipod.common.queue.command.CommandSilenceAlerts
@@ -680,7 +679,7 @@ class OmnipodDashOverviewFragment : DaggerFragment() {
     }
 
     private fun isAutomaticallySilenceAlertsEnabled(): Boolean {
-        return preferences.get(OmnipodBooleanPreferenceKey.AutomaticallyAcknowledgeAlerts)
+        return false // Automatic alert silencing is not supported for DASH (see also Omnipod EROS)
     }
 
     private fun displayErrorDialog(title: String, message: String, withSound: Boolean) {

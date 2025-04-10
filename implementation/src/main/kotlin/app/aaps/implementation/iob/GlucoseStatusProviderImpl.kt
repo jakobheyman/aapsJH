@@ -68,7 +68,7 @@ class GlucoseStatusProviderImpl @Inject constructor(
 
         // Use the latest sgv value in the now calculations
         for (i in 1 until sizeRecords) {
-            if (data[i].value > 39 && !data[i].filledGap) {   // if (data[i].recalculated > 38) {
+            if (data[i].recalculated > 39) {
                 val then = data[i]
                 val thenDate = then.timestamp
 

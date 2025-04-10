@@ -6,12 +6,12 @@ kotlin = "2.1.20"
 wearable = "2.9.0"
 room = "2.6.1"
 dagger = "2.56.1"
-mockito = "5.16.1"
+mockito = "5.17.0"
 junit = "5.12.1"
 okhttp = "4.12.0"
 retrofit = "2.11.0"
 kotlinx-serialization = "1.8.1"
-kotlinx-coroutines = "1.10.1"
+kotlinx-coroutines = "1.10.2"
 work = "2.10.0"
 datastorePreferences = "1.1.4"
 annotation = "1.9.1"
@@ -53,7 +53,7 @@ com-google-android-flexbox = { group = "com.google.android.flexbox", name = "fle
 com-google-android-wearable = { group = "com.google.android.wearable", name = "wearable", version.ref = "wearable" }
 com-google-android-wearable-support = { group = "com.google.android.support", name = "wearable", version.ref = "wearable" }
 
-com-google-guava = { group = "com.google.guava", name = "guava", version = "33.4.6-jre" }
+com-google-guava = { group = "com.google.guava", name = "guava", version = "33.4.7-jre" }
 com-google-code-gson = { group = "com.google.code.gson", name = "gson", version = "2.12.1" }
 com-google-crypto-tink = { group = "com.google.crypto.tink", name = "tink-android", version = "1.17.0" }
 com-google-truth = { group = "com.google.truth", name = "truth", version = "1.4.4" }
@@ -85,7 +85,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version = "1.1.0" }
 androidx-browser = { group = "androidx.browser", name = "browser", version = "1.8.0" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.2.1" }
-androidx-core = { group = "androidx.core", name = "core-ktx", version = "1.15.0" }
+androidx-core = { group = "androidx.core", name = "core-ktx", version = "1.16.0" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.6.1" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version = "1.8.6" }
