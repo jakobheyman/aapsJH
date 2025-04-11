@@ -26,8 +26,8 @@ dependencies {
     implementation(project(":core:utils"))
     implementation(project(":core:ui"))
     implementation(project(":core:validators"))
-    implementation(project(":pump:pump-common"))
-    implementation(project(":pump:omnipod-common"))
+    implementation(project(":pump:common"))
+    implementation(project(":pump:omnipod:common"))
 
     api(libs.androidx.room)
     api(libs.androidx.room.runtime)

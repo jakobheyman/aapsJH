@@ -26,7 +26,7 @@ dependencies {
     implementation(project(":core:utils"))
     implementation(project(":core:ui"))
     implementation(project(":core:validators"))
-    implementation(project(":pump:pump-common"))
+    implementation(project(":pump:common"))
     testImplementation(project(":shared:tests"))
 
     api(libs.com.google.android.material)

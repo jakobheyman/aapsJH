@@ -21,7 +21,7 @@ dependencies {
     implementation(project(":core:libraries"))
     implementation(project(":core:utils"))
     implementation(project(":core:ui"))
-    implementation(project(":pump:eopatch-core"))
+    implementation(project(":pump:eopatch:core"))
 
     api(libs.com.google.guava)
 

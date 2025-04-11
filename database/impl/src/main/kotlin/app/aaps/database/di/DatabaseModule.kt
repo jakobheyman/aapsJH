@@ -36,8 +36,7 @@ open class DatabaseModule {
                     createCustomIndexes(db)
                 }
             })
-            .fallbackToDestructiveMigration()
-            .fallbackToDestructiveMigrationOnDowngrade()
+            .fallbackToDestructiveMigration(false)
             .build()
 
     @Qualifier
