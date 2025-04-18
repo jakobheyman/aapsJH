@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Omnipod - Pod Management -->
-    <string name="omnipod_common_pod_management_title">Pod Management</string>
     <string name="omnipod_common_pod_management_heading_actions">Aktionen</string>
-    <string name="omnipod_common_pod_management_heading_tools">Tools</string>
     <string name="omnipod_common_pod_management_button_activate_pod">Pod aktivieren</string>
     <string name="omnipod_common_pod_management_button_deactivate_pod">Pod deaktivieren</string>
     <string name="omnipod_common_pod_management_button_discard_pod">Pod verwerfen</string>
@@ -43,9 +41,7 @@
     <string name="omnipod_common_overview_button_set_time">Zeit einstellen</string>
     <string name="omnipod_common_overview_button_suspend_delivery">Unterbrechungen</string>
     <string name="omnipod_common_overview_button_resume_delivery">Abgabe fortsetzen</string>
-    <string name="omnipod_common_overview_button_pod_management">Pod Mgmt</string>
     <string name="omnipod_common_overview_button_silence_alerts">Alarme stummschalten</string>
-    <string name="omnipod_common_overview_pod_status">Pod Status</string>
     <string name="omnipod_common_overview_total_delivered">Insgesamt abgegeben</string>
     <string name="omnipod_common_overview_total_delivered_value">%1$.2f IE</string>
     <string name="omnipod_common_overview_pod_unique_id">Eindeutige ID</string>
@@ -56,7 +52,6 @@
     <string name="omnipod_common_overview_last_bolus">Letzter Bolus</string>
     <string name="omnipod_common_overview_temp_basal_rate">Temporäre Basalrate</string>
     <string name="omnipod_common_overview_base_basal_rate">Basis-Basalrate</string>
-    <string name="omnipod_common_overview_reservoir">Reservoir</string>
     <string name="omnipod_common_overview_pod_active_alerts">Aktive Pod-Warnungen</string>
     <string name="omnipod_common_overview_firmware_version">Firmware-Version</string>
     <string name="omnipod_common_overview_time_on_pod">Zeit auf dem Pod</string>
@@ -155,13 +150,10 @@
     <!-- Omnipod - Short status -->
     <string name="omnipod_common_short_status_no_active_pod">Kein aktiver Pod</string>
     <string name="omnipod_common_short_status_last_connection">Letzte Verb.: vor %1$d min</string>
-    <string name="omnipod_common_short_status_temp_basal">Temp: %1$s</string>
     <string name="omnipod_common_short_status_extended_bolus">Verlängert: %1$s</string>
-    <string name="omnipod_common_short_status_reservoir">Reserv: %1$sU</string>
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Ja</string>
     <string name="omnipod_common_no">Nein</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Abbrechen</string>
     <string name="omnipod_common_warning">Warnung</string>
     <!-- Omnipod - Times -->

@@ -9,6 +9,7 @@ import app.aaps.pump.omnipod.dash.history.database.DashHistoryDatabase
 import app.aaps.pump.omnipod.dash.history.database.HistoryRecordDao
 import app.aaps.pump.omnipod.dash.history.mapper.HistoryMapper
 import app.aaps.shared.tests.AAPSLoggerTest
+import com.google.common.truth.Truth.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -34,32 +35,20 @@ class DashHistoryTest {
 
     @Test
     fun testInsertionAndConverters() {
-        dashHistory.getRecords().test().apply {
-            assertValue { it.isEmpty() }
-        }
-
-        dashHistory.createRecord(commandType = OmnipodCommandType.CANCEL_BOLUS, 0L).test().apply {
-            assertValue { it != 0L }
-        }
-
-        dashHistory.getRecords().test().apply {
-            assertValue { it.size == 1 }
-        }
+        assertThat(dashHistory.getRecords().blockingGet().isEmpty()).isTrue()
+        assertThat(dashHistory.createRecord(commandType = OmnipodCommandType.CANCEL_BOLUS, 0L).blockingGet()).isNotEqualTo(0L)
+        assertThat(dashHistory.getRecords().blockingGet().size).isEqualTo(1)
     }
 
     @Test
     fun testExceptionOnBolusWithoutRecord() {
-        dashHistory.getRecords().test().apply {
-            assertValue { it.isEmpty() }
-        }
+        assertThat(dashHistory.getRecords().blockingGet().isEmpty()).isTrue()
 
         dashHistory.createRecord(commandType = OmnipodCommandType.SET_BOLUS, 0L).test().apply {
             assertError(IllegalArgumentException::class.java)
         }
 
-        dashHistory.getRecords().test().apply {
-            assertValue { it.isEmpty() }
-        }
+        assertThat(dashHistory.getRecords().blockingGet().isEmpty()).isTrue()
     }
 
     @After
