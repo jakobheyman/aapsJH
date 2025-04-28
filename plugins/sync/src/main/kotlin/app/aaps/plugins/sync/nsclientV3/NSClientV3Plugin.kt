@@ -221,13 +221,14 @@ class NSClientV3Plugin @Inject constructor(
             .observeOn(aapsSchedulers.io)
             .subscribe({ ev ->
                            rxBus.send(EventNSClientNewLog("● CONNECTIVITY", ev.blockingReason))
-                           assert(nsClientV3Service != null)
-                           if (ev.connected) {
-                               when {
-                                   isAllowed && nsClientV3Service?.storageSocket == null  -> setClient() // socket must be created
-                                   !isAllowed && nsClientV3Service?.storageSocket != null -> stopService()
+                           nsClientV3Service?.let { service ->
+                               if (ev.connected) {
+                                   when {
+                                       isAllowed && service.storageSocket == null   -> setClient() // socket must be created
+                                       !isAllowed && service.storageSocket != null -> stopService()
+                                   }
+                                   if (isAllowed) executeLoop("CONNECTIVITY", forceNew = false)
                                }
-                               if (isAllowed) executeLoop("CONNECTIVITY", forceNew = false)
                            }
                            rxBus.send(EventNSClientUpdateGuiStatus())
                        }, fabricPrivacy::logException)

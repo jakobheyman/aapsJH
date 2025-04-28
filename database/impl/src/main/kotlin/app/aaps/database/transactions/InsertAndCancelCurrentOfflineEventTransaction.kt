@@ -9,7 +9,7 @@ class InsertAndCancelCurrentOfflineEventTransaction(
 
     override fun run(): TransactionResult {
         val result = TransactionResult()
-        val current = database.offlineEventDao.getOfflineEventActiveAt(offlineEvent.timestamp).blockingGet()
+        val current = database.offlineEventDao.getOfflineEventActiveAtLegacy(offlineEvent.timestamp)
         if (current != null) {
             current.end = offlineEvent.timestamp
             database.offlineEventDao.updateExistingEntry(current)

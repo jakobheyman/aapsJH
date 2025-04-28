@@ -196,8 +196,7 @@ class CompatDbHelperTest @Inject constructor() {
         // EventTreatmentChange should be triggered
         assertThat(rxHelper.waitFor(EventTreatmentChange::class.java, comment = "step5").first).isTrue()
         assertThat(rxHelper.waitFor(EventNewHistoryData::class.java, comment = "step6").first).isTrue()
-/*
-    FOLOWING CODE IS BROKEN BY ROOM 2.7.0
+
         // TB
         rxHelper.resetState(EventTempBasalChange::class.java)
         rxHelper.resetState(EventNewHistoryData::class.java)
@@ -288,6 +287,5 @@ class CompatDbHelperTest @Inject constructor() {
         persistenceLayer.insertDeviceStatus(ds)
         // EventDeviceStatusChange should be triggered
         assertThat(rxHelper.waitFor(EventDeviceStatusChange::class.java, comment = "step13").first).isTrue()
-*/
     }
 }

@@ -182,19 +182,14 @@ class PluginStore @Inject constructor(
         get() = activeBgSourceStore ?: checkNotNull(activeBgSourceStore) { "No bg source selected" }
 
     override val activeProfileSource: ProfileSource
-        get() = activeProfile ?: wait() ?: activeProfile ?: checkNotNull(activeProfile) { "No profile selected" }
+        get() = activeProfile ?: checkNotNull(activeProfile) { "No profile selected" }
 
     override val activeInsulin: Insulin
         get() = activeInsulinStore ?: getDefaultPlugin(PluginType.INSULIN) as Insulin
 
-    private fun <T> wait(millis: Long = 3000): T? {
-        Thread.sleep(millis)
-        return null
-    }
-
     // App may not be initialized yet. Wait before second return
     override val activeAPS: APS
-        get() = activeAPSStore ?: wait() ?: activeAPSStore ?: wait(5000) ?: activeAPSStore ?: checkNotNull(activeAPSStore) { "No APS selected" }
+        get() = activeAPSStore ?: checkNotNull(activeAPSStore) { "No APS selected" }
 
     override val activePump: Pump
         get() = activePumpStore
@@ -203,12 +198,10 @@ class PluginStore @Inject constructor(
             ?: checkNotNull(activePumpStore) { "No pump selected" }
 
     override val activeSensitivity: Sensitivity
-        get() = activeSensitivityStore
-            ?: checkNotNull(activeSensitivityStore) { "No sensitivity selected" }
+        get() = activeSensitivityStore ?: checkNotNull(activeSensitivityStore) { "No sensitivity selected" }
 
     override val activeSmoothing: Smoothing
-        get() = activeSmoothingStore
-            ?: checkNotNull(activeSmoothingStore) { "No smoothing selected" }
+        get() = activeSmoothingStore ?: checkNotNull(activeSmoothingStore) { "No smoothing selected" }
 
     override val activeOverview: Overview
         get() = getSpecificPluginsListByInterface(Overview::class.java).first() as Overview
