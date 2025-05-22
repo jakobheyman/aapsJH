@@ -1,5 +1,6 @@
 package app.aaps.plugins.sync.nsclientV3
 
+import androidx.annotation.OpenForTesting
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.AAPSLogger
@@ -73,7 +74,8 @@ class DataSyncSelectorV3 @Inject constructor(
 
     override fun queueSize(): Long = queueCounter.size()
 
-    private val bgUploadEnabled get() = preferences.get(BooleanKey.BgSourceUploadToNs) && activePlugin.activeBgSource !is NSClientSource
+
+    val bgUploadEnabled @OpenForTesting get() = preferences.get(BooleanKey.BgSourceUploadToNs) && activePlugin.activeBgSource !is NSClientSource
 
     override suspend fun doUpload() {
         rxBus.send(EventNSClientUpdateGuiStatus())
@@ -132,13 +134,15 @@ class DataSyncSelectorV3 @Inject constructor(
         else preferences.remove(NsclientLongKey.DeviceStatusLastSyncedId)
     }
 
-    private fun confirmLastBolusIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastBolusIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.BolusLastSyncedId)) {
             preferences.put(NsclientLongKey.BolusLastSyncedId, lastSynced)
         }
     }
 
-    private suspend fun processChangedBoluses() {
+    @OpenForTesting
+    suspend fun processChangedBoluses() {
         var cont = true
         while (cont) {
             if (isPaused) return
@@ -173,7 +177,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastCarbsIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastCarbsIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.CarbsLastSyncedId)) {
             preferences.put(NsclientLongKey.CarbsLastSyncedId, lastSynced)
         }
@@ -214,7 +219,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastBolusCalculatorResultsIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastBolusCalculatorResultsIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.BolusCalculatorLastSyncedId)) {
             preferences.put(NsclientLongKey.BolusCalculatorLastSyncedId, lastSynced)
         }
@@ -263,7 +269,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastTempTargetsIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastTempTargetsIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.TemporaryTargetLastSyncedId)) {
             preferences.put(NsclientLongKey.TemporaryTargetLastSyncedId, lastSynced)
         }
@@ -304,7 +311,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastFoodIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastFoodIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.FoodLastSyncedId)) {
             preferences.put(NsclientLongKey.FoodLastSyncedId, lastSynced)
         }
@@ -345,7 +353,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastGlucoseValueIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastGlucoseValueIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.GlucoseValueLastSyncedId)) {
             preferences.put(NsclientLongKey.GlucoseValueLastSyncedId, lastSynced)
         }
@@ -388,7 +397,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastTherapyEventIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastTherapyEventIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.TherapyEventLastSyncedId)) {
             preferences.put(NsclientLongKey.TherapyEventLastSyncedId, lastSynced)
         }
@@ -429,7 +439,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastDeviceStatusIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastDeviceStatusIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.DeviceStatusLastSyncedId)) {
             preferences.put(NsclientLongKey.DeviceStatusLastSyncedId, lastSynced)
         }
@@ -458,7 +469,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastTemporaryBasalIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastTemporaryBasalIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.TemporaryBasalLastSyncedId)) {
             preferences.put(NsclientLongKey.TemporaryBasalLastSyncedId, lastSynced)
         }
@@ -500,7 +512,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastExtendedBolusIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastExtendedBolusIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.ExtendedBolusLastSyncedId)) {
             preferences.put(NsclientLongKey.ExtendedBolusLastSyncedId, lastSynced)
         }
@@ -544,7 +557,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastProfileSwitchIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastProfileSwitchIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.ProfileSwitchLastSyncedId)) {
             preferences.put(NsclientLongKey.ProfileSwitchLastSyncedId, lastSynced)
         }
@@ -585,7 +599,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastEffectiveProfileSwitchIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastEffectiveProfileSwitchIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.EffectiveProfileSwitchLastSyncedId)) {
             preferences.put(NsclientLongKey.EffectiveProfileSwitchLastSyncedId, lastSynced)
         }
@@ -626,7 +641,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastOfflineEventIdIfGreater(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastOfflineEventIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.OfflineEventLastSyncedId)) {
             preferences.put(NsclientLongKey.OfflineEventLastSyncedId, lastSynced)
         }
@@ -667,7 +683,8 @@ class DataSyncSelectorV3 @Inject constructor(
         }
     }
 
-    private fun confirmLastProfileStore(lastSynced: Long) {
+    @OpenForTesting
+    fun confirmLastProfileStore(lastSynced: Long) {
         preferences.put(NsclientLongKey.ProfileStoreLastSyncedId, lastSynced)
     }
 

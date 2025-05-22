@@ -21,7 +21,6 @@
     <string name="history_group_bolus">Bolussen</string>
     <string name="history_group_prime">Vullen</string>
     <string name="history_group_alarm">Alarmen</string>
-    <string name="history_group_glucose">Glucose</string>
     <string name="history_group_base">Basis</string>
     <string name="history_group_other">Anders</string>
     <string name="history_group_events">Alle gebeurtenissen</string>
@@ -38,14 +37,12 @@
     <string name="time_last_month">Vorige maand</string>
     <!-- BLE Config -->
     <string name="ble_config_button_scan_start">Scannen</string>
-    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Geselecteerd</string>
     <string name="ble_config_scan_scanning">Scannen</string>
     <string name="ble_config_scan_finished">Scannen voltooid</string>
     <string name="ble_config_scan_error">Scanfout: %1$d</string>
     <string name="ble_config_remove">Verwijderen</string>
     <!-- Pump History -->
-    <string name="pump_history_type">Type:</string>
     <plurals name="duration_days">
         <item quantity="one">%1$d dag</item>
         <item quantity="other">%1$d dagen</item>

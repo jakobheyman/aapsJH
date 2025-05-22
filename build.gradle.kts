@@ -4,8 +4,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
     repositories {
-        google()
         mavenCentral()
+        google()
     }
     dependencies {
         classpath(libs.com.android.tools.build)
@@ -31,9 +31,8 @@ plugins {
 
 allprojects {
     repositories {
-        google()
         mavenCentral()
-        maven("https://maven.google.com")
+        google()
         maven("https://jitpack.io")
     }
     tasks.withType<KotlinCompile>().configureEach {

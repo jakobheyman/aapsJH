@@ -47,7 +47,7 @@ L\'ENSEMBLE DES RISQUES LIÉS À LA QUALITÉ ET À LA PERFORMANCE DU PROGRAMME S
     <string name="readstatus">Statut de lecture</string>
     <string name="data_choices">Choix de données</string>
     <string name="fabric_upload">Téléchargement Fabric</string>
-    <string name="unattended_settings_export">Exportation des paramètres sans surveillance</string>
+    <string name="unattended_settings_export">Export des paramètres sans surveillance</string>
     <string name="unattended_settings_export_summary">L\'activation permettra de stocker votre mot de passe en toute sécurité sur votre téléphone</string>
     <string name="identification">Identification (email, FB ou pseudo dans Discord, etc)</string>
     <string name="request">Demande</string>

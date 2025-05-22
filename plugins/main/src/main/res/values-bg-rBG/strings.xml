@@ -220,6 +220,8 @@
     <string name="thirdcarbsincrement">Стойност на третия бърз бутон [гр]</string>
     <string name="cgm">CGM</string>
     <string name="default_temptargets">Временна цел по подразбиране</string>
+    <string name="eatingsoon_duration">За хранене (мин)</string>
+    <string name="eatingsoon_target">За хранене цел</string>
     <string name="fill_bolus_title">Fill/Prime количества инсулин по подразбиране</string>
     <string name="button1">Бутон 1</string>
     <string name="button2">Бутон 2</string>

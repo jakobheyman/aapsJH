@@ -73,6 +73,12 @@ jobs:
       - codecov/upload:
           file: './build/reports/jacoco/jacocoAllDebugReport/jacocoAllDebugReport.xml'
 
+      - run:
+          name: Kill java processes
+          command: |
+            killall java
+          when: always
+
 workflows:
   # Below is the definition of your workflow.
   # Inside the workflow, you provide the jobs you want to run, e.g this workflow runs the build-and-test job above.

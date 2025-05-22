@@ -9,8 +9,7 @@ plugins {
 dependencies {
     testImplementation(kotlin("test"))
     testImplementationFromCatalog("org-junit-jupiter")
-    testImplementationFromCatalog("org.junit-jupiter-api")
-    testImplementationFromCatalog("org-json")
+    testImplementationFromCatalog("org-junit-jupiter-api")
     testImplementationFromCatalog("org-mockito-junit-jupiter")
     testImplementationFromCatalog("org-mockito-kotlin")
     testImplementationFromCatalog("joda-time")

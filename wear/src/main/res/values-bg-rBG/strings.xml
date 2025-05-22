@@ -144,7 +144,6 @@
     <string name="simple_ui_charging">По време на зареждане</string>
     <string name="simple_ui_always_on">Режим Постоянно включен</string>
     <string name="simple_ui_always_on_charging">Винаги включен по време на зареждане</string>
-    <string name="temp_target_eating_soon">Хранене</string>
     <string name="temp_target_hypo">Хипоглекимия</string>
     <string name="temp_target_activity">Физ.активност</string>
     <string name="temp_target_manual">Друго</string>

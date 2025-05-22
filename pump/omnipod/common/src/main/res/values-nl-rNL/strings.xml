@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Omnipod - Pod Management -->
-    <string name="omnipod_common_pod_management_title">Pod Management</string>
     <string name="omnipod_common_pod_management_heading_actions">Acties</string>
     <string name="omnipod_common_pod_management_heading_tools">Hulpmiddelen</string>
     <string name="omnipod_common_pod_management_button_activate_pod">Activeer Pod</string>
@@ -45,7 +44,6 @@
     <string name="omnipod_common_overview_button_resume_delivery">Toediening hervatten</string>
     <string name="omnipod_common_overview_button_pod_management">Pod Beheer</string>
     <string name="omnipod_common_overview_button_silence_alerts">Alarmen Stil</string>
-    <string name="omnipod_common_overview_pod_status">Pod Status</string>
     <string name="omnipod_common_overview_total_delivered">Totaal toegediend</string>
     <string name="omnipod_common_overview_total_delivered_value">%1$.2f E</string>
     <string name="omnipod_common_overview_pod_unique_id">Uniek ID</string>
@@ -56,7 +54,6 @@
     <string name="omnipod_common_overview_last_bolus">Laatste bolus</string>
     <string name="omnipod_common_overview_temp_basal_rate">Tijdelijke basaalstand</string>
     <string name="omnipod_common_overview_base_basal_rate">Basis basaalstand</string>
-    <string name="omnipod_common_overview_reservoir">Reservoir</string>
     <string name="omnipod_common_overview_pod_active_alerts">Actieve pod alarmen</string>
     <string name="omnipod_common_overview_firmware_version">Firmware versie</string>
     <string name="omnipod_common_overview_time_on_pod">Tijd op Pod</string>
@@ -169,7 +166,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Ja</string>
     <string name="omnipod_common_no">Nee</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Afbreken</string>
     <string name="omnipod_common_warning">Waarschuwing</string>
     <string name="omnipod_common_disable_suspend_alerts">UITSCHAKELEN SUSPEND ALARM</string>

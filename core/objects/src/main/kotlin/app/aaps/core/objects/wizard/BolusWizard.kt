@@ -481,6 +481,7 @@ class BolusWizard @Inject constructor(
     private fun commonProcessing(ctx: Context, quickWizardEntry: QuickWizardEntry? = null) {
         val profile = profileFunction.getProfile() ?: return
         val pump = activePlugin.activePump
+        val now = dateUtil.now()
 
         val confirmMessage = confirmMessageAfterConstraints(ctx, advisor = false, quickWizardEntry)
         OKDialog.showConfirmation(ctx, rh.gs(app.aaps.core.ui.R.string.boluswizard), confirmMessage, {
@@ -516,7 +517,7 @@ class BolusWizard @Inject constructor(
                     context = ctx
                     mgdlGlucose = profileUtil.convertToMgdl(bg, profile.units)
                     glucoseType = TE.MeterType.MANUAL
-                    carbsTimestamp = dateUtil.now() + T.mins(this@BolusWizard.carbTime.toLong()).msecs()
+                    carbsTimestamp = now + T.mins(this@BolusWizard.carbTime.toLong()).msecs()
                     bolusCalculatorResult = createBolusCalculatorResult()
                     notes = this@BolusWizard.notes
                     if (insulin > 0 || carbs > 0) {
@@ -529,12 +530,12 @@ class BolusWizard @Inject constructor(
                             action = action,
                             source = if (quickWizard) Sources.QuickWizard else Sources.WizardDialog,
                             note = notes,
-                            listValues = listOf(
+                            listValues = listOfNotNull(
                                 ValueWithUnit.TEType(eventType),
                                 ValueWithUnit.Insulin(insulinAfterConstraints).takeIf { insulinAfterConstraints != 0.0 },
                                 ValueWithUnit.Gram(this@BolusWizard.carbs).takeIf { this@BolusWizard.carbs != 0 },
                                 ValueWithUnit.Minute(carbTime).takeIf { carbTime != 0 }
-                            ).filterNotNull()
+                            )
                         )
                         commandQueue.bolus(this, object : Callback() {
                             override fun run() {
