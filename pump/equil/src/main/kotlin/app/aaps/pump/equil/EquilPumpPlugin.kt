@@ -106,7 +106,7 @@ class EquilPumpPlugin @Inject constructor(
     private val bolusProfile: BolusProfile = BolusProfile()
 
     private val disposable = CompositeDisposable()
-    private var statusChecker: Runnable
+    private lateinit var statusChecker: Runnable
 
     override fun onStart() {
         super.onStart()
@@ -179,7 +179,7 @@ class EquilPumpPlugin @Inject constructor(
     init {
         pumpDescription = PumpDescription().fillFor(pumpType)
         statusChecker = Runnable {
-            var cmd = commandQueue.performing()
+            val cmd = commandQueue.performing()
 
             if (commandQueue.size() == 0 && cmd == null) {
                 if (indexEquilReadStatus >= 5) {
@@ -194,7 +194,6 @@ class EquilPumpPlugin @Inject constructor(
                 }
 
             } else {
-                equilManager.readStatus()
                 aapsLogger.debug(
                     LTag.PUMPCOMM,
                     "Skipping Pod status check because command queue is not empty"

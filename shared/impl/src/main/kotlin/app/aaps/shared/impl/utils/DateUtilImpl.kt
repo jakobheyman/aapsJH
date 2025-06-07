@@ -447,7 +447,7 @@ class DateUtilImpl @Inject constructor(private val context: Context) : DateUtil 
         // - TimeZone.getDefault().rawOffset is only workaround for MaterialDatePicket bug
         // Remove after lib fix
         // https://github.com/material-components/material-components-android/issues/4373
-        val selected = Calendar.getInstance().apply { timeInMillis = dateUtcMillis - TimeZone.getDefault().rawOffset }
+        val selected = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = dateUtcMillis }
         return Calendar.getInstance().apply {
             timeInMillis = timestamp
             set(Calendar.YEAR, selected[Calendar.YEAR])

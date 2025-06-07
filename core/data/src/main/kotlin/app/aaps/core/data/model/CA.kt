@@ -1,6 +1,8 @@
 package app.aaps.core.data.model
 
 import java.util.TimeZone
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 data class CA(
     override var id: Long = 0,
@@ -16,6 +18,11 @@ data class CA(
     var amount: Double,
     var notes: String? = null
 ) : HasIDs {
+
+    init {
+        require(duration <= TimeUnit.HOURS.toMillis(10)) { "Duration must be less than 10 hours" } // UI and sync limit in HardLimits interface
+        require(abs(amount) <= 400) { "Amount must be less than 400" } // UI and sync limit in HardLimits interface
+    }
 
     fun contentEqualsTo(other: CA): Boolean =
         isValid == other.isValid &&
