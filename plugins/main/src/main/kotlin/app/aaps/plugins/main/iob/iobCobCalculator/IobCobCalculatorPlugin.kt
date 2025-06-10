@@ -33,7 +33,7 @@ import app.aaps.core.interfaces.rx.events.EventConfigBuilderChange
 import app.aaps.core.interfaces.rx.events.EventEffectiveProfileSwitchChanged
 import app.aaps.core.interfaces.rx.events.EventNewBG
 import app.aaps.core.interfaces.rx.events.EventNewHistoryData
-import app.aaps.core.interfaces.rx.events.EventOfflineChange
+import app.aaps.core.interfaces.rx.events.EventRunningModeChange
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.rx.events.EventTherapyEventChange
 import app.aaps.core.interfaces.utils.DateUtil
@@ -152,7 +152,7 @@ class IobCobCalculatorPlugin @Inject constructor(
             .observeOn(aapsSchedulers.io)
             .subscribe({ calculationWorkflow.runOnEventTherapyEventChange(overviewData) }, fabricPrivacy::logException)
         disposable += rxBus
-            .toObservable(EventOfflineChange::class.java)
+            .toObservable(EventRunningModeChange::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ calculationWorkflow.runOnEventTherapyEventChange(overviewData) }, fabricPrivacy::logException)
         disposable += rxBus

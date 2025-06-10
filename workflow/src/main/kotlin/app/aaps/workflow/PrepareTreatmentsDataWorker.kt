@@ -5,7 +5,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import app.aaps.core.data.model.BS
 import app.aaps.core.data.model.GlucoseUnit
-import app.aaps.core.data.model.TE
 import app.aaps.core.data.time.T
 import app.aaps.core.graph.data.BolusDataPoint
 import app.aaps.core.graph.data.CarbsDataPoint
@@ -88,18 +87,6 @@ class PrepareTreatmentsDataWorker(
                 data.overviewData.maxEpsValue = maxOf(data.overviewData.maxEpsValue, it.data.originalPercentage.toDouble())
                 filteredEps.add(it)
             }
-
-        // OfflineEvent
-        persistenceLayer.getOfflineEventsFromTimeToTime(data.overviewData.fromTime, data.overviewData.endTime, true)
-            .map {
-                TherapyEventDataPoint(
-                    TE(timestamp = it.timestamp, duration = it.duration, type = TE.Type.APS_OFFLINE, glucoseUnit = GlucoseUnit.MMOL),
-                    rh,
-                    profileUtil,
-                    translator
-                )
-            }
-            .forEach(filteredTreatments::add)
 
         // Extended bolus
         if (!activePlugin.activePump.isFakingTempsByExtendedBoluses) {

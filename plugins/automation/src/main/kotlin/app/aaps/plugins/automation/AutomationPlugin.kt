@@ -8,6 +8,7 @@ import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceManager
 import androidx.preference.PreferenceScreen
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.data.time.T
@@ -240,21 +241,15 @@ class AutomationPlugin @Inject constructor(
     internal fun processActions() {
         if (!config.appInitialized) return
         var commonEventsEnabled = true
-        if (loop.isSuspended || !(loop as PluginBase).isEnabled()) {
-            aapsLogger.debug(LTag.AUTOMATION, "Loop deactivated")
-            executionLog.add(rh.gs(app.aaps.core.ui.R.string.loopisdisabled))
+        if (loop.runningMode.isSuspended() || !loop.runningMode.isLoopRunning()) {
+            aapsLogger.debug(LTag.AUTOMATION, "Loop suspended")
+            executionLog.add(rh.gs(app.aaps.core.ui.R.string.loopsuspended))
             rxBus.send(EventAutomationUpdateGui())
             commonEventsEnabled = false
         }
-        if (loop.isDisconnected || !(loop as PluginBase).isEnabled()) {
+        if (loop.runningMode == RM.Mode.DISCONNECTED_PUMP || !(loop as PluginBase).isEnabled()) {
             aapsLogger.debug(LTag.AUTOMATION, "Loop disconnected")
             executionLog.add(rh.gs(app.aaps.core.ui.R.string.disconnected))
-            rxBus.send(EventAutomationUpdateGui())
-            commonEventsEnabled = false
-        }
-        if (activePlugin.activePump.isSuspended()) {
-            aapsLogger.debug(LTag.AUTOMATION, "Pump suspended")
-            executionLog.add(rh.gs(app.aaps.core.ui.R.string.waitingforpump))
             rxBus.send(EventAutomationUpdateGui())
             commonEventsEnabled = false
         }

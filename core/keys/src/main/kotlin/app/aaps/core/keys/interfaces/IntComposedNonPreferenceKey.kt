@@ -25,9 +25,4 @@ interface IntComposedNonPreferenceKey : NonPreferenceKey, ComposedKey {
      * Default value
      */
     val defaultValue: Int
-
-    /**
-     * Compose final key from arguments
-     */
-    fun composeKey(vararg arguments: Any): String = String.format(Locale.ENGLISH, key + format, *arguments)
 }

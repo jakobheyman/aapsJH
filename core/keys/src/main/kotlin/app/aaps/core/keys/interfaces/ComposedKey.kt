@@ -1,5 +1,7 @@
 package app.aaps.core.keys.interfaces
 
+import java.util.Locale
+
 interface ComposedKey {
 
     /**
@@ -13,4 +15,9 @@ interface ComposedKey {
      * String used to format vararg
      */
     val format: String
+
+    /**
+     * Compose final key from arguments
+     */
+    fun composeKey(vararg arguments: Any): String = String.format(Locale.ENGLISH, key + format, *arguments)
 }

@@ -1,12 +1,14 @@
 package app.aaps.plugins.automation.actions
 
+import app.aaps.core.data.model.RM
+import app.aaps.core.data.ue.Sources
+import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.queue.Callback
 import app.aaps.plugins.automation.R
 import app.aaps.plugins.automation.elements.InputDuration
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 
@@ -37,22 +39,40 @@ class ActionLoopSuspendTest : ActionsTestBase() {
         assertThat(sut.icon()).isEqualTo(R.drawable.ic_pause_circle_outline_24dp)
     }
 
-    @Test fun doActionTest() {
-        `when`(loopPlugin.isSuspended).thenReturn(false)
-        sut.minutes = InputDuration(30, InputDuration.TimeUnit.MINUTES)
-        sut.doAction(object : Callback() {
-            override fun run() {}
-        })
-        Mockito.verify(loopPlugin, Mockito.times(1)).suspendLoop(anyInt(), anyObject(), anyObject(), anyObject(), anyObject())
-
-        // another call should keep it suspended, no more invocations
-        `when`(loopPlugin.isSuspended).thenReturn(true)
-        sut.doAction(object : Callback() {
-            override fun run() {}
-        })
-        Mockito.verify(loopPlugin, Mockito.times(1)).suspendLoop(anyInt(), anyObject(), anyObject(), anyObject(), anyObject())
+    @Test
+    fun isValidTest() {
+        assertThat(sut.isValid()).isEqualTo(true)
     }
 
+    @Test fun doActionTest() {
+        `when`(loop.allowedNextModes()).thenReturn(listOf(RM.Mode.SUSPENDED_BY_USER))
+        sut.doAction(object : Callback() {
+            override fun run() {
+            }
+        })
+        Mockito.verify(loop, Mockito.times(1)).handleRunningModeChange(
+            newRM = RM.Mode.SUSPENDED_BY_USER,
+            action = app.aaps.core.data.ue.Action.SUSPEND,
+            source = Sources.Automation,
+            durationInMinutes = sut.minutes.getMinutes(),
+            listValues = listOf(ValueWithUnit.Minute(sut.minutes.getMinutes())),
+            profile = validProfile
+        )
+
+        // mode not allowed, no new invocation
+        `when`(loop.allowedNextModes()).thenReturn(emptyList())
+        sut.doAction(object : Callback() {
+            override fun run() {}
+        })
+        Mockito.verify(loop, Mockito.times(1)).handleRunningModeChange(
+            newRM = RM.Mode.SUSPENDED_BY_USER,
+            action = app.aaps.core.data.ue.Action.SUSPEND,
+            source = Sources.Automation,
+            durationInMinutes = sut.minutes.getMinutes(),
+            listValues = listOf(ValueWithUnit.Minute(sut.minutes.getMinutes())),
+            profile = validProfile
+        )
+    }
     @Test fun applyTest() {
         val a = ActionLoopSuspend(injector)
         a.minutes = InputDuration(20, InputDuration.TimeUnit.MINUTES)

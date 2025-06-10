@@ -48,8 +48,8 @@ import app.aaps.plugins.sync.nsclientV3.extensions.toEffectiveProfileSwitch
 import app.aaps.plugins.sync.nsclientV3.extensions.toExtendedBolus
 import app.aaps.plugins.sync.nsclientV3.extensions.toFood
 import app.aaps.plugins.sync.nsclientV3.extensions.toGV
-import app.aaps.plugins.sync.nsclientV3.extensions.toOfflineEvent
 import app.aaps.plugins.sync.nsclientV3.extensions.toProfileSwitch
+import app.aaps.plugins.sync.nsclientV3.extensions.toRunningMode
 import app.aaps.plugins.sync.nsclientV3.extensions.toTemporaryBasal
 import app.aaps.plugins.sync.nsclientV3.extensions.toTemporaryTarget
 import app.aaps.plugins.sync.nsclientV3.extensions.toTherapyEvent
@@ -218,9 +218,9 @@ class NsIncomingDataProcessor @Inject constructor(
                             }
 
                     is NSOfflineEvent           ->
-                        if (preferences.get(BooleanKey.NsClientAcceptOfflineEvent) && config.isEngineeringMode() || config.AAPSCLIENT || doFullSync)
-                            treatment.toOfflineEvent().let { offlineEvent ->
-                                storeDataForDb.addToOfflineEvents(offlineEvent)
+                        if (preferences.get(BooleanKey.NsClientAcceptRunningMode) && config.isEngineeringMode() || config.AAPSCLIENT || doFullSync)
+                            treatment.toRunningMode().let { runningMode ->
+                                storeDataForDb.addToRunningModes(runningMode)
                             }
 
                     is NSExtendedBolus          ->

@@ -197,7 +197,7 @@ class NSClientService : DaggerService() {
             .observeOn(aapsSchedulers.io)
             .subscribe({ resend("EventTherapyEventChange") }, fabricPrivacy::logException)
         disposable += rxBus
-            .toObservable(EventOfflineChange::class.java)
+            .toObservable(EventRunningModeChange::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ resend("EventOfflineChange") }, fabricPrivacy::logException)
         disposable += rxBus

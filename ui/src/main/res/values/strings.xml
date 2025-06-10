@@ -154,6 +154,8 @@
     <!--    Widget-->
     <string name="use_black_color">Use black color</string>
     <string name="widget_configuration">Widget configuration</string>
+    <string name="until_changed">Until changed</string>
+    <string name="limitations">Limitations</string>
 
     <string-array name="yes_no_positiveonly_negativeonly">
         <item>Both</item>

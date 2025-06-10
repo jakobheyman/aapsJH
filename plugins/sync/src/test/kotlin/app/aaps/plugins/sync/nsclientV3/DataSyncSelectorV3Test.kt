@@ -80,7 +80,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         verify(preferences, Times(1)).remove(NsclientLongKey.TherapyEventLastSyncedId)
         verify(preferences, Times(1)).remove(NsclientLongKey.ProfileSwitchLastSyncedId)
         verify(preferences, Times(1)).remove(NsclientLongKey.EffectiveProfileSwitchLastSyncedId)
-        verify(preferences, Times(1)).remove(NsclientLongKey.OfflineEventLastSyncedId)
+        verify(preferences, Times(1)).remove(NsclientLongKey.RunningModeLastSyncedId)
         verify(preferences, Times(1)).remove(NsclientLongKey.ProfileStoreLastSyncedId)
         verify(preferences, Times(1)).put(NsclientLongKey.DeviceStatusLastSyncedId, 1)
 
@@ -176,12 +176,12 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         sut.confirmLastEffectiveProfileSwitchIdIfGreater(2)
         verify(preferences, Times(1)).put(NsclientLongKey.EffectiveProfileSwitchLastSyncedId, 2)
         // OfflineEvent
-        `when`(preferences.get(NsclientLongKey.OfflineEventLastSyncedId)).thenReturn(2)
-        sut.confirmLastOfflineEventIdIfGreater(2)
-        verify(preferences, Times(0)).put(NsclientLongKey.OfflineEventLastSyncedId, 2)
-        `when`(preferences.get(NsclientLongKey.OfflineEventLastSyncedId)).thenReturn(1)
-        sut.confirmLastOfflineEventIdIfGreater(2)
-        verify(preferences, Times(1)).put(NsclientLongKey.OfflineEventLastSyncedId, 2)
+        `when`(preferences.get(NsclientLongKey.RunningModeLastSyncedId)).thenReturn(2)
+        sut.confirmLastRunningModeIdIfGreater(2)
+        verify(preferences, Times(0)).put(NsclientLongKey.RunningModeLastSyncedId, 2)
+        `when`(preferences.get(NsclientLongKey.RunningModeLastSyncedId)).thenReturn(1)
+        sut.confirmLastRunningModeIdIfGreater(2)
+        verify(preferences, Times(1)).put(NsclientLongKey.RunningModeLastSyncedId, 2)
         // ProfileStore
         sut.confirmLastProfileStore(2)
         verify(preferences, Times(1)).put(NsclientLongKey.ProfileStoreLastSyncedId, 2)

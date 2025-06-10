@@ -126,7 +126,7 @@ class DataSyncSelectorXdripImpl @Inject constructor(
         preferences.remove(XdripLongKey.TherapyEventLastSyncedId)
         preferences.remove(XdripLongKey.ProfileSwitchLastSyncedId)
         preferences.remove(XdripLongKey.EffectiveProfileSwitchLastSyncedId)
-        preferences.remove(XdripLongKey.OfflineEventLastSyncedId)
+        preferences.remove(XdripLongKey.RunningModeLastSyncedId)
         preferences.remove(XdripLongKey.ProfileStoreLastSyncedId)
 
         val lastDeviceStatusDbId = persistenceLayer.getLastDeviceStatusId()
@@ -513,31 +513,31 @@ class DataSyncSelectorXdripImpl @Inject constructor(
         sendTreatments(force = true, progress)
     }
 
-    private fun confirmLastOfflineEventIdIfGreater(lastSynced: Long) {
-        if (lastSynced > preferences.get(XdripLongKey.OfflineEventLastSyncedId)) {
+    private fun confirmLastRunningModeIdIfGreater(lastSynced: Long) {
+        if (lastSynced > preferences.get(XdripLongKey.RunningModeLastSyncedId)) {
             //aapsLogger.debug(LTag.XDRIP, "Setting OfflineEvent data sync from $lastSynced")
-            preferences.put(XdripLongKey.OfflineEventLastSyncedId, lastSynced)
+            preferences.put(XdripLongKey.RunningModeLastSyncedId, lastSynced)
         }
     }
 
-    private fun processChangedOfflineEvents() {
+    private fun processChangedRunningModes() {
         var progress: String
-        val lastDbId = persistenceLayer.getLastOfflineEventId() ?: 0L
+        val lastDbId = persistenceLayer.getLastRunningModeId() ?: 0L
         while (true) {
             if (!isEnabled) return
-            var startId = preferences.get(XdripLongKey.OfflineEventLastSyncedId)
+            var startId = preferences.get(XdripLongKey.RunningModeLastSyncedId)
             if (startId > lastDbId) {
-                preferences.put(XdripLongKey.OfflineEventLastSyncedId, 0)
+                preferences.put(XdripLongKey.RunningModeLastSyncedId, 0)
                 startId = 0
             }
             queueCounter.oesRemaining = lastDbId - startId
             progress = "$startId/$lastDbId"
-            persistenceLayer.getNextSyncElementOfflineEvent(startId).blockingGet()?.let { oe ->
-                aapsLogger.info(LTag.XDRIP, "Loading OfflineEvent data Start: $startId ${oe.first} forID: ${oe.second.id} ")
-                if (!isOld(oe.first.timestamp))
-                    preparedTreatments.add(DataSyncSelector.PairOfflineEvent(oe.first, oe.second.id))
+            persistenceLayer.getNextSyncElementRunningMode(startId).blockingGet()?.let { rm ->
+                aapsLogger.info(LTag.XDRIP, "Loading RunningMode data Start: $startId ${rm.first} forID: ${rm.second.id} ")
+                if (!isOld(rm.first.timestamp))
+                    preparedTreatments.add(DataSyncSelector.PairRunningMode(rm.first, rm.second.id))
                 sendTreatments(force = false, progress)
-                confirmLastOfflineEventIdIfGreater(oe.second.id)
+                confirmLastRunningModeIdIfGreater(rm.second.id)
             } ?: break
         }
         sendTreatments(force = true, progress)

@@ -25,6 +25,7 @@ import androidx.core.text.toSpanned
 import androidx.recyclerview.widget.LinearLayoutManager
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
@@ -512,7 +513,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
 
             R.id.temp_target         -> v.performClick()
             R.id.active_profile      -> activity?.let { activity ->
-                if (loop.isDisconnected) OKDialog.show(activity, rh.gs(R.string.not_available_full), rh.gs(R.string.smscommunicator_pump_disconnected))
+                if (loop.runningMode == RM.Mode.DISCONNECTED_PUMP) OKDialog.show(activity, rh.gs(R.string.not_available_full), rh.gs(R.string.smscommunicator_pump_disconnected))
                 else
                     protectionCheck.queryProtection(
                         activity,
@@ -559,7 +560,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         val quickWizardEntry = quickWizard.getActive()
         runOnUiThread {
             _binding ?: return@runOnUiThread
-            if (quickWizardEntry != null && lastBG != null && profile != null && pump.isInitialized() && !pump.isSuspended() && !loop.isDisconnected) {
+            if (quickWizardEntry != null && lastBG != null && profile != null && pump.isInitialized() && !loop.runningMode.isSuspended()) {
                 binding.buttonsLayout.quickWizardButton.visibility = View.VISIBLE
                 val wizard = quickWizardEntry.doCalc(profile, profileName, lastBG)
                 binding.buttonsLayout.quickWizardButton.text = quickWizardEntry.buttonText() + "\n" + rh.gs(app.aaps.core.objects.R.string.format_carbs, quickWizardEntry.carbs()) +
@@ -579,7 +580,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
 
         runOnUiThread {
             _binding ?: return@runOnUiThread
-            if (showAcceptButton && pump.isInitialized() && !pump.isSuspended() && (loop as PluginBase).isEnabled()) {
+            if (showAcceptButton && pump.isInitialized() && !loop.runningMode.isSuspended() && (loop as PluginBase).isEnabled()) {
                 binding.buttonsLayout.acceptTempButton.visibility = View.VISIBLE
                 binding.buttonsLayout.acceptTempButton.text = "${rh.gs(R.string.set_basal_question)}\n${lastRun.constraintsProcessed?.resultAsString()}"
             } else {
@@ -589,12 +590,12 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
             // **** Various treatment buttons ****
             binding.buttonsLayout.carbsButton.visibility =
                 (profile != null && preferences.get(BooleanKey.OverviewShowCarbsButton)).toVisibility()
-            binding.buttonsLayout.treatmentButton.visibility = (!loop.isDisconnected && pump.isInitialized() && !pump.isSuspended() && profile != null
+            binding.buttonsLayout.treatmentButton.visibility = (!loop.runningMode.isSuspended() && pump.isInitialized() && profile != null
                 && preferences.get(BooleanKey.OverviewShowTreatmentButton)).toVisibility()
-            binding.buttonsLayout.wizardButton.visibility = (!loop.isDisconnected && pump.isInitialized() && !pump.isSuspended() && profile != null
+            binding.buttonsLayout.wizardButton.visibility = (!loop.runningMode.isSuspended() && pump.isInitialized() && profile != null
                 && preferences.get(BooleanKey.OverviewShowWizardButton)).toVisibility()
             binding.buttonsLayout.insulinButton.visibility = (profile != null && preferences.get(BooleanKey.OverviewShowInsulinButton)).toVisibility()
-            if (loop.isDisconnected || !pump.isInitialized() || pump.isSuspended()) {
+            if (loop.runningMode.isSuspended() || !pump.isInitialized()) {
                 setRibbon(
                     binding.buttonsLayout.insulinButton,
                     app.aaps.core.ui.R.attr.ribbonTextWarningColor,
@@ -634,7 +635,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
             // Automation buttons
             binding.buttonsLayout.userButtonsLayout.removeAllViews()
             val events = automation.userEvents()
-            if (!loop.isDisconnected && pump.isInitialized() && !pump.isSuspended() && profile != null && !config.showUserActionsOnWatchOnly())
+            if (!loop.runningMode.isSuspended() && pump.isInitialized() && profile != null && !config.showUserActionsOnWatchOnly())
                 for (event in events)
                     if (event.isEnabled && event.canRun()) {
                         context?.let { context ->
@@ -678,83 +679,74 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         val pump = activePlugin.activePump
 
         // aps mode
-        val closedLoopEnabled = constraintChecker.isClosedLoopAllowed()
-
         fun apsModeSetA11yLabel(stringRes: Int) {
             binding.infoLayout.apsMode.stateDescription = rh.gs(stringRes)
         }
 
         runOnUiThread {
             _binding ?: return@runOnUiThread
-            if (config.APS && pump.pumpDescription.isTempBasalCapable) {
+            if (pump.pumpDescription.isTempBasalCapable) {
                 binding.infoLayout.apsMode.visibility = View.VISIBLE
-                binding.infoLayout.timeLayout.visibility = View.GONE
-                when {
-                    (loop as PluginBase).isEnabled() && loop.isSuperBolus                       -> {
+                binding.infoLayout.apsModeText.visibility = View.VISIBLE
+                when (loop.runningMode) {
+                    RM.Mode.SUPER_BOLUS       -> {
                         binding.infoLayout.apsMode.setImageResource(R.drawable.ic_loop_superbolus)
                         apsModeSetA11yLabel(app.aaps.core.ui.R.string.superbolus)
                         binding.infoLayout.apsModeText.text = dateUtil.age(loop.minutesToEndOfSuspend() * 60000L, true, rh)
                         binding.infoLayout.apsModeText.visibility = View.VISIBLE
                     }
 
-                    loop.isDisconnected                                                         -> {
+                    RM.Mode.DISCONNECTED_PUMP -> {
                         binding.infoLayout.apsMode.setImageResource(app.aaps.core.ui.R.drawable.ic_loop_disconnected)
                         apsModeSetA11yLabel(app.aaps.core.ui.R.string.disconnected)
                         binding.infoLayout.apsModeText.text = dateUtil.age(loop.minutesToEndOfSuspend() * 60000L, true, rh)
                         binding.infoLayout.apsModeText.visibility = View.VISIBLE
                     }
 
-                    (loop as PluginBase).isEnabled() && loop.isSuspended                        -> {
+                    RM.Mode.SUSPENDED_BY_PUMP -> {
                         binding.infoLayout.apsMode.setImageResource(app.aaps.core.ui.R.drawable.ic_loop_paused)
-                        apsModeSetA11yLabel(app.aaps.core.ui.R.string.suspendloop_label)
+                        apsModeSetA11yLabel(app.aaps.core.ui.R.string.pumpsuspended)
+                        binding.infoLayout.apsModeText.text = rh.gs(app.aaps.core.ui.R.string.pumpsuspended)
+                        binding.infoLayout.apsModeText.visibility = View.GONE
+                    }
+
+                    RM.Mode.SUSPENDED_BY_USER -> {
+                        binding.infoLayout.apsMode.setImageResource(app.aaps.core.ui.R.drawable.ic_loop_paused)
+                        apsModeSetA11yLabel(app.aaps.core.ui.R.string.loopsuspended)
                         binding.infoLayout.apsModeText.text = dateUtil.age(loop.minutesToEndOfSuspend() * 60000L, true, rh)
                         binding.infoLayout.apsModeText.visibility = View.VISIBLE
                     }
 
-                    pump.isSuspended()                                                          -> {
-                        binding.infoLayout.apsMode.setImageResource(
-                            if (pump.model() == PumpType.OMNIPOD_EROS || pump.model() == PumpType.OMNIPOD_DASH) {
-                                // For Omnipod, indicate the pump as disconnected when it's suspended.
-                                // The only way to 'reconnect' it, is through the Omnipod tab
-                                apsModeSetA11yLabel(app.aaps.core.ui.R.string.disconnected)
-                                app.aaps.core.ui.R.drawable.ic_loop_disconnected
-                            } else {
-                                apsModeSetA11yLabel(app.aaps.core.ui.R.string.pump_paused)
-                                app.aaps.core.ui.R.drawable.ic_loop_paused
-                            }
-                        )
-                        binding.infoLayout.apsModeText.visibility = View.GONE
-                    }
-
-                    (loop as PluginBase).isEnabled() && closedLoopEnabled.value() && loop.isLGS -> {
+                    RM.Mode.CLOSED_LOOP_LGS   -> {
                         binding.infoLayout.apsMode.setImageResource(app.aaps.core.ui.R.drawable.ic_loop_lgs)
                         apsModeSetA11yLabel(app.aaps.core.ui.R.string.uel_lgs_loop_mode)
                         binding.infoLayout.apsModeText.visibility = View.GONE
                     }
 
-                    (loop as PluginBase).isEnabled() && closedLoopEnabled.value()               -> {
+                    RM.Mode.CLOSED_LOOP       -> {
                         binding.infoLayout.apsMode.setImageResource(app.aaps.core.objects.R.drawable.ic_loop_closed)
                         apsModeSetA11yLabel(app.aaps.core.ui.R.string.closedloop)
                         binding.infoLayout.apsModeText.visibility = View.GONE
                     }
 
-                    (loop as PluginBase).isEnabled() && !closedLoopEnabled.value()              -> {
+                    RM.Mode.OPEN_LOOP         -> {
                         binding.infoLayout.apsMode.setImageResource(app.aaps.core.ui.R.drawable.ic_loop_open)
                         apsModeSetA11yLabel(app.aaps.core.ui.R.string.openloop)
                         binding.infoLayout.apsModeText.visibility = View.GONE
                     }
 
-                    else                                                                        -> {
+                    RM.Mode.DISABLED_LOOP     -> {
                         binding.infoLayout.apsMode.setImageResource(app.aaps.core.ui.R.drawable.ic_loop_disabled)
                         apsModeSetA11yLabel(R.string.disabled_loop)
                         binding.infoLayout.apsModeText.visibility = View.GONE
                     }
+
+                    RM.Mode.RESUME            -> error("Invalid mode")
                 }
             } else {
-                //nsclient
+                // loop not supported by pump, hide aps mode
                 binding.infoLayout.apsMode.visibility = View.GONE
                 binding.infoLayout.apsModeText.visibility = View.GONE
-                binding.infoLayout.timeLayout.visibility = View.VISIBLE
             }
 
             // pump status from ns
@@ -863,7 +855,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
 
             binding.infoLayout.timeAgo.text = dateUtil.minAgo(rh, lastBg?.timestamp)
             binding.infoLayout.timeAgo.contentDescription = dateUtil.minAgoLong(rh, lastBg?.timestamp)
-            binding.infoLayout.timeAgoShort.text = "(" + dateUtil.minAgoShort(lastBg?.timestamp) + ")"
+            binding.infoLayout.timeAgoShort.text = dateUtil.minAgoShort(lastBg?.timestamp)
 
             val qualityIcon = bgQualityCheck.icon()
             if (qualityIcon != 0) {
@@ -1074,6 +1066,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         if ((pump.pumpDescription.isTempBasalCapable || config.AAPSCLIENT) && menuChartSettings[0][OverviewMenus.CharType.BAS.ordinal])
             graphData.addBasals()
         graphData.addTargetLine()
+        graphData.addRunningModes()
         graphData.addNowLine(dateUtil.now())
 
         // set manual x bounds to have nice steps

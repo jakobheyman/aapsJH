@@ -37,7 +37,6 @@ enum class StringKey(
     OverviewCopySettingsFromNs(key = "statuslights_copy_ns", "", dependency = BooleanKey.OverviewShowStatusLights),
 
     SafetyAge("age", "adult"),
-    LoopApsMode("aps_mode", "OPEN" /* ApsMode.OPEN.name */),
     MaintenanceEmail("maintenance_logs_email", "logs@aaps.app", defaultedBySM = true),
     MaintenanceIdentification("email_for_crash_report", ""),
     AutomationLocation("location", "PASSIVE", hideParentScreenIfHidden = true),

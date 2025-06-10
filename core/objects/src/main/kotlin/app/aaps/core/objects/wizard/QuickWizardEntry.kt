@@ -2,6 +2,7 @@ package app.aaps.core.objects.wizard
 
 import app.aaps.annotations.OpenForTesting
 import app.aaps.core.data.iob.InMemoryGlucoseValue
+import app.aaps.core.data.model.RM
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
@@ -134,7 +135,7 @@ class QuickWizardEntry @Inject constructor(private val injector: HasAndroidInjec
         if (useSuperBolus() == YES && preferences.get(BooleanKey.OverviewUseSuperBolus)) {
             superBolus = true
         }
-        if (loop.isEnabled() && loop.isSuperBolus) superBolus = false
+        if (loop.runningMode == RM.Mode.SUPER_BOLUS) superBolus = false
         // Trend
         val glucoseStatus = glucoseStatusProvider.glucoseStatusData
         var trend = false

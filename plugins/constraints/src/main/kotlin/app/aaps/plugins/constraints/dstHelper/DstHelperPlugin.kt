@@ -66,7 +66,7 @@ class DstHelperPlugin @Inject constructor(
             return value
         }
         if (wasDST(cal)) {
-            if (!loop.isSuspended) {
+            if (!loop.runningMode.isSuspended()) {
                 val snoozedTo: Long = preferences.get(DstHelperLongKey.SnoozeLoopDisabled)
                 if (snoozedTo == 0L || System.currentTimeMillis() > snoozedTo) {
                     uiInteraction.addNotification(

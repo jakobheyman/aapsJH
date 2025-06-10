@@ -219,7 +219,7 @@ class OpenHumansUploaderPlugin @Inject internal constructor(
                 extendedBoluses.isNotEmpty() ||
                 glucoseValues.isNotEmpty() ||
 //                multiwaveBolusLinks.isNotEmpty() ||
-                offlineEvents.isNotEmpty() ||
+                runningModes.isNotEmpty() ||
 //                preferencesChanges.isNotEmpty() ||
                 profileSwitches.isNotEmpty() ||
                 temporaryBasals.isNotEmpty() ||
@@ -428,14 +428,14 @@ class OpenHumansUploaderPlugin @Inject internal constructor(
                 }
         */
 
-        if (data.offlineEvents.isNotEmpty()) {
-            zos.writeDBEntryFile("OfflineEvents.json", data.offlineEvents) {
+        if (data.runningModes.isNotEmpty()) {
+            zos.writeDBEntryFile("RunningModes.json", data.runningModes) {
                 put("timestamp", it.timestamp)
                 put("utcOffset", it.utcOffset)
-                put("reason", it.reason.toString())
+                put("mode", it.mode.toString())
                 put("duration", it.duration)
             }
-            tags.add("OfflineEvents")
+            tags.add("RunningModes")
         }
 
         /*

@@ -17,7 +17,6 @@ import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.Event
 import app.aaps.core.interfaces.rx.events.EventNewNotification
 import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
-import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.equil.EquilConst
 import app.aaps.pump.equil.R
@@ -42,7 +41,6 @@ import app.aaps.pump.equil.events.EventEquilDataChanged
 import app.aaps.pump.equil.events.EventEquilInsulinChanged
 import app.aaps.pump.equil.events.EventEquilModeChanged
 import app.aaps.pump.equil.keys.EquilStringKey
-import app.aaps.pump.equil.manager.EquilManager.EquilState
 import app.aaps.pump.equil.manager.Utils.bytesToInt
 import app.aaps.pump.equil.manager.Utils.internalDecodeSpeedToUH
 import app.aaps.pump.equil.manager.command.BaseCmd
@@ -66,9 +64,7 @@ import org.apache.commons.lang3.StringUtils
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import org.joda.time.format.ISODateTimeFormat
-import java.lang.Exception
 import java.lang.reflect.Type
-import java.util.ArrayList
 import java.util.Arrays
 import java.util.Calendar
 import java.util.Optional
@@ -259,11 +255,7 @@ class EquilManager @Inject constructor(
 
     fun bolus(detailedBolusInfo: DetailedBolusInfo, bolusProfile: BolusProfile): PumpEnactResult {
         val progressUpdateEvent = EventOverviewBolusProgress
-        progressUpdateEvent.t = EventOverviewBolusProgress.Treatment(
-            HardLimits.MAX_IOB_LGS, 0,
-            detailedBolusInfo.bolusType ==
-                BS.Type.SMB, detailedBolusInfo.id
-        )
+        progressUpdateEvent.t = EventOverviewBolusProgress.Treatment(0.0, 0, detailedBolusInfo.bolusType == BS.Type.SMB, detailedBolusInfo.id)
         val result = instantiator.providePumpEnactResult()
         try {
             val command = CmdLargeBasalSet(detailedBolusInfo.insulin, aapsLogger, preferences, this)

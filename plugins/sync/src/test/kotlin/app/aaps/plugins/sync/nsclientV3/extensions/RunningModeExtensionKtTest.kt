@@ -1,7 +1,7 @@
 package app.aaps.plugins.sync.nsclientV3.extensions
 
 import app.aaps.core.data.model.IDs
-import app.aaps.core.data.model.OE
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.nssdk.localmodel.treatment.NSOfflineEvent
 import app.aaps.core.nssdk.mapper.convertToRemoteAndBack
@@ -10,14 +10,14 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 
 @Suppress("SpellCheckingInspection")
-internal class OfflineEventExtensionKtTest {
+internal class RunningModeExtensionKtTest {
 
     @Test
     fun toOfflineEvent() {
-        var offlineEvent = OE(
+        var runningMode = RM(
             timestamp = 10000,
             isValid = true,
-            reason = OE.Reason.DISCONNECT_PUMP,
+            mode = RM.Mode.DISCONNECTED_PUMP,
             duration = 30000,
             ids = IDs(
                 nightscoutId = "nightscoutId",
@@ -27,14 +27,14 @@ internal class OfflineEventExtensionKtTest {
             )
         )
 
-        var offlineEvent2 = (offlineEvent.toNSOfflineEvent().convertToRemoteAndBack() as NSOfflineEvent).toOfflineEvent()
-        assertThat(offlineEvent.contentEqualsTo(offlineEvent2)).isTrue()
-        assertThat(offlineEvent.ids.contentEqualsTo(offlineEvent2.ids)).isTrue()
+        var runningMode2 = (runningMode.toNSOfflineEvent().convertToRemoteAndBack() as NSOfflineEvent).toRunningMode()
+        assertThat(runningMode.contentEqualsTo(runningMode2)).isTrue()
+        assertThat(runningMode.ids.contentEqualsTo(runningMode2.ids)).isTrue()
 
-        offlineEvent = OE(
+        runningMode = RM(
             timestamp = 10000,
             isValid = true,
-            reason = OE.Reason.SUSPEND,
+            mode = RM.Mode.SUSPENDED_BY_USER,
             duration = 3600000,
             ids = IDs(
                 nightscoutId = "nightscoutId",
@@ -44,14 +44,14 @@ internal class OfflineEventExtensionKtTest {
             )
         )
 
-        offlineEvent2 = (offlineEvent.toNSOfflineEvent().convertToRemoteAndBack() as NSOfflineEvent).toOfflineEvent()
-        assertThat(offlineEvent.contentEqualsTo(offlineEvent2)).isTrue()
-        assertThat(offlineEvent.ids.contentEqualsTo(offlineEvent2.ids)).isTrue()
+        runningMode2 = (runningMode.toNSOfflineEvent().convertToRemoteAndBack() as NSOfflineEvent).toRunningMode()
+        assertThat(runningMode.contentEqualsTo(runningMode2)).isTrue()
+        assertThat(runningMode.ids.contentEqualsTo(runningMode2.ids)).isTrue()
 
-        offlineEvent = OE(
+        runningMode = RM(
             timestamp = 10000,
             isValid = true,
-            reason = OE.Reason.DISABLE_LOOP,
+            mode = RM.Mode.DISABLED_LOOP,
             duration = 0,
             ids = IDs(
                 nightscoutId = "nightscoutId",
@@ -61,8 +61,8 @@ internal class OfflineEventExtensionKtTest {
             )
         )
 
-        offlineEvent2 = (offlineEvent.toNSOfflineEvent().convertToRemoteAndBack() as NSOfflineEvent).toOfflineEvent()
-        assertThat(offlineEvent.contentEqualsTo(offlineEvent2)).isTrue()
-        assertThat(offlineEvent.ids.contentEqualsTo(offlineEvent2.ids)).isTrue()
+        runningMode2 = (runningMode.toNSOfflineEvent().convertToRemoteAndBack() as NSOfflineEvent).toRunningMode()
+        assertThat(runningMode.contentEqualsTo(runningMode2)).isTrue()
+        assertThat(runningMode.ids.contentEqualsTo(runningMode2.ids)).isTrue()
     }
 }

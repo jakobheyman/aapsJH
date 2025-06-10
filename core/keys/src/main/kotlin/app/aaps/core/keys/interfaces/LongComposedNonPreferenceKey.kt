@@ -25,9 +25,4 @@ interface LongComposedNonPreferenceKey : NonPreferenceKey, ComposedKey {
      * Default value
      */
     val defaultValue: Long
-
-    /**
-     * Compose final key from arguments
-     */
-    fun composeKey(vararg arguments: Any): String = String.format(Locale.ENGLISH, key + format, *arguments)
 }

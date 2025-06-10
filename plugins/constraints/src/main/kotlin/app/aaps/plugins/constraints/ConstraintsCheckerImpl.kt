@@ -41,14 +41,14 @@ class ConstraintsCheckerImpl @Inject constructor(
         return value
     }
 
-    override fun isLgsAllowed(): Constraint<Boolean> = isLgsAllowed(ConstraintObject(true, aapsLogger))
+    override fun isLgsForced(): Constraint<Boolean> = isLgsForced(ConstraintObject(false, aapsLogger))
 
-    override fun isLgsAllowed(value: Constraint<Boolean>): Constraint<Boolean> {
+    override fun isLgsForced(value: Constraint<Boolean>): Constraint<Boolean> {
         val constraintsPlugins = activePlugin.getSpecificPluginsListByInterface(PluginConstraints::class.java)
         for (p in constraintsPlugins) {
             val constraint = p as PluginConstraints
             if (!p.isEnabled()) continue
-            constraint.isLgsAllowed(value)
+            constraint.isLgsForced(value)
         }
         return value
     }

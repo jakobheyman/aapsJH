@@ -107,6 +107,10 @@ import kotlin.math.max
         addSeries(overviewData.temporaryTargetSeries as LineGraphSeries<DataPoint>)
     }
 
+    fun addRunningModes() {
+        addSeries(overviewData.runningModesSeries as PointsWithLabelGraphSeries<DataPoint>)
+    }
+
     fun addTreatments(context: Context?) {
         maxY = maxOf(maxY, overviewData.maxTreatmentsValue)
         addSeries(overviewData.treatmentsSeries as PointsWithLabelGraphSeries<DataPointWithLabelInterface>)

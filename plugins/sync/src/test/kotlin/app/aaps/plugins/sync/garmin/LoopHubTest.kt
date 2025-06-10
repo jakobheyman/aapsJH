@@ -6,7 +6,7 @@ import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.HR
 import app.aaps.core.data.model.ICfg
-import app.aaps.core.data.model.OE
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TB
 import app.aaps.core.data.model.TE
@@ -167,9 +167,9 @@ class LoopHubTest : TestBase() {
 
     @Test
     fun testIsConnected() {
-        whenever(loop.isDisconnected).thenReturn(false)
+        whenever(loop.runningMode).thenReturn(RM.Mode.CLOSED_LOOP)
         assertEquals(true, loopHub.isConnected)
-        verify(loop, times(1)).isDisconnected
+        verify(loop, times(1)).runningMode
     }
 
     private fun effectiveProfileSwitch(duration: Long) = EPS(
@@ -243,9 +243,9 @@ class LoopHubTest : TestBase() {
 
     @Test
     fun testConnectPump() {
-        whenever(persistenceLayer.cancelCurrentOfflineEvent(clock.millis(), Action.RECONNECT, Sources.Garmin)).thenReturn(Single.just(PersistenceLayer.TransactionResult()))
+        whenever(persistenceLayer.cancelCurrentRunningMode(clock.millis(), Action.RECONNECT, Sources.Garmin)).thenReturn(Single.just(PersistenceLayer.TransactionResult()))
         loopHub.connectPump()
-        verify(persistenceLayer).cancelCurrentOfflineEvent(clock.millis(), Action.RECONNECT, Sources.Garmin)
+        verify(persistenceLayer).cancelCurrentRunningMode(clock.millis(), Action.RECONNECT, Sources.Garmin)
         verify(commandQueue).cancelTempBasal(true, null)
     }
 
@@ -255,10 +255,9 @@ class LoopHubTest : TestBase() {
         whenever(profileFunction.getProfile()).thenReturn(profile)
         loopHub.disconnectPump(23)
         verify(profileFunction).getProfile()
-        verify(loop).goToZeroTemp(
-            23, profile, OE.Reason.DISCONNECT_PUMP, Action.DISCONNECT,
-            Sources.Garmin,
-            listOf(ValueWithUnit.Minute(23))
+        verify(loop).handleRunningModeChange(
+            durationInMinutes = 23, profile = profile, newRM = RM.Mode.DISCONNECTED_PUMP, action = Action.DISCONNECT,
+            source = Sources.Garmin, listValues = listOf(ValueWithUnit.Minute(23))
         )
     }
 

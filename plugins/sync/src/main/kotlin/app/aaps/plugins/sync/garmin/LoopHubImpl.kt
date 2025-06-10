@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.HR
-import app.aaps.core.data.model.OE
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
@@ -80,7 +80,7 @@ class LoopHubImpl @Inject constructor(
         get() = iobCobCalculator.getCobInfo("LoopHubImpl").displayCob
 
     /** Returns true if the pump is connected. */
-    override val isConnected: Boolean get() = !loop.isDisconnected
+    override val isConnected: Boolean get() = loop.runningMode != RM.Mode.DISCONNECTED_PUMP
 
     /** Returns true if the current profile is set of a limited amount of time. */
     override val isTemporaryProfile: Boolean
@@ -110,7 +110,7 @@ class LoopHubImpl @Inject constructor(
 
     /** Tells the loop algorithm that the pump is physically connected. */
     override fun connectPump() {
-        disposable += persistenceLayer.cancelCurrentOfflineEvent(clock.millis(), Action.RECONNECT, Sources.Garmin).subscribe()
+        disposable += persistenceLayer.cancelCurrentRunningMode(clock.millis(), Action.RECONNECT, Sources.Garmin).subscribe()
         commandQueue.cancelTempBasal(true, null)
     }
 
@@ -118,10 +118,10 @@ class LoopHubImpl @Inject constructor(
      *  for the given number of minutes. */
     override fun disconnectPump(minutes: Int) {
         currentProfile?.let { p ->
-            loop.goToZeroTemp(
+            loop.handleRunningModeChange(
                 durationInMinutes = minutes,
                 profile = p,
-                reason = OE.Reason.DISCONNECT_PUMP,
+                newRM = RM.Mode.DISCONNECTED_PUMP,
                 action = Action.DISCONNECT,
                 source = Sources.Garmin,
                 listValues = listOf(ValueWithUnit.Minute(minutes))

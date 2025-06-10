@@ -20,6 +20,6 @@ enum class XdripLongKey(
     ExtendedBolusLastSyncedId("xdrip_extended_bolus_last_synced_id", 0L),
     ProfileSwitchLastSyncedId("profile_switch_last_synced_id", 0L),
     EffectiveProfileSwitchLastSyncedId("xdrip_effective_profile_switch_last_synced_id", 0L),
-    OfflineEventLastSyncedId("xdrip_offline_event_last_synced_id", 0L),
+    RunningModeLastSyncedId("xdrip_running_mode_last_synced_id", 0L),
     ProfileStoreLastSyncedId("xdrip_profile_store_last_synced_timestamp", 0L),
 }

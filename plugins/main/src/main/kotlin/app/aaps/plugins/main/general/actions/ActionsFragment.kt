@@ -235,10 +235,9 @@ class ActionsFragment : DaggerFragment() {
             activePlugin.activeProfileSource.profile != null &&
                 pump.pumpDescription.isSetBasalProfileCapable &&
                 pump.isInitialized() &&
-                !pump.isSuspended() &&
-                !loop.isDisconnected).toVisibility()
+                loop.runningMode.isLoopRunning()).toVisibility()
 
-        if (!pump.pumpDescription.isExtendedBolusCapable || !pump.isInitialized() || pump.isSuspended() || loop.isDisconnected || pump.isFakingTempsByExtendedBoluses || config.AAPSCLIENT) {
+        if (!pump.pumpDescription.isExtendedBolusCapable || !pump.isInitialized()  || !loop.runningMode.isLoopRunning() || pump.isFakingTempsByExtendedBoluses || config.AAPSCLIENT) {
             binding.extendedBolus.visibility = View.GONE
             binding.extendedBolusCancel.visibility = View.GONE
         } else {
@@ -254,7 +253,7 @@ class ActionsFragment : DaggerFragment() {
             }
         }
 
-        if (!pump.pumpDescription.isTempBasalCapable || !pump.isInitialized() || pump.isSuspended() || loop.isDisconnected || config.AAPSCLIENT) {
+        if (!pump.pumpDescription.isTempBasalCapable || !pump.isInitialized() || !loop.runningMode.isLoopRunning() || config.AAPSCLIENT) {
             binding.setTempBasal.visibility = View.GONE
             binding.cancelTempBasal.visibility = View.GONE
         } else {
@@ -271,9 +270,9 @@ class ActionsFragment : DaggerFragment() {
         }
         val activeBgSource = activePlugin.activeBgSource
         binding.historyBrowser.visibility = (profile != null).toVisibility()
-        binding.fill.visibility = (pump.pumpDescription.isRefillingCapable && pump.isInitialized() && !pump.isSuspended()).toVisibility()
+        binding.fill.visibility = (pump.pumpDescription.isRefillingCapable && pump.isInitialized() && !loop.runningMode.isSuspended()).toVisibility()
         binding.pumpBatteryChange.visibility = (pump.pumpDescription.isBatteryReplaceable || pump.isBatteryChangeLoggingEnabled()).toVisibility()
-        binding.tempTarget.visibility = (profile != null && !loop.isDisconnected).toVisibility()
+        binding.tempTarget.visibility = (profile != null && !loop.runningMode.isLoopRunning()).toVisibility()
         binding.tddStats.visibility = pump.pumpDescription.supportsTDDs.toVisibility()
         val isPatchPump = pump.pumpDescription.isPatchPump
         binding.status.apply {

@@ -246,7 +246,7 @@ class XdripPlugin @Inject constructor(
 
     private fun buildStatusLine(profile: Profile): String {
         val status = StringBuilder()
-        if (!loop.isEnabled() && config.APS)
+        if (!loop.runningMode.isLoopRunning() && config.APS)
             status.append(rh.gs(R.string.disabled_loop)).append("\n")
 
         //Temp basal
@@ -384,7 +384,7 @@ class XdripPlugin @Inject constructor(
 
                 is DataSyncSelector.PairProfileSwitch          -> dataPair.value.toJson(true, dateUtil, decimalFormatter)
                 is DataSyncSelector.PairEffectiveProfileSwitch -> dataPair.value.toJson(true, dateUtil)
-                is DataSyncSelector.PairOfflineEvent           -> dataPair.value.toJson(true, dateUtil)
+                is DataSyncSelector.PairRunningMode            -> dataPair.value.toJson(true, dateUtil)
                 else                                           -> null
             }?.let {
                 array.put(it)

@@ -51,6 +51,7 @@ import app.aaps.core.validators.preferences.AdaptiveListPreference
 import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
 import app.aaps.pump.virtual.events.EventVirtualPumpUpdateGui
 import app.aaps.pump.virtual.extensions.toText
+import app.aaps.pump.virtual.keys.VirtualBooleanNonPreferenceKey
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import org.json.JSONException
@@ -86,7 +87,7 @@ open class VirtualPumpPlugin @Inject constructor(
         .description(R.string.description_pump_virtual)
         .setDefault()
         .neverVisible(config.AAPSCLIENT),
-    ownPreferences = emptyList(),
+    ownPreferences = listOf(VirtualBooleanNonPreferenceKey::class.java),
     aapsLogger, rh, preferences, commandQueue
 ), Pump, VirtualPump {
 
@@ -143,7 +144,7 @@ open class VirtualPumpPlugin @Inject constructor(
     }
 
     override fun isInitialized(): Boolean = true
-    override fun isSuspended(): Boolean = false
+    override fun isSuspended(): Boolean = preferences.get(VirtualBooleanNonPreferenceKey.IsSuspended)
     override fun isBusy(): Boolean = false
     override fun isConnected(): Boolean = true
     override fun isConnecting(): Boolean = false

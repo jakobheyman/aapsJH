@@ -17,12 +17,13 @@ interface CalculationWorkflow {
         DRAW_BG(0, 1),
         PREPARE_TREATMENTS_DATA(1, 2),
         PREPARE_BASAL_DATA(2, 6),
-        PREPARE_TEMPORARY_TARGET_DATA(3, 6),
-        DRAW_TT(4, 1),
-        IOB_COB_OREF(5, 77),
-        PREPARE_IOB_AUTOSENS_DATA(6, 5),
-        DRAW_IOB(7, 1),
-        DRAW_FINAL(8, 1);
+        PREPARE_TEMPORARY_TARGET_DATA(3, 5),
+        PREPARE_RUNNING_MODE_DATA(4, 1),
+        DRAW_TT(5, 1),
+        IOB_COB_OREF(6, 77),
+        PREPARE_IOB_AUTOSENS_DATA(7, 5),
+        DRAW_IOB(8, 1),
+        DRAW_FINAL(9, 1);
 
         fun finalPercent(progress: Int): Int {
             var total = 0

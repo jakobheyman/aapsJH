@@ -205,7 +205,7 @@ class NSClientPlugin @Inject constructor(
             is DataSyncSelector.PairExtendedBolus          -> dataPair.value.toJson(true, profile, dateUtil)
             is DataSyncSelector.PairProfileSwitch          -> dataPair.value.toJson(true, dateUtil, decimalFormatter)
             is DataSyncSelector.PairEffectiveProfileSwitch -> dataPair.value.toJson(true, dateUtil)
-            is DataSyncSelector.PairOfflineEvent           -> dataPair.value.toJson(true, dateUtil)
+            is DataSyncSelector.PairRunningMode -> dataPair.value.toJson(true, dateUtil)
             is DataSyncSelector.PairProfileStore           -> dataPair.value
             else                                           -> null
         }?.let { data ->
@@ -227,7 +227,7 @@ class NSClientPlugin @Inject constructor(
             is DataSyncSelector.PairExtendedBolus          -> dataPair.value.ids.nightscoutId
             is DataSyncSelector.PairProfileSwitch          -> dataPair.value.ids.nightscoutId
             is DataSyncSelector.PairEffectiveProfileSwitch -> dataPair.value.ids.nightscoutId
-            is DataSyncSelector.PairOfflineEvent           -> dataPair.value.ids.nightscoutId
+            is DataSyncSelector.PairRunningMode            -> dataPair.value.ids.nightscoutId
             else                                           -> error("Unsupported data type")
         }
         when (dataPair) {
@@ -242,7 +242,7 @@ class NSClientPlugin @Inject constructor(
             is DataSyncSelector.PairExtendedBolus          -> dataPair.value.toJson(false, profile, dateUtil)
             is DataSyncSelector.PairProfileSwitch          -> dataPair.value.toJson(false, dateUtil, decimalFormatter)
             is DataSyncSelector.PairEffectiveProfileSwitch -> dataPair.value.toJson(false, dateUtil)
-            is DataSyncSelector.PairOfflineEvent           -> dataPair.value.toJson(false, dateUtil)
+            is DataSyncSelector.PairRunningMode            -> dataPair.value.toJson(false, dateUtil)
             else                                           -> null
         }?.let { data ->
             nsClientService?.dbUpdate(collection, id, data, dataPair, progress)
@@ -282,7 +282,7 @@ class NSClientPlugin @Inject constructor(
                 addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptInsulin, summary = R.string.ns_receive_insulin_summary, title = R.string.ns_receive_insulin))
                 addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptCarbs, summary = R.string.ns_receive_carbs_summary, title = R.string.ns_receive_carbs))
                 addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptTherapyEvent, summary = R.string.ns_receive_therapy_events_summary, title = R.string.ns_receive_therapy_events))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptOfflineEvent, summary = R.string.ns_receive_offline_event_summary, title = R.string.ns_receive_offline_event))
+                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptRunningMode, summary = R.string.ns_receive_running_mode_summary, title = R.string.ns_receive_running_mode))
                 addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptTbrEb, summary = R.string.ns_receive_tbr_eb_summary, title = R.string.ns_receive_tbr_eb))
             })
             addPreference(preferenceManager.createPreferenceScreen(context).apply {

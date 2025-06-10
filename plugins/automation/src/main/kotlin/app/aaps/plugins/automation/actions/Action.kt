@@ -62,7 +62,7 @@ abstract class Action(val injector: HasAndroidInjector) {
                 ActionCarePortalEvent::class.java.simpleName      -> ActionCarePortalEvent(injector).fromJSON(data.toString())
                 ActionDummy::class.java.simpleName                -> ActionDummy(injector).fromJSON(data.toString())
                 ActionLoopDisable::class.java.simpleName          -> ActionLoopDisable(injector).fromJSON(data.toString())
-                ActionLoopEnable::class.java.simpleName           -> ActionLoopEnable(injector).fromJSON(data.toString())
+                ActionLoopClosed::class.java.simpleName           -> ActionLoopClosed(injector).fromJSON(data.toString())
                 ActionLoopResume::class.java.simpleName           -> ActionLoopResume(injector).fromJSON(data.toString())
                 ActionLoopSuspend::class.java.simpleName          -> ActionLoopSuspend(injector).fromJSON(data.toString())
                 ActionNotification::class.java.simpleName         -> ActionNotification(injector).fromJSON(data.toString())

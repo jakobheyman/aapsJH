@@ -322,6 +322,7 @@ class HistoryBrowseActivity : TranslatedDaggerAppCompatActivity() {
         if (pump.pumpDescription.isTempBasalCapable && menuChartSettings[0][OverviewMenus.CharType.BAS.ordinal])
             graphData.addBasals()
         graphData.addTargetLine()
+        graphData.addRunningModes()
         graphData.addNowLine(dateUtil.now())
 
         // set manual x bounds to have nice steps

@@ -100,6 +100,11 @@ class CalculationWorkflowImpl @Inject constructor(
                     .build()
             )
             .then(
+                OneTimeWorkRequest.Builder(PrepareRunningModeDataWorker::class.java)
+                    .setInputData(dataWorkerStorage.storeInputData(PrepareRunningModeDataWorker.PrepareRunningModeData(overviewData)))
+                    .build()
+            )
+            .then(
                 OneTimeWorkRequest.Builder(UpdateGraphWorker::class.java)
                     .setInputData(Data.Builder().putString(JOB, job).putInt(PASS, CalculationWorkflow.ProgressData.DRAW_TT.pass).build())
                     .build()

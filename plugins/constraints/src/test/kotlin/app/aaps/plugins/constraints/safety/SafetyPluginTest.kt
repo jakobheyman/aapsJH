@@ -1,17 +1,16 @@
 package app.aaps.plugins.constraints.safety
 
-import app.aaps.core.data.aps.ApsMode
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.pump.defs.PumpDescription
+import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.bgQualityCheck.BgQualityCheck
-import app.aaps.core.interfaces.constraints.Constraint
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.profiling.Profiler
 import app.aaps.core.interfaces.stats.TddCalculator
 import app.aaps.core.interfaces.ui.UiInteraction
-import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.IntKey
@@ -43,6 +42,7 @@ class SafetyPluginTest : TestBaseWithProfile() {
     @Mock lateinit var tddCalculator: TddCalculator
     @Mock lateinit var determineBasalAMA: DetermineBasalAMA
     @Mock lateinit var determineBasalSMB: DetermineBasalSMB
+    @Mock lateinit var loop: Loop
 
     private lateinit var safetyPlugin: SafetyPlugin
     private lateinit var openAPSAMAPlugin: OpenAPSAMAPlugin
@@ -66,7 +66,6 @@ class SafetyPluginTest : TestBaseWithProfile() {
         `when`(rh.gs(app.aaps.plugins.constraints.R.string.pumpisnottempbasalcapable)).thenReturn("Pump is not temp basal capable")
         `when`(rh.gs(app.aaps.plugins.aps.R.string.increasing_max_basal)).thenReturn("Increasing max basal value because setting is lower than your max basal in profile")
         `when`(rh.gs(app.aaps.plugins.aps.R.string.smb_disabled_in_preferences)).thenReturn("SMB disabled in preferences")
-        `when`(rh.gs(app.aaps.plugins.constraints.R.string.closedmodedisabledinpreferences)).thenReturn("Closed loop mode disabled in preferences")
         `when`(rh.gs(app.aaps.plugins.constraints.R.string.closed_loop_disabled_on_dev_branch)).thenReturn("Running dev version. Closed loop is disabled.")
         `when`(rh.gs(app.aaps.plugins.constraints.R.string.smbalwaysdisabled)).thenReturn("SMB always and after carbs disabled because active BG source doesn\\'t support advanced filtering")
         `when`(rh.gs(app.aaps.plugins.constraints.R.string.smbnotallowedinopenloopmode)).thenReturn("SMB not allowed in open loop mode")
@@ -99,18 +98,10 @@ class SafetyPluginTest : TestBaseWithProfile() {
 
     @Test
     fun disabledEngineeringModeShouldLimitClosedLoop() {
-        `when`(preferences.get(StringKey.LoopApsMode)).thenReturn(ApsMode.CLOSED.name)
+        `when`(loop.runningMode).thenReturn(RM.Mode.CLOSED_LOOP)
         `when`(config.isEngineeringModeOrRelease()).thenReturn(false)
         val c = safetyPlugin.isClosedLoopAllowed(ConstraintObject(true, aapsLogger))
         assertThat(c.getReasons()).contains("Running dev version. Closed loop is disabled.")
-        assertThat(c.value()).isFalse()
-    }
-
-    @Test
-    fun setOpenLoopInPreferencesShouldLimitClosedLoop() {
-        `when`(preferences.get(StringKey.LoopApsMode)).thenReturn(ApsMode.OPEN.name)
-        val c = safetyPlugin.isClosedLoopAllowed(ConstraintObject(true, aapsLogger))
-        assertThat(c.getReasons()).contains("Closed loop mode disabled in preferences")
         assertThat(c.value()).isFalse()
     }
 
@@ -270,20 +261,13 @@ Safety: Limiting max basal rate to 500.00 U/h because of pump limit
         openAPSSMBPlugin.setPluginEnabled(PluginType.APS, true)
         //`when`(openAPSSMBPlugin.isEnabled()).thenReturn(true)
         //`when`(openAPSAMAPlugin.isEnabled()).thenReturn(false)
-        `when`(preferences.get(StringKey.LoopApsMode)).thenReturn(ApsMode.LGS.name)
+        `when`(loop.runningMode).thenReturn(RM.Mode.CLOSED_LOOP_LGS)
         `when`(preferences.get(DoubleKey.ApsAmaMaxIob)).thenReturn(1.5)
         `when`(preferences.get(DoubleKey.ApsSmbMaxIob)).thenReturn(3.0)
         `when`(preferences.get(StringKey.SafetyAge)).thenReturn("teenage")
 
         // Apply all limits
-        var d: Constraint<Double> = ConstraintObject(Double.MAX_VALUE, aapsLogger)
-        d = safetyPlugin.applyMaxIOBConstraints(d)
-        assertThat(d.value()).isWithin(0.01).of(HardLimits.MAX_IOB_LGS)
-        assertThat(d.getReasons()).isEqualTo("Safety: Limiting IOB to 0.0 U because of Low Glucose Suspend")
-        assertThat(d.getMostLimitedReasons()).isEqualTo("Safety: Limiting IOB to 0.0 U because of Low Glucose Suspend")
-
-        // Apply all limits
-        d = ConstraintObject(Double.MAX_VALUE, aapsLogger)
+        var d = ConstraintObject(Double.MAX_VALUE, aapsLogger)
         val a = openAPSAMAPlugin.applyMaxIOBConstraints(d)
         assertThat(a.value()).isWithin(0.01).of(1.5)
         assertThat(d.getReasons()).isEqualTo("OpenAPSAMA: Limiting IOB to 1.5 U because of max value in preferences\nOpenAPSAMA: Limiting IOB to 5.0 U because of hard limit")

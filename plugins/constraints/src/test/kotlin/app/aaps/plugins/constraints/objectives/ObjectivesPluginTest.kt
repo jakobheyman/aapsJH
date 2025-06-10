@@ -39,7 +39,8 @@ class ObjectivesPluginTest : TestBase() {
         objectivesPlugin.onStart()
         `when`(rh.gs(R.string.objectivenotstarted, 9)).thenReturn("Objective 9 not started")
         `when`(rh.gs(R.string.objectivenotstarted, 8)).thenReturn("Objective 8 not started")
-        `when`(rh.gs(R.string.objectivenotstarted, 6)).thenReturn("Objective 6 not started")
+        `when`(rh.gs(R.string.objectivenotfinished, 6)).thenReturn("Objective 6 not finished")
+        `when`(rh.gs(R.string.objectivenotstarted, 7)).thenReturn("Objective 7 not started")
         `when`(rh.gs(R.string.objectivenotstarted, 1)).thenReturn("Objective 1 not started")
     }
 
@@ -51,10 +52,18 @@ class ObjectivesPluginTest : TestBase() {
         objectivesPlugin.objectives[Objectives.FIRST_OBJECTIVE].startedOn = dateUtil.now()
     }
 
+    @Test fun notStartedObjective5ShouldForceLgs() {
+        objectivesPlugin.objectives[Objectives.LGS_OBJECTIVE].startedOn = 1
+        objectivesPlugin.objectives[Objectives.LGS_OBJECTIVE].accomplishedOn = 0
+        val c = objectivesPlugin.isLgsForced(ConstraintObject(false, aapsLogger))
+        assertThat(c.getReasons()).contains("Objective 6 not finished")
+        assertThat(c.value()).isTrue()
+    }
+
     @Test fun notStartedObjective6ShouldLimitClosedLoop() {
-        objectivesPlugin.objectives[Objectives.MAXIOB_ZERO_CL_OBJECTIVE].startedOn = 0
+        objectivesPlugin.objectives[Objectives.CLOSED_LOOP_OBJECTIVE].startedOn = 0
         val c = objectivesPlugin.isClosedLoopAllowed(ConstraintObject(true, aapsLogger))
-        assertThat(c.getReasons()).contains("Objective 6 not started")
+        assertThat(c.getReasons()).contains("Objective 7 not started")
         assertThat(c.value()).isFalse()
     }
 

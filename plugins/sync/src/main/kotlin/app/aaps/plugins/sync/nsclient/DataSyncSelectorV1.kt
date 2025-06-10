@@ -53,7 +53,7 @@ class DataSyncSelectorV1 @Inject constructor(
         var ebsRemaining: Long = -1L,
         var pssRemaining: Long = -1L,
         var epssRemaining: Long = -1L,
-        var oesRemaining: Long = -1L
+        var rmsRemaining: Long = -1L
     ) {
 
         fun size(): Long =
@@ -69,7 +69,7 @@ class DataSyncSelectorV1 @Inject constructor(
                 ebsRemaining +
                 pssRemaining +
                 epssRemaining +
-                oesRemaining
+                rmsRemaining
     }
 
     private val queueCounter = QueueCounter()
@@ -104,7 +104,7 @@ class DataSyncSelectorV1 @Inject constructor(
             queueCounter.ebsRemaining = (persistenceLayer.getLastExtendedBolusId() ?: 0L) - preferences.get(NsclientLongKey.ExtendedBolusLastSyncedId)
             queueCounter.pssRemaining = (persistenceLayer.getLastProfileSwitchId() ?: 0L) - preferences.get(NsclientLongKey.ProfileSwitchLastSyncedId)
             queueCounter.epssRemaining = (persistenceLayer.getLastEffectiveProfileSwitchId() ?: 0L) - preferences.get(NsclientLongKey.EffectiveProfileSwitchLastSyncedId)
-            queueCounter.oesRemaining = (persistenceLayer.getLastOfflineEventId() ?: 0L) - preferences.get(NsclientLongKey.OfflineEventLastSyncedId)
+            queueCounter.rmsRemaining = (persistenceLayer.getLastRunningModeId() ?: 0L) - preferences.get(NsclientLongKey.RunningModeLastSyncedId)
             rxBus.send(EventNSClientUpdateGuiQueue())
             val boluses = scope.async { processChangedBoluses() }
             val carbs = scope.async { processChangedCarbs() }
@@ -118,7 +118,7 @@ class DataSyncSelectorV1 @Inject constructor(
             val foods = scope.async { processChangedFoods() }
             val tes = scope.async { processChangedTherapyEvents() }
             val dss = scope.async { processChangedDeviceStatuses() }
-            val oes = scope.async { processChangedOfflineEvents() }
+            val rms = scope.async { processChangedRunningModes() }
             val ps = scope.async { processChangedProfileStore() }
 
             boluses.await()
@@ -133,7 +133,7 @@ class DataSyncSelectorV1 @Inject constructor(
             foods.await()
             tes.await()
             dss.await()
-            oes.await()
+            rms.await()
             ps.await()
         }
         rxBus.send(EventNSClientUpdateGuiStatus())
@@ -152,7 +152,7 @@ class DataSyncSelectorV1 @Inject constructor(
         preferences.remove(NsclientLongKey.TherapyEventLastSyncedId)
         preferences.remove(NsclientLongKey.ProfileSwitchLastSyncedId)
         preferences.remove(NsclientLongKey.EffectiveProfileSwitchLastSyncedId)
-        preferences.remove(NsclientLongKey.OfflineEventLastSyncedId)
+        preferences.remove(NsclientLongKey.RunningModeLastSyncedId)
         preferences.remove(NsclientLongKey.ProfileStoreLastSyncedId)
 
         val lastDeviceStatusDbId = persistenceLayer.getLastDeviceStatusId()
@@ -727,48 +727,48 @@ class DataSyncSelectorV1 @Inject constructor(
         }
     }
 
-    private fun confirmLastOfflineEventIdIfGreater(lastSynced: Long) {
-        if (lastSynced > preferences.get(NsclientLongKey.OfflineEventLastSyncedId)) {
-            preferences.put(NsclientLongKey.OfflineEventLastSyncedId, lastSynced)
+    private fun confirmLastRunningModeIdIfGreater(lastSynced: Long) {
+        if (lastSynced > preferences.get(NsclientLongKey.RunningModeLastSyncedId)) {
+            preferences.put(NsclientLongKey.RunningModeLastSyncedId, lastSynced)
         }
     }
 
-    private suspend fun processChangedOfflineEvents() {
+    private suspend fun processChangedRunningModes() {
         var cont = true
         while (cont) {
             if (isPaused) return
-            val lastDbId = persistenceLayer.getLastOfflineEventId() ?: 0L
-            var startId = preferences.get(NsclientLongKey.OfflineEventLastSyncedId)
+            val lastDbId = persistenceLayer.getLastRunningModeId() ?: 0L
+            var startId = preferences.get(NsclientLongKey.RunningModeLastSyncedId)
             if (startId > lastDbId) {
-                preferences.put(NsclientLongKey.OfflineEventLastSyncedId, 0)
+                preferences.put(NsclientLongKey.RunningModeLastSyncedId, 0)
                 startId = 0
             }
-            queueCounter.oesRemaining = lastDbId - startId
+            queueCounter.rmsRemaining = lastDbId - startId
             rxBus.send(EventNSClientUpdateGuiQueue())
-            persistenceLayer.getNextSyncElementOfflineEvent(startId).blockingGet()?.let { oe ->
-                aapsLogger.info(LTag.NSCLIENT, "Loading OfflineEvent data Start: $startId ${oe.first} forID: ${oe.second.id} ")
-                val dataPair = DataSyncSelector.PairOfflineEvent(oe.first, oe.second.id)
+            persistenceLayer.getNextSyncElementRunningMode(startId).blockingGet()?.let { rm ->
+                aapsLogger.info(LTag.NSCLIENT, "Loading RunningMode data Start: $startId ${rm.first} forID: ${rm.second.id} ")
+                val dataPair = DataSyncSelector.PairRunningMode(rm.first, rm.second.id)
                 when {
                     // new record with existing NS id => must be coming from NS => ignore
-                    oe.first.id == oe.second.id && oe.first.ids.nightscoutId != null ->
-                        aapsLogger.info(LTag.NSCLIENT, "Ignoring OfflineEvent. Loaded from NS: ${oe.second.id} ")
+                    rm.first.id == rm.second.id && rm.first.ids.nightscoutId != null ->
+                        aapsLogger.info(LTag.NSCLIENT, "Ignoring RunningMode. Loaded from NS: ${rm.second.id} ")
                     // only NsId changed, no need to upload
-                    oe.first.onlyNsIdAdded(oe.second)                                ->
-                        aapsLogger.info(LTag.NSCLIENT, "Ignoring OfflineEvent. Only NS id changed ID: ${oe.second.id} ")
+                    rm.first.onlyNsIdAdded(rm.second)                                ->
+                        aapsLogger.info(LTag.NSCLIENT, "Ignoring RunningMode. Only NS id changed ID: ${rm.second.id} ")
                     // without nsId = create new
-                    oe.first.ids.nightscoutId == null                                -> {
+                    rm.first.ids.nightscoutId == null                                -> {
                         activePlugin.activeNsClient?.nsAdd("treatments", dataPair, "$startId/$lastDbId")
                         synchronized(dataPair) { dataPair.waitMillis(60000) }
                         cont = dataPair.confirmed
                     }
                     // existing with nsId = update
-                    oe.first.ids.nightscoutId != null                                -> {
+                    rm.first.ids.nightscoutId != null                                -> {
                         activePlugin.activeNsClient?.nsUpdate("treatments", dataPair, "$startId/$lastDbId")
                         synchronized(dataPair) { dataPair.waitMillis(60000) }
                         cont = dataPair.confirmed
                     }
                 }
-                if (cont) confirmLastOfflineEventIdIfGreater(oe.second.id)
+                if (cont) confirmLastRunningModeIdIfGreater(rm.second.id)
             } ?: run {
                 cont = false
             }

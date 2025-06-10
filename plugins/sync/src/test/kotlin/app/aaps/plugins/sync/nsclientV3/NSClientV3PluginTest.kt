@@ -11,8 +11,8 @@ import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.IDs
-import app.aaps.core.data.model.OE
 import app.aaps.core.data.model.PS
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TB
 import app.aaps.core.data.model.TE
@@ -370,11 +370,11 @@ internal class NSClientV3PluginTest : TestBaseWithProfile() {
 
     @Test
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun nsAddOffilineEvent() = runTest {
-        val offlineEvent = OE(
+    fun nsAddRunningModeTest() = runTest {
+        val runningMode = RM(
             timestamp = 10000,
             isValid = true,
-            reason = OE.Reason.DISCONNECT_PUMP,
+            mode = RM.Mode.DISCONNECTED_PUMP,
             duration = 30000,
             ids = IDs(
                 nightscoutId = "nightscoutId",
@@ -383,15 +383,15 @@ internal class NSClientV3PluginTest : TestBaseWithProfile() {
                 pumpSerial = "bbbb"
             )
         )
-        val dataPair = DataSyncSelector.PairOfflineEvent(offlineEvent, 1000)
+        val dataPair = DataSyncSelector.PairRunningMode(runningMode, 1000)
         // create
         Mockito.`when`(nsAndroidClient.createTreatment(anyObject())).thenReturn(CreateUpdateResponse(201, "aaa"))
         sut.nsAdd("treatments", dataPair, "1/3")
-        assertThat(storeDataForDb.nsIdOfflineEvents).hasSize(1)
+        assertThat(storeDataForDb.nsIdRunningModes).hasSize(1)
         // update
         Mockito.`when`(nsAndroidClient.updateTreatment(anyObject())).thenReturn(CreateUpdateResponse(200, "aaa"))
         sut.nsUpdate("treatments", dataPair, "1/3")
-        assertThat(storeDataForDb.nsIdOfflineEvents).hasSize(2)
+        assertThat(storeDataForDb.nsIdRunningModes).hasSize(2)
     }
 
     @Test
