@@ -272,7 +272,7 @@ class ActionsFragment : DaggerFragment() {
         binding.historyBrowser.visibility = (profile != null).toVisibility()
         binding.fill.visibility = (pump.pumpDescription.isRefillingCapable && pump.isInitialized() && !loop.runningMode.isSuspended()).toVisibility()
         binding.pumpBatteryChange.visibility = (pump.pumpDescription.isBatteryReplaceable || pump.isBatteryChangeLoggingEnabled()).toVisibility()
-        binding.tempTarget.visibility = (profile != null && !loop.runningMode.isLoopRunning()).toVisibility()
+        binding.tempTarget.visibility = (profile != null && loop.runningMode.isLoopRunning()).toVisibility()
         binding.tddStats.visibility = pump.pumpDescription.supportsTDDs.toVisibility()
         val isPatchPump = pump.pumpDescription.isPatchPump
         binding.status.apply {
