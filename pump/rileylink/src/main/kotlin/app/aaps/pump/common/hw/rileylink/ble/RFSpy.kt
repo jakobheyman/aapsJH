@@ -249,7 +249,7 @@ class RFSpy @Inject constructor(
     private fun updateBatteryLevel() {
         rileyLinkServiceData.batteryLevel = retrieveBatteryLevel()
         nextBatteryCheck = System.currentTimeMillis() +
-            (if (Optional.ofNullable<Int?>(rileyLinkServiceData.batteryLevel).orElse(0) <= LOW_BATTERY_PERCENTAGE_THRESHOLD) LOW_BATTERY_BATTERY_CHECK_INTERVAL_MILLIS else DEFAULT_BATTERY_CHECK_INTERVAL_MILLIS)
+            (if (Optional.ofNullable<Int>(rileyLinkServiceData.batteryLevel).orElse(0) <= LOW_BATTERY_PERCENTAGE_THRESHOLD) LOW_BATTERY_BATTERY_CHECK_INTERVAL_MILLIS else DEFAULT_BATTERY_CHECK_INTERVAL_MILLIS)
 
         // The Omnipod plugin reports the RL battery as the pump battery (as the Omnipod battery level is unknown)
         // So update overview when the battery level has been updated

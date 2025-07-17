@@ -224,14 +224,14 @@ class OmnipodErosPumpPlugin @Inject constructor(
                 rileyLinkOmnipodService = mLocalBinder.serviceInstance
                 rileyLinkOmnipodService?.let { rileyLinkOmnipodService ->
                     rileyLinkOmnipodService.verifyConfiguration()
-                    Thread(Runnable {
+                    Thread {
                         for (@Suppress("unused") i in 0..19) {
                             SystemClock.sleep(5000)
 
                             aapsLogger.debug(LTag.PUMP, "Starting Omnipod-RileyLink service")
-                            if (rileyLinkOmnipodService.setNotInPreInit() == true) break
+                            if (rileyLinkOmnipodService.setNotInPreInit()) break
                         }
-                    }).start()
+                    }.start()
                 }
             }
 
@@ -499,12 +499,12 @@ class OmnipodErosPumpPlugin @Inject constructor(
     }
 
     private fun getPodStatus(): PumpEnactResult {
-        return executeCommand<PumpEnactResult>(OmnipodCommandType.GET_POD_STATUS, Supplier { aapsOmnipodErosManager.getPodStatus() })!!
+        return executeCommand(OmnipodCommandType.GET_POD_STATUS) { aapsOmnipodErosManager.getPodStatus() }!!
     }
 
     override fun setNewBasalProfile(profile: Profile): PumpEnactResult {
         if (!podStateManager.hasPodState()) return instantiator.providePumpEnactResult().enacted(false).success(false).comment("Null pod state")
-        val result: PumpEnactResult = executeCommand(OmnipodCommandType.SET_BASAL_PROFILE, Supplier { aapsOmnipodErosManager.setBasalProfile(profile, true) })!!
+        val result: PumpEnactResult = executeCommand(OmnipodCommandType.SET_BASAL_PROFILE) { aapsOmnipodErosManager.setBasalProfile(profile, true) }!!
 
         aapsLogger.info(LTag.PUMP, "Basal Profile was set: " + result.success)
 
@@ -545,7 +545,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
     }
 
     override fun stopBolusDelivering() {
-        executeCommand<PumpEnactResult?>(OmnipodCommandType.CANCEL_BOLUS, Supplier { aapsOmnipodErosManager.cancelBolus() })
+        executeCommand<PumpEnactResult?>(OmnipodCommandType.CANCEL_BOLUS) { aapsOmnipodErosManager.cancelBolus() }
     }
 
     // if enforceNew is true, current temp basal is cancelled and new TBR set (duration is prolonged),
@@ -575,7 +575,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
         }
 
         val result: PumpEnactResult =
-            executeCommand<PumpEnactResult>(OmnipodCommandType.SET_TEMPORARY_BASAL, Supplier { aapsOmnipodErosManager.setTemporaryBasal(TempBasalPair(absoluteRate, false, durationInMinutes)) })!!
+            executeCommand(OmnipodCommandType.SET_TEMPORARY_BASAL) { aapsOmnipodErosManager.setTemporaryBasal(TempBasalPair(absoluteRate, false, durationInMinutes)) }!!
 
         aapsLogger.info(LTag.PUMP, "setTempBasalAbsolute - setTBR. Response: " + result.success)
 
@@ -594,7 +594,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
             return instantiator.providePumpEnactResult().success(true).enacted(false)
         }
 
-        return executeCommand<PumpEnactResult?>(OmnipodCommandType.CANCEL_TEMPORARY_BASAL, Supplier { aapsOmnipodErosManager.cancelTemporaryBasal() })!!
+        return executeCommand<PumpEnactResult?>(OmnipodCommandType.CANCEL_TEMPORARY_BASAL) { aapsOmnipodErosManager.cancelTemporaryBasal() }!!
     }
 
     // TODO improve (i8n and more)
@@ -697,7 +697,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
     override fun executeCustomCommand(customCommand: CustomCommand): PumpEnactResult? {
         if (!podStateManager.hasPodState()) return instantiator.providePumpEnactResult().enacted(false).success(false).comment("Null pod state")
         if (customCommand is CommandSilenceAlerts) {
-            return executeCommand<PumpEnactResult?>(OmnipodCommandType.ACKNOWLEDGE_ALERTS, Supplier { aapsOmnipodErosManager.acknowledgeAlerts() })
+            return executeCommand<PumpEnactResult?>(OmnipodCommandType.ACKNOWLEDGE_ALERTS) { aapsOmnipodErosManager.acknowledgeAlerts() }
         }
         if (customCommand is CommandGetPodStatus) {
             return getPodStatus()
@@ -706,13 +706,13 @@ class OmnipodErosPumpPlugin @Inject constructor(
             return retrievePulseLog()
         }
         if (customCommand is CommandSuspendDelivery) {
-            return executeCommand<PumpEnactResult?>(OmnipodCommandType.SUSPEND_DELIVERY, Supplier { aapsOmnipodErosManager.suspendDelivery() })
+            return executeCommand<PumpEnactResult?>(OmnipodCommandType.SUSPEND_DELIVERY) { aapsOmnipodErosManager.suspendDelivery() }
         }
         if (customCommand is CommandResumeDelivery) {
-            return executeCommand<PumpEnactResult?>(OmnipodCommandType.RESUME_DELIVERY, Supplier { aapsOmnipodErosManager.setBasalProfile(profileFunction.getProfile(), false) })
+            return executeCommand<PumpEnactResult?>(OmnipodCommandType.RESUME_DELIVERY) { aapsOmnipodErosManager.setBasalProfile(profileFunction.getProfile(), false) }
         }
         if (customCommand is CommandDeactivatePod) {
-            return executeCommand<PumpEnactResult?>(OmnipodCommandType.DEACTIVATE_POD, Supplier { aapsOmnipodErosManager.deactivatePod() })
+            return executeCommand<PumpEnactResult?>(OmnipodCommandType.DEACTIVATE_POD) { aapsOmnipodErosManager.deactivatePod() }
         }
         if (customCommand is CommandHandleTimeChange) {
             return handleTimeChange(customCommand.requestedByUser)
@@ -721,7 +721,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
             return updateAlertConfiguration()
         }
         if (customCommand is CommandPlayTestBeep) {
-            return executeCommand<PumpEnactResult?>(OmnipodCommandType.PLAY_TEST_BEEP, Supplier { aapsOmnipodErosManager.playTestBeep(BeepConfigType.BEEEP) })
+            return executeCommand<PumpEnactResult?>(OmnipodCommandType.PLAY_TEST_BEEP) { aapsOmnipodErosManager.playTestBeep(BeepConfigType.BEEEP) }
         }
 
         aapsLogger.warn(LTag.PUMP, "Unsupported custom command: " + customCommand.javaClass.getName())
@@ -731,7 +731,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
     private fun retrievePulseLog(): PumpEnactResult {
         var result: PodInfoRecentPulseLog
         try {
-            result = executeCommand<PodInfoRecentPulseLog>(OmnipodCommandType.READ_POD_PULSE_LOG, Supplier { aapsOmnipodErosManager.readPulseLog() })!!
+            result = executeCommand(OmnipodCommandType.READ_POD_PULSE_LOG) { aapsOmnipodErosManager.readPulseLog() }!!
         } catch (ex: Exception) {
             return instantiator.providePumpEnactResult().success(false).enacted(false).comment(aapsOmnipodErosManager.translateException(ex))
         }
@@ -748,11 +748,11 @@ class OmnipodErosPumpPlugin @Inject constructor(
             .expirationAdvisory(
                 expirationReminderTimeBeforeShutdown != null,
                 Optional.ofNullable<Duration?>(expirationReminderTimeBeforeShutdown).orElse(Duration.ZERO)
-            ) //
-            .lowReservoir(lowReservoirAlertUnits != null, Optional.ofNullable<Int?>(lowReservoirAlertUnits).orElse(0)) //
+            )
+            .lowReservoir(lowReservoirAlertUnits != null, Optional.ofNullable<Int>(lowReservoirAlertUnits).orElse(0))
             .build()
 
-        val result: PumpEnactResult = executeCommand<PumpEnactResult>(OmnipodCommandType.CONFIGURE_ALERTS, Supplier { aapsOmnipodErosManager.configureAlerts(alertConfigurations) })!!
+        val result: PumpEnactResult = executeCommand(OmnipodCommandType.CONFIGURE_ALERTS) { aapsOmnipodErosManager.configureAlerts(alertConfigurations) }!!
 
         if (result.success) {
             aapsLogger.info(LTag.PUMP, "Successfully configured alerts in Pod")
@@ -774,9 +774,9 @@ class OmnipodErosPumpPlugin @Inject constructor(
 
     private fun handleTimeChange(requestedByUser: Boolean): PumpEnactResult {
         aapsLogger.debug(LTag.PUMP, "Setting time, requestedByUser={}", requestedByUser)
-        var result: PumpEnactResult =
+        val result: PumpEnactResult =
             if (requestedByUser || aapsOmnipodErosManager.isTimeChangeEventEnabled) {
-                executeCommand<PumpEnactResult>(OmnipodCommandType.SET_TIME, Supplier { aapsOmnipodErosManager.setTime(!requestedByUser) })!!
+                executeCommand(OmnipodCommandType.SET_TIME) { aapsOmnipodErosManager.setTime(!requestedByUser) }!!
             } else {
                 // Even if automatically changing the time is disabled, we still want to at least do a GetStatus request,
                 // in order to update the Pod's activation time, which we need for calculating the time on the Pod
@@ -934,7 +934,7 @@ class OmnipodErosPumpPlugin @Inject constructor(
     }
 
     private fun deliverBolus(detailedBolusInfo: DetailedBolusInfo): PumpEnactResult {
-        val result: PumpEnactResult = executeCommand<PumpEnactResult>(OmnipodCommandType.SET_BOLUS, Supplier { aapsOmnipodErosManager.bolus(detailedBolusInfo) })!!
+        val result: PumpEnactResult = executeCommand(OmnipodCommandType.SET_BOLUS) { aapsOmnipodErosManager.bolus(detailedBolusInfo) }!!
 
         if (result.success) {
             if (detailedBolusInfo.bolusType == BS.Type.SMB)

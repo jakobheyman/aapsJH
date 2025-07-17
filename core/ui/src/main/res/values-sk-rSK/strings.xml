@@ -91,7 +91,6 @@
     <string name="alarm">Alarm</string>
     <string name="exportsettings">Export nastavení</string>
     <string name="disableloop">Deaktivovať uzavretý okruh</string>
-    <string name="enableloop">Aktivovať uzavretý okruh</string>
     <string name="resumeloop">Pokračovať v uzavretom okruhu</string>
     <string name="suspendloop">Pozastaviť uzavretý okruh</string>
     <string name="duration_min_label">Trvanie [min]</string>
@@ -167,7 +166,6 @@
     <string name="canceling_tbr_failed">Zrušenie dočasného bazálu zlyhalo</string>
     <string name="canceling_eb_failed">Zastavenie predĺženého bolusu zlyhalo</string>
     <string name="virtualpump_uploadstatus_title">Nahrávať stav pumpy do NS, alebo Tidepoolu</string>
-    <string name="suspendloop_label">Deaktivovaný/pozastavený uzavretý okruh</string>
     <string name="iob_label">Aktívny inzulín (IOB)</string>
     <string name="loopstatus_targets">CIELE:</string>
     <string name="loopstatus_OAPS_result">VÝSLEDOK OAPS:</string>
@@ -297,7 +295,6 @@
     <string name="uel_lgs_loop_mode">REŽIM LGS</string>
     <string name="uel_open_loop_mode">REŽIM OTVORENÉHO OKRUHU</string>
     <string name="uel_loop_disabled">UZAVRETÝ OKRUH VYPNUTÝ</string>
-    <string name="uel_loop_enabled">UZAVRETÝ OKRUH ZAPNUTÝ</string>
     <string name="uel_reconnect">ZNOVU PRIPOJIŤ</string>
     <string name="uel_disconnect">ODPOJIŤ</string>
     <string name="uel_resume">OBNOVIŤ</string>

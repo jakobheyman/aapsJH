@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- NSClient -->
+    <!-- AAPSClient -->
     <string name="ns_cellular">Usar conexão móvel</string>
     <string name="ns_wifi">Utilizar conexão Wi-Fi</string>
     <string name="ns_wifi_ssids">WiFi SSID</string>
@@ -19,10 +19,8 @@
     <string name="unsupported_ns_version">Versão não suportada do Nightscout</string>
     <string name="openaps_short">OAPS</string>
     <string name="uploader_short">UPLD</string>
-    <string name="ns_malfunction">Erro de funcionamento do NSCliente. Pondere reiniciar o NS e NSCliente.</string>
-    <!-- NSClient -->
+    <!-- AAPSClient -->
     <string name="no_write_permission">NSCLIENT não tem permissão de escrita. Senha da API errada?</string>
-    <string name="ns_client">NSCliente</string>
     <string name="ns_client_url">URL:</string>
     <string name="restart">Reiniciar</string>
     <string name="ns_client_url_title">Nightscout URL</string>
@@ -38,19 +36,12 @@
     <string name="ns_receive_profile_store">Receber perfil armazenado</string>
     <string name="ns_receive_profile_store_summary">Sincronizar perfis vindo do editor de perfis do NS</string>
     <string name="ns_receive_temp_target">Receber alvos temporários</string>
-    <string name="ns_receive_temp_target_summary">Aceitar alvos temporários inseridos através do NS ou NSClient</string>
     <string name="ns_receive_profile_switch">Receber trocas de perfil</string>
-    <string name="ns_receive_profile_switch_summary">Aceitar trocas de perfil inseridas através de NS ou NSClient</string>
-    <string name="ns_receive_offline_event">Receber eventos APS offline</string>
-    <string name="ns_receive_offline_event_summary">Aceitar eventos APS offline inseridos através de NS ou NSClient</string>
     <string name="ns_receive_tbr_eb">Receber taxa basal temporária (TBT) e bolus estendido (e-bolus ou BE)</string>
     <string name="ns_receive_tbr_eb_summary">Aceitar taxa basal temporária (TBT) e bolus estendido (BE) informados por outra instância</string>
     <string name="ns_receive_insulin">Receber insulina</string>
-    <string name="ns_receive_insulin_summary">Aceitar insulina inserida através de NS ou NSClient (não é administrada, apenas serve para o cálculo da IA)</string>
     <string name="ns_receive_carbs">Receber carboidratos</string>
-    <string name="ns_receive_carbs_summary">Aceitar carboidratos inseridos através de NS ou NSClient</string>
     <string name="ns_receive_therapy_events">Receber eventos de terapia</string>
-    <string name="ns_receive_therapy_events_summary">Aceitar eventos de terapia (cânula, insulina, troca de bateria etc) inseridos através de NS ou NSClient</string>
     <string name="ns_receive_cgm">Receber dados recentes e dados antigos do CGM</string>
     <string name="ns_receive_cgm_summary">Aceitar dados de CGM do NS</string>
     <string name="ns_sync_slow">Desacelerar os envios de dados</string>

@@ -90,6 +90,7 @@
     <string name="menu_default">По умолчанию</string>
     <string name="menu_menu">Меню</string>
     <string name="quick_wizard_short">XL</string>
+    <string name="action_duration_minutes">Продолжительность\n[минут]</string>
     <string name="action_tempt_confirmation">Требуется Временная Цель</string>
     <string name="action_quick_wizard_confirmation">Запрошен мастер настройки</string>
     <string name="action_user_action_confirmation">Запрошено действие пользователя</string>
@@ -99,8 +100,14 @@
     <string name="action_fill_confirmation">Заполнение запрошено</string>
     <string name="action_ecarb_confirmation">Углеводы запрошены</string>
     <string name="action_profile_switch_confirmation">Запрос на смену профиля</string>
+    <string name="action_target_unit" comment="In temp target menu, single target value">Целевое значение\n[%s]</string>
+    <string name="action_low_unit" comment="In temp target menu, lower value from range">Низкое\n[%s]</string>
+    <string name="action_high_unit" comment="In temp target menu, higher value from range">Высокое\n[%s]</string>
     <string name="action_carbs">Углеводы</string>
+    <string name="action_carbs_gram">Углеводы [g]</string>
     <string name="action_ecarbs">Растянутые углеводы eCarbs </string>
+    <string name="action_percentage">Процент\n[%]</string>
+    <string name="action_start_minutes">Начало\n[minutes]</string>
     <string name="action_duration_h">Продолжительность [h]</string>
     <string name="action_insulin">Инсулин</string>
     <string name="action_preset_1">Предустановка 1</string>

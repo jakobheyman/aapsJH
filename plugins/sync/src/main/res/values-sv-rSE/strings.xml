@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- NSClient -->
+    <!-- AAPSClient -->
     <string name="ns_cellular">Använd mobilanslutning</string>
     <string name="ns_wifi">Använd WiFi-anslutning</string>
     <string name="ns_wifi_ssids">WiFi nätverksnamn</string>
@@ -19,10 +19,8 @@
     <string name="unsupported_ns_version">Versionen av Nightscout stöds inte</string>
     <string name="openaps_short">APS</string>
     <string name="uploader_short">Upld batt</string>
-    <string name="ns_malfunction">Fel på NSClient. Överväg att starta om NSClient och Nightscout-webbplatsen.</string>
-    <!-- NSClient -->
+    <!-- AAPSClient -->
     <string name="no_write_permission">NS Client kan inte uppdatera Nightscout. Fel API secret?</string>
-    <string name="ns_client">NSClient</string>
     <string name="ns_client_url">URL:</string>
     <string name="restart">Starta om</string>
     <string name="ns_client_url_title">Nightscout-URL</string>
@@ -38,19 +36,12 @@
     <string name="ns_receive_profile_store">Ladda ner profiler</string>
     <string name="ns_receive_profile_store_summary">Synkronisera profiler från NS</string>
     <string name="ns_receive_temp_target">Ladda ner temporära mål</string>
-    <string name="ns_receive_temp_target_summary">Godkänn temp mål som anges genom NS eller NSClient</string>
     <string name="ns_receive_profile_switch">Ladda ner profilbyten</string>
-    <string name="ns_receive_profile_switch_summary">Acceptera profilbyten som matats in via NS eller NSClient</string>
-    <string name="ns_receive_offline_event">Ladda ner APS offline händelser</string>
-    <string name="ns_receive_offline_event_summary">Acceptera APS Offline-händelser som matas in via NS eller NSClient</string>
     <string name="ns_receive_tbr_eb">Ladda ner temp basal och förlängd bolus</string>
     <string name="ns_receive_tbr_eb_summary">Acceptera temp basal och förlängd bolus inlagda av en annan instans</string>
     <string name="ns_receive_insulin">Ladda ner loggade insulindoser</string>
-    <string name="ns_receive_insulin_summary">Acceptera loggat insulin som matats in via NS eller NSClient (den levereras inte, endast beräknad mot IOB)</string>
     <string name="ns_receive_carbs">Ladda ner loggade kolhydrater</string>
-    <string name="ns_receive_carbs_summary">Acceptera kolhydrater som matats in via NS eller NSClient</string>
     <string name="ns_receive_therapy_events">Ladda ner loggade behandlingar</string>
-    <string name="ns_receive_therapy_events_summary">Acceptera händelser (kanyl-, insulin-, batteribyte etc) som angetts via NS eller NSClient</string>
     <string name="ns_receive_cgm">Ladda ner CGM-data</string>
     <string name="ns_receive_cgm_summary">Acceptera CGM-data från NS</string>
     <string name="ns_sync_slow">Långsamma uppladdningar</string>

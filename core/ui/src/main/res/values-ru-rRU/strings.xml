@@ -91,7 +91,6 @@
     <string name="alarm">Оповещения об опасности</string>
     <string name="exportsettings">Настройки экспорта</string>
     <string name="disableloop">Деактивировать цикл</string>
-    <string name="enableloop">Активировать цикл</string>
     <string name="resumeloop">Возобновить цикл</string>
     <string name="suspendloop">Приостановить цикл</string>
     <string name="duration_min_label">Длительность (мин)</string>
@@ -167,7 +166,6 @@
     <string name="canceling_tbr_failed">Отмена врем базала не состоялась</string>
     <string name="canceling_eb_failed">Сбой отмены пролонгированного болюса</string>
     <string name="virtualpump_uploadstatus_title">Передавать статус помпы в NS или Tidepool</string>
-    <string name="suspendloop_label">Отключенный/приостановленный цикл</string>
     <string name="iob_label">Активный инсулин (IOB)</string>
     <string name="loopstatus_targets">ЦЕЛИ:</string>
     <string name="loopstatus_OAPS_result">РЕЗУЛЬТАТ: OAPS:</string>
@@ -297,7 +295,6 @@
     <string name="uel_lgs_loop_mode">РЕЖИМ ОСТАНОВКИ НА НИЗКИХ LGS</string>
     <string name="uel_open_loop_mode">РЕЖИМ ОТКРЫТОГО ЦИКЛА</string>
     <string name="uel_loop_disabled">ЦИКЛ ВЫКЛЮЧЕН</string>
-    <string name="uel_loop_enabled">ЦИКЛ ВКЛЮЧЕН</string>
     <string name="uel_reconnect">ПЕРЕПОДКЛЮЧИТЬ</string>
     <string name="uel_disconnect">ОТКЛЮЧИТЬ</string>
     <string name="uel_resume">ВОЗОБНОВИТЬ</string>

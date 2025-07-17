@@ -90,7 +90,6 @@
     <string name="loopisdisabled">הלולאה מושבתת</string>
     <string name="alarm">התראה</string>
     <string name="disableloop">השבתת לולאה</string>
-    <string name="enableloop">הפעלת לולאה</string>
     <string name="resumeloop">חידוש לולאה</string>
     <string name="suspendloop">השהיית הלולאה</string>
     <string name="duration_min_label">משך [min]</string>
@@ -165,7 +164,6 @@
     <string name="canceling_tbr_failed">ביטול בזאלי זמני נכשל</string>
     <string name="canceling_eb_failed">ביטול בולוס ממושך נכשל</string>
     <string name="virtualpump_uploadstatus_title">שלח את סטטוס המשאבה לנייטסקאוט או ל-Tidepool</string>
-    <string name="suspendloop_label">השבתת \\ השהיית לולאה</string>
     <string name="iob_label">אינסולין פעיל בגוף (IOB)</string>
     <string name="loopstatus_targets">ערכי מטרה:</string>
     <string name="loopstatus_OAPS_result">תוצאות OAPS:</string>
@@ -285,7 +283,6 @@
     <string name="uel_lgs_loop_mode">מצב השהיה עקב סוכר נמוך</string>
     <string name="uel_open_loop_mode">מצב לולאה פתוחה</string>
     <string name="uel_loop_disabled">לולאה מושבתת</string>
-    <string name="uel_loop_enabled">לולאה מופעלת</string>
     <string name="uel_reconnect">חיבור מחדש</string>
     <string name="uel_disconnect">ניתוק</string>
     <string name="uel_resume">חידוש</string>
