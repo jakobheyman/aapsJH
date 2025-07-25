@@ -109,6 +109,7 @@ import javax.inject.Singleton
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.time.ExperimentalTime
 import info.nightscout.comboctl.base.BluetoothAddress as ComboCtlBluetoothAddress
 import info.nightscout.comboctl.base.LogLevel as ComboCtlLogLevel
 import info.nightscout.comboctl.base.Logger as ComboCtlLogger
@@ -127,7 +128,7 @@ class ComboV2Plugin @Inject constructor(
     private val context: Context,
     private val rxBus: RxBus,
     private val constraintChecker: ConstraintsChecker,
-    private val sp: SP,
+    sp: SP,
     private val pumpSync: PumpSync,
     private val dateUtil: DateUtil,
     private val uiInteraction: UiInteraction,
@@ -1329,6 +1330,7 @@ class ComboV2Plugin @Inject constructor(
     override fun cancelExtendedBolus(): PumpEnactResult =
         createFailurePumpEnactResult(R.string.combov2_extended_bolus_not_supported)
 
+    @OptIn(ExperimentalTime::class)
     override fun getJSONStatus(profile: Profile, profileName: String, version: String): JSONObject {
         if (!isInitialized())
             return JSONObject()
@@ -1443,6 +1445,7 @@ class ComboV2Plugin @Inject constructor(
     override val pumpDescription: PumpDescription
         get() = _pumpDescription
 
+    @OptIn(ExperimentalTime::class)
     override fun shortStatus(veryShort: Boolean): String {
         val lines = mutableListOf<String>()
 
@@ -1501,6 +1504,7 @@ class ComboV2Plugin @Inject constructor(
 
     override val isFakingTempsByExtendedBoluses = false
 
+    @OptIn(ExperimentalTime::class)
     override fun loadTDDs(): PumpEnactResult {
         val pumpEnactResult = instantiator.providePumpEnactResult()
         val acquiredPump = getAcquiredPump()
@@ -1984,6 +1988,7 @@ class ComboV2Plugin @Inject constructor(
         _baseBasalRateUIFlow.value = activeBasalProfile?.get(currentHour)?.cctlBasalToIU()
     }
 
+    @OptIn(ExperimentalTime::class)
     private fun handlePumpEvent(event: ComboCtlPump.Event) {
         aapsLogger.debug(LTag.PUMP, "Handling pump event $event")
 
@@ -2447,7 +2452,7 @@ class ComboV2Plugin @Inject constructor(
                     ctx = context, intentKey = ComboIntentKey.UnpairPump, title = R.string.combov2_unpair_pump_title, summary = R.string.combov2_unpair_pump_summary
                 ).apply {
                     onPreferenceClickListener = Preference.OnPreferenceClickListener { preference ->
-                        OKDialog.showConfirmation(preference.context, "Confirm pump unpairing", "Do you really want to unpair the pump?", ok = Runnable { unpair() })
+                        OKDialog.showConfirmation(preference.context, "Confirm pump unpairing", "Do you really want to unpair the pump?", ok = { unpair() })
                         false
                     }
                 }

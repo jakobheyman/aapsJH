@@ -10,7 +10,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.android.HasAndroidInjector
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Suppress("unused")
 @Module(
@@ -31,6 +32,7 @@ open class WearModule {
         @Binds fun bindInjector(aaps: WearApp): HasAndroidInjector
     }
 
+    @OptIn(ExperimentalTime::class)
     @Provides
     fun providesClock(): Clock = Clock.System
 }
