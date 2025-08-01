@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
+import app.aaps.core.data.model.RM
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.aps.Loop
@@ -235,9 +236,10 @@ class ActionsFragment : DaggerFragment() {
             activePlugin.activeProfileSource.profile != null &&
                 pump.pumpDescription.isSetBasalProfileCapable &&
                 pump.isInitialized() &&
-                loop.runningMode.isLoopRunning()).toVisibility()
+                loop.runningMode != RM.Mode.DISCONNECTED_PUMP &&
+                !pump.isSuspended()).toVisibility()
 
-        if (!pump.pumpDescription.isExtendedBolusCapable || !pump.isInitialized()  || !loop.runningMode.isLoopRunning() || pump.isFakingTempsByExtendedBoluses || config.AAPSCLIENT) {
+        if (!pump.pumpDescription.isExtendedBolusCapable || !pump.isInitialized()  || pump.isSuspended() || loop.runningMode == RM.Mode.DISCONNECTED_PUMP || pump.isFakingTempsByExtendedBoluses || config.AAPSCLIENT) {
             binding.extendedBolus.visibility = View.GONE
             binding.extendedBolusCancel.visibility = View.GONE
         } else {
@@ -253,7 +255,7 @@ class ActionsFragment : DaggerFragment() {
             }
         }
 
-        if (!pump.pumpDescription.isTempBasalCapable || !pump.isInitialized() || !loop.runningMode.isLoopRunning() || config.AAPSCLIENT) {
+        if (!pump.pumpDescription.isTempBasalCapable || !pump.isInitialized() || pump.isSuspended() || loop.runningMode == RM.Mode.DISCONNECTED_PUMP || config.AAPSCLIENT) {
             binding.setTempBasal.visibility = View.GONE
             binding.cancelTempBasal.visibility = View.GONE
         } else {
@@ -270,7 +272,7 @@ class ActionsFragment : DaggerFragment() {
         }
         val activeBgSource = activePlugin.activeBgSource
         binding.historyBrowser.visibility = (profile != null).toVisibility()
-        binding.fill.visibility = (pump.pumpDescription.isRefillingCapable && pump.isInitialized() && !loop.runningMode.isSuspended()).toVisibility()
+        binding.fill.visibility = (pump.pumpDescription.isRefillingCapable && pump.isInitialized()).toVisibility()
         binding.pumpBatteryChange.visibility = (pump.pumpDescription.isBatteryReplaceable || pump.isBatteryChangeLoggingEnabled()).toVisibility()
         binding.tempTarget.visibility = (profile != null && loop.runningMode.isLoopRunning()).toVisibility()
         binding.tddStats.visibility = pump.pumpDescription.supportsTDDs.toVisibility()

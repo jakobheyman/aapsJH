@@ -59,9 +59,9 @@ import app.aaps.receivers.TimeDateOrTZChangeReceiver
 import app.aaps.ui.activityMonitor.ActivityMonitor
 import app.aaps.ui.widget.Widget
 import com.google.firebase.FirebaseApp
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
-import com.google.firebase.remoteconfig.ktx.remoteConfig
+import com.google.firebase.remoteconfig.remoteConfig
 import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
 import io.reactivex.rxjava3.disposables.CompositeDisposable
