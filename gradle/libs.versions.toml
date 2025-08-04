@@ -12,7 +12,7 @@ okhttp = "5.1.0"
 retrofit = "3.0.0"
 kotlinx-serialization = "1.9.0"
 kotlinx-coroutines = "1.10.2"
-work = "2.10.2"
+work = "2.10.3"
 datastorePreferences = "1.1.7"
 annotation = "1.9.1"
 
@@ -89,7 +89,7 @@ androidx-browser = { group = "androidx.browser", name = "browser", version = "1.
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.2.1" }
 androidx-core = { group = "androidx.core", name = "core-ktx", version = "1.16.0" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.6.1" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.7.0" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version = "1.8.8" }
 androidx-gridlayout = { group = "androidx.gridlayout", name = "gridlayout", version = "1.1.0" }
 androidx-legacy-support = { group = "androidx.legacy", name = "legacy-support-v13", version = "1.0.0" }
