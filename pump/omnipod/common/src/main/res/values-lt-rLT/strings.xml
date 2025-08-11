@@ -169,7 +169,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Taip</string>
     <string name="omnipod_common_no">Ne</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Atšaukti</string>
     <string name="omnipod_common_warning">Perspėjimas</string>
     <string name="omnipod_common_disable_suspend_alerts">IŠJUNGTI SUSTABDYMO ĮSPĖJIMUS</string>

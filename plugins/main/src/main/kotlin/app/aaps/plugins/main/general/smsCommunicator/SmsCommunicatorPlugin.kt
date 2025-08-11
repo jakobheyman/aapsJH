@@ -81,6 +81,7 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import kotlinx.coroutines.Dispatchers
 import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.Strings
 import org.joda.time.DateTime
 import java.text.Normalizer
 import java.util.Locale
@@ -741,7 +742,7 @@ class SmsCommunicatorPlugin @Inject constructor(
                 }
             })
         } else if (divided[1].endsWith("%")) {
-            var tempBasalPct = SafeParse.stringToInt(StringUtils.removeEnd(divided[1], "%"))
+            var tempBasalPct = SafeParse.stringToInt(Strings.CS.removeEnd(divided[1], "%"))
             val durationStep = activePlugin.activePump.model().tbrSettings()?.durationStep ?: 60
             var duration = 30
             if (divided.size > 2) duration = SafeParse.stringToInt(divided[2])

@@ -12,7 +12,6 @@
     <!-- Omnipod Dash - Overview -->
     <string name="omnipod_dash_overview_bluetooth_status">Bluetooth-status</string>
     <string name="omnipod_dash_overview_bluetooth_address">Bluetooth-adress</string>
-    <string name="omnipod_dash_overview_firmware_version_value">Firmware %1$s / Bluetooth %2$s</string>
     <string name="omnipod_dash_overview_bluetooth_connection_quality">Anslutningskvalitet</string>
     <string name="omnipod_dash_overview_delivery_status">Leveransstatus</string>
     <!-- Omnipod Dash - Pod Activation Wizard -->

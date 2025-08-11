@@ -56,7 +56,6 @@
     <string name="omnipod_common_overview_last_bolus">Seneste bolus</string>
     <string name="omnipod_common_overview_temp_basal_rate">Midlertidig basal rate</string>
     <string name="omnipod_common_overview_base_basal_rate">Standard basal rate</string>
-    <string name="omnipod_common_overview_reservoir">Reservoir</string>
     <string name="omnipod_common_overview_pod_active_alerts">Aktive pod alarmer</string>
     <string name="omnipod_common_overview_firmware_version">Firmwareversion</string>
     <string name="omnipod_common_overview_time_on_pod">Tid på Pod</string>
@@ -166,7 +165,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Ja</string>
     <string name="omnipod_common_no">Nej</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Annuller</string>
     <string name="omnipod_common_warning">Advarsel</string>
     <!-- Omnipod - Times -->

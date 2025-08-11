@@ -7,7 +7,6 @@
     <string name="omnipod_eros_preferences_pulse_log_button_enabled">在Pod管理菜单中显示Pulse日志按钮</string>
     <string name="omnipod_eros_preferences_riley_link_stats_button_enabled">在Pod管理菜单中显示RileyLink状态按键</string>
     <string name="omnipod_eros_preferences_battery_change_logging_enabled">在操作中启用电池更改记录</string>
-    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <string name="omnipod_eros_preferences_notification_uncertain_tbr_sound_enabled">临时基础率TBR不确定时启用声音通知</string>
     <string name="omnipod_eros_preferences_notification_uncertain_smb_sound_enabled">微型大剂量SMB不确定时启用声音通知</string>
     <string name="omnipod_eros_preferences_notification_uncertain_bolus_sound_enabled">常规大剂量不确定时启用声音通知</string>
@@ -17,7 +16,6 @@
     <string name="omnipod_eros_history_item_source">来源</string>
     <string name="omnipod_eros_history_item_date">日期</string>
     <string name="omnipod_eros_history_type">类型：</string>
-    <string name="omnipod_eros_history_bolus_value">%1$.2f U</string>
     <string name="omnipod_eros_history_bolus_value_with_carbs">%1$.2f U, 碳水=%2$.1f 克</string>
     <string name="omnipod_eros_history_tbr_value">速率： %1$.2f U，持续时间： %2$d 分钟</string>
     <!-- Omnipod Eros - Short Status -->

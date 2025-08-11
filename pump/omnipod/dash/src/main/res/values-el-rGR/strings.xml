@@ -30,7 +30,6 @@
     <string name="omnipod_dash_command_not_received_by_the_pod">Εντολή που δεν ελήφθη από το pod</string>
     <string name="omnipod_dash_unknown">Άγνωστη κατάσταση της εντολής</string>
     <string name="omnipod_common_history_tbr_value">%1$.2f U/h, %2$d λεπτά</string>
-    <string name="omnipod_common_history_bolus_value">%1$.2f U</string>
     <string name="omnipod_common_alert_delivery_suspended">Η χορήγηση ινσουλίνης είναι σε αναστολή</string>
     <string name="omnipod_common_history_total_delivered">Σύνολο παραδόθηκε: %1$.2f U</string>
     <string name="omnipod_dash_connection_lost">Τελευταία σύνδεση με pod</string>

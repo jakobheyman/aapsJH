@@ -38,7 +38,6 @@
     <string name="time_last_month">Ostatni miesiąc</string>
     <!-- BLE Config -->
     <string name="ble_config_button_scan_start">Skanuj</string>
-    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Wybrany</string>
     <string name="ble_config_scan_scanning">Skanowanie</string>
     <string name="ble_config_scan_finished">Skanowanie zakończono</string>

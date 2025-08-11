@@ -18,7 +18,6 @@
     <string name="history_group_statistic">통계</string>
     <string name="history_group_unknown">알수없음</string>
     <string name="history_group_all">모든</string>
-    <string name="history_group_bolus">Boluses</string>
     <string name="history_group_prime">교체</string>
     <string name="history_group_alarm">알람</string>
     <string name="history_group_glucose">혈당</string>

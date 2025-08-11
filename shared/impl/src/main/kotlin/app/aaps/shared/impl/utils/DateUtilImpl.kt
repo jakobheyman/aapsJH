@@ -7,6 +7,8 @@ import app.aaps.core.interfaces.R
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.SafeParse
+import app.aaps.core.utils.pump.ThreadUtil
+import org.apache.commons.lang3.ThreadUtils
 import org.apache.commons.lang3.time.DateUtils.isSameDay
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
@@ -220,6 +222,17 @@ class DateUtilImpl @Inject constructor(private val context: Context) : DateUtil 
         return if (abs(minutes) > 9999) "" else rh.gs(R.string.minago, minutes)
     }
 
+    override fun minOrSecAgo(rh: ResourceHelper, time: Long?): String {
+        if (time == null) return ""
+        //val minutes = ((now() - time) / 1000 / 60).toInt()
+        val seconds = (now() - time) / 1000
+        if (seconds > 99) {
+            return rh.gs(R.string.minago, (seconds / 60).toInt())
+        } else {
+            return rh.gs(R.string.secago, seconds.toInt())
+        }
+    }
+
     override fun minAgoShort(time: Long?): String {
         if (time == null) return ""
         val minutes = ((time - now()) / 1000 / 60).toInt()
@@ -405,7 +418,7 @@ class DateUtilImpl @Inject constructor(private val context: Context) : DateUtil 
         }
         val thisDf: DecimalFormat?
         // use singleton if on ui thread otherwise allocate new as DecimalFormat is not thread safe
-        if (Thread.currentThread().id == 1L) {
+        if (ThreadUtil.threadId() == 1L) {
             if (df == null) {
                 val localDf = DecimalFormat("#", dfs)
                 localDf.minimumIntegerDigits = 1

@@ -38,7 +38,6 @@
     <string name="time_last_month">Praėjusį mėnesį</string>
     <!-- BLE Config -->
     <string name="ble_config_button_scan_start">Skanuoti</string>
-    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Parinkta</string>
     <string name="ble_config_scan_scanning">Skanuojama</string>
     <string name="ble_config_scan_finished">Skanavimas baigtas</string>

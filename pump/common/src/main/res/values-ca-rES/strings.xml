@@ -5,7 +5,6 @@
     <!-- PumpCommon - Pump Status -->
     <string name="pump_status_suspended">En pausa</string>
     <!-- PumpCommon - History Group -->
-    <string name="history_group_basal">Basals</string>
     <string name="history_group_configuration">Configuracions</string>
     <string name="history_group_notification">Avisos</string>
     <string name="history_group_statistic">Estadístiques</string>

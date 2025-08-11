@@ -171,7 +171,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Áno</string>
     <string name="omnipod_common_no">Nie</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Zrušiť</string>
     <string name="omnipod_common_warning">Upozornenie</string>
     <string name="omnipod_common_disable_suspend_alerts">Vypnúť upozornenia o pozastavení</string>

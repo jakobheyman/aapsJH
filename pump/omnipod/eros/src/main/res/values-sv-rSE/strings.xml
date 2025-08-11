@@ -21,7 +21,6 @@
     <string name="omnipod_eros_history_bolus_value_with_carbs">%1$.2f U, KH=%2$.1f g</string>
     <string name="omnipod_eros_history_tbr_value">Dos: %1$.2f U, Duration: %2$d min</string>
     <!-- Omnipod Eros - Short Status -->
-    <string name="omnipod_eros_short_status_riley_link_battery">RLBatt: %1$d</string>
     <!-- Omnipod Eros - Error -->
     <string name="omnipod_eros_error_riley_link_address_invalid">Riley Link adress felaktig.</string>
     <string name="omnipod_eros_error_crc_mismatch">Kommunikationsfel: Lyckades inte verifiera meddelandet</string>

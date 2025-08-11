@@ -169,7 +169,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Да</string>
     <string name="omnipod_common_no">Нет</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Отменить</string>
     <string name="omnipod_common_warning">Внимание</string>
     <string name="omnipod_common_disable_suspend_alerts">ОТКЛЮЧИТЬ ОПОВЕЩЕНИЯ ОБ ОСТАНОВЕ</string>

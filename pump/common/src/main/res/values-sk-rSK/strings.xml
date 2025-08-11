@@ -38,7 +38,6 @@
     <string name="time_last_month">Posledný mesiac</string>
     <!-- BLE Config -->
     <string name="ble_config_button_scan_start">Vyhľadávanie</string>
-    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Vybrané</string>
     <string name="ble_config_scan_scanning">Vyhľadávanie</string>
     <string name="ble_config_scan_finished">Vyhľadávanie dokončené</string>

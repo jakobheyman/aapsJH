@@ -47,7 +47,6 @@
     <string name="omnipod_common_overview_button_silence_alerts">Alertas silenciados</string>
     <string name="omnipod_common_overview_pod_status">Status do Pod</string>
     <string name="omnipod_common_overview_total_delivered">Total entregue</string>
-    <string name="omnipod_common_overview_total_delivered_value">%1$.2f U</string>
     <string name="omnipod_common_overview_pod_unique_id">ID único</string>
     <string name="omnipod_common_overview_lot_number">Número do LOT</string>
     <string name="omnipod_common_overview_pod_sequence_number">Número sequencial</string>
@@ -161,7 +160,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Sim</string>
     <string name="omnipod_common_no">Não</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Cancelar</string>
     <string name="omnipod_common_warning">Aviso</string>
     <!-- Omnipod - Times -->

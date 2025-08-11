@@ -47,7 +47,6 @@
     <string name="omnipod_common_overview_button_silence_alerts">Silenciar alertes</string>
     <string name="omnipod_common_overview_pod_status">Estat pod</string>
     <string name="omnipod_common_overview_total_delivered">Total lliurat</string>
-    <string name="omnipod_common_overview_total_delivered_value">%1$.2f U</string>
     <string name="omnipod_common_overview_pod_unique_id">ID únic</string>
     <string name="omnipod_common_overview_lot_number">Nr. LOT</string>
     <string name="omnipod_common_overview_pod_sequence_number">Nr. de seqüència</string>
@@ -63,7 +62,6 @@
     <string name="omnipod_common_overview_temp_basal_value">%1$.2fU/h @%2$s (%3$d/%4$d minuts)</string>
     <string name="omnipod_common_overview_reservoir_value">Queden %1$.2f U</string>
     <string name="omnipod_common_overview_reservoir_value_over50">Queden més de 50 U</string>
-    <string name="omnipod_common_overview_errors">Errors</string>
     <!-- Omnipod - Wizard Base -->
     <string name="omnipod_common_wizard_button_cancel">Cancel·lar</string>
     <string name="omnipod_common_wizard_button_finish">Finalitzar</string>
@@ -155,13 +153,10 @@
     <!-- Omnipod - Short status -->
     <string name="omnipod_common_short_status_no_active_pod">Cap pod actiu</string>
     <string name="omnipod_common_short_status_last_connection">Darrera connexió: fa %1$d min</string>
-    <string name="omnipod_common_short_status_temp_basal">Temp: %1$s</string>
     <string name="omnipod_common_short_status_extended_bolus">Estès: %1$s</string>
     <string name="omnipod_common_short_status_reservoir">Reservori.: %1$s U</string>
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Sí</string>
-    <string name="omnipod_common_no">No</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Cancel·lar</string>
     <string name="omnipod_common_warning">Avís</string>
     <!-- Omnipod - Times -->

@@ -13,5 +13,4 @@
     <string name="omnipod_dash_overview_bluetooth_address">Adreça Bluetooth</string>
     <!-- Omnipod Dash - Pod Activation Wizard -->
     <!-- Exceptions -->
-    <string name="omnipod_common_history_bolus_value">%1$.2f U</string>
 </resources>

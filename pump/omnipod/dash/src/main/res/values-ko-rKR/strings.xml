@@ -30,7 +30,6 @@
     <string name="omnipod_dash_command_not_received_by_the_pod">Pod에서 명령이 받아들여지지 않음</string>
     <string name="omnipod_dash_unknown">알려지지 않은 명령 상태</string>
     <string name="omnipod_common_history_tbr_value">%1$.2f U/h, %2$d 분</string>
-    <string name="omnipod_common_history_bolus_value">%1$.2f U</string>
     <string name="omnipod_common_alert_delivery_suspended">인슐린 주입이 중지되었습니다.</string>
     <string name="omnipod_common_history_total_delivered">총 주입량: %1$.2f U</string>
     <string name="omnipod_dash_connection_lost">Pod와의 연결 소실</string>

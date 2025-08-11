@@ -47,7 +47,6 @@
     <string name="omnipod_common_overview_button_silence_alerts">Wycisz alarmy</string>
     <string name="omnipod_common_overview_pod_status">Status Poda</string>
     <string name="omnipod_common_overview_total_delivered">Łącznie dostarczono</string>
-    <string name="omnipod_common_overview_total_delivered_value">%1$.2f U</string>
     <string name="omnipod_common_overview_pod_unique_id">Unikalny ID</string>
     <string name="omnipod_common_overview_lot_number">Numer LOT</string>
     <string name="omnipod_common_overview_pod_sequence_number">Numer sekwencji</string>
@@ -168,7 +167,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Tak</string>
     <string name="omnipod_common_no">Nie</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Anuluj</string>
     <string name="omnipod_common_warning">Ostrzeżenie</string>
     <string name="omnipod_common_disable_suspend_alerts">WYŁĄCZ OSTRZEŻENIA O ZAWIESZENIU</string>

@@ -8,11 +8,8 @@
     <string name="omnipod_dash_history_item_amount">Mængde</string>
     <string name="omnipod_dash_history_item_source">Kilde</string>
     <string name="omnipod_dash_history_item_date">Dato</string>
-    <string name="omnipod_dash_history_type">Type:</string>
     <!-- Omnipod Dash - Overview -->
-    <string name="omnipod_dash_overview_bluetooth_status">Bluetooth Status</string>
     <string name="omnipod_dash_overview_bluetooth_address">Bluetooth adresse</string>
-    <string name="omnipod_dash_overview_firmware_version_value">Firmware %1$s / Bluetooth %2$s</string>
     <string name="omnipod_dash_overview_bluetooth_connection_quality">Forbindelseskvalitet</string>
     <string name="omnipod_dash_overview_delivery_status">Afgivelsesstatus</string>
     <!-- Omnipod Dash - Pod Activation Wizard -->

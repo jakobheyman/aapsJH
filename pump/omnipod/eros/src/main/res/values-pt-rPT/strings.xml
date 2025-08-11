@@ -7,7 +7,6 @@
     <string name="omnipod_eros_preferences_pulse_log_button_enabled">Mostrar botão de Pulse Log no menu de Gestão do Pod</string>
     <string name="omnipod_eros_preferences_riley_link_stats_button_enabled">Mostrar botão de Estatísticas do RileyLink no menu de Gestão do Pod</string>
     <string name="omnipod_eros_preferences_battery_change_logging_enabled">Activar o registo de mudança da bateria em Acções</string>
-    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <string name="omnipod_eros_preferences_notification_uncertain_tbr_sound_enabled">Som activado para notificações incertas da DBT</string>
     <string name="omnipod_eros_preferences_notification_uncertain_smb_sound_enabled">Som activado para notificações SMB incerto</string>
     <string name="omnipod_eros_preferences_notification_uncertain_bolus_sound_enabled">Som activado para notificações de bolús incerto</string>
@@ -17,7 +16,6 @@
     <string name="omnipod_eros_history_item_source">Fonte</string>
     <string name="omnipod_eros_history_item_date">Data</string>
     <string name="omnipod_eros_history_type">Tipo:</string>
-    <string name="omnipod_eros_history_bolus_value">%1$.2f U</string>
     <string name="omnipod_eros_history_bolus_value_with_carbs">%1$.2f U, HC=%2$.1f g</string>
     <string name="omnipod_eros_history_tbr_value">Rácio: %1$.2f U, duração: %2$d minutes</string>
     <!-- Omnipod Eros - Short Status -->
@@ -60,7 +58,6 @@
     <string name="omnipod_eros_pod_management_button_reset_riley_link_config">Redefinir configuração RileyLink</string>
     <string name="omnipod_eros_pod_management_button_read_pulse_log">Ler Pulse Log</string>
     <string name="omnipod_eros_pod_management_button_reading_pulse_log">A Ler Pulse Log…</string>
-    <string name="omnipod_eros_pod_management_pulse_log">Pulse Log</string>
     <string name="omnipod_eros_pod_management_pulse_log_value">Pulse Log (copiado para a área de transferência)</string>
     <!-- Omnipod Eros - Pod Activation Wizard -->
     <string name="omnipod_eros_pod_activation_wizard_initialize_pod_text">A tentar emparelhar com o novo Pod e purgá-lo.\n\nQuando o processo de inicialização for concluído com sucesso, pode pressionar <b>Seguinte</b>.\n\n<b>Nota:</b> por favor, posicione o RileyLink na posição vertical e coloque o Pod a alguns centímetros de distância dele.</string>

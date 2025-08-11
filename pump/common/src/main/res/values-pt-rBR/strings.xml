@@ -22,7 +22,6 @@
     <string name="history_group_prime">Purgar/Preencher</string>
     <string name="history_group_alarm">Alarmes</string>
     <string name="history_group_glucose">Glicose</string>
-    <string name="history_group_base">Base</string>
     <string name="history_group_other">Outro</string>
     <string name="history_group_events">Todos os eventos</string>
     <string name="history_group_events_no_stat">Eventos (sem Status)</string>

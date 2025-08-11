@@ -7,7 +7,6 @@
     <string name="omnipod_eros_preferences_pulse_log_button_enabled">Показване на PULSE LOG в менюто на Pod Management</string>
     <string name="omnipod_eros_preferences_riley_link_stats_button_enabled">Показване на RileyLink Stats бутон в меню Управление на Pod</string>
     <string name="omnipod_eros_preferences_battery_change_logging_enabled">Позволи на записване на смяна на батерията в Действия</string>
-    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <string name="omnipod_eros_preferences_notification_uncertain_tbr_sound_enabled">Сигнал при неясни TBR известия, разрешен</string>
     <string name="omnipod_eros_preferences_notification_uncertain_smb_sound_enabled">Сигнал при неясни SMB известия, разрешен</string>
     <string name="omnipod_eros_preferences_notification_uncertain_bolus_sound_enabled">Сигнал при неясни болус известия, разрешен</string>

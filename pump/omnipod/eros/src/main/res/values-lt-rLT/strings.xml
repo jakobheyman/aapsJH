@@ -7,7 +7,6 @@
     <string name="omnipod_eros_preferences_pulse_log_button_enabled">Pod valdymo meniu rodyti mygtuką Pulse log</string>
     <string name="omnipod_eros_preferences_riley_link_stats_button_enabled">Pod valdymo meniu rodyti mygtuką RileyLink statistika</string>
     <string name="omnipod_eros_preferences_battery_change_logging_enabled">Įjungti baterijos keitimo registravimą veiksmuose</string>
-    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <string name="omnipod_eros_preferences_notification_uncertain_tbr_sound_enabled">Įjungtas garsas neaiškiems laikinos bazės perspėjimams</string>
     <string name="omnipod_eros_preferences_notification_uncertain_smb_sound_enabled">Įjungtas garsas neaiškiems SMB perspėjimams</string>
     <string name="omnipod_eros_preferences_notification_uncertain_bolus_sound_enabled">Įjungtas garsas neaiškiems bolusų perspėjimams</string>

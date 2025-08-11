@@ -3,7 +3,6 @@
     <!-- Omnipod Eros - Description -->
     <!-- Omnipod Eros - Overview -->
     <!-- Omnipod Eros - Preferences -->
-    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <!-- Omnipod Eros - History -->
     <string name="omnipod_eros_history_bolus_value">%1$.2f E</string>
     <!-- Omnipod Eros - Short Status -->

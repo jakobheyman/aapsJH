@@ -37,8 +37,6 @@
     <string name="time_last_week">Τελευταία εβδομάδα</string>
     <string name="time_last_month">Τελευταίος μήνας</string>
     <!-- BLE Config -->
-    <string name="ble_config_button_scan_start">Scan</string>
-    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Επιλεγμένο</string>
     <string name="ble_config_scan_scanning">Σάρωση</string>
     <string name="ble_config_scan_finished">Η σάρωση ολοκληρώθηκε</string>
@@ -49,10 +47,6 @@
     <plurals name="duration_days">
         <item quantity="one">%1$d ημέρες</item>
         <item quantity="other">%1$d ημέρες</item>
-    </plurals>
-    <plurals name="duration_hours">
-        <item quantity="one">%1$d hour</item>
-        <item quantity="other">%1$d ώρες</item>
     </plurals>
     <plurals name="hoursago">
         <item quantity="one">%1$d ώρα πριν</item>

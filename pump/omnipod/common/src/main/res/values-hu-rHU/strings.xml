@@ -27,7 +27,6 @@
     <!-- Omnipod - Other -->
     <string name="omnipod_common_yes">Igen</string>
     <string name="omnipod_common_no">Nem</string>
-    <string name="omnipod_common_ok">OK</string>
     <string name="omnipod_common_cancel">Mégse</string>
     <string name="omnipod_common_warning">Figyelmeztetés</string>
     <!-- Omnipod - Times -->

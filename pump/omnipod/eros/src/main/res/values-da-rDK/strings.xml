@@ -7,7 +7,6 @@
     <string name="omnipod_eros_preferences_pulse_log_button_enabled">Vis Puls Log knap i Pod indstillingsmenu</string>
     <string name="omnipod_eros_preferences_riley_link_stats_button_enabled">Vis Rileylink statistik knap i Pod indstillingsmenu</string>
     <string name="omnipod_eros_preferences_battery_change_logging_enabled">Aktiver logning af batteriskift i menuen Handlinger</string>
-    <string name="omnipod_eros_preferences_category_riley_link">RileyLink</string>
     <string name="omnipod_eros_preferences_notification_uncertain_tbr_sound_enabled">Lyd for usikre TBR-meddelelser aktiveret</string>
     <string name="omnipod_eros_preferences_notification_uncertain_smb_sound_enabled">Lyd for usikre SMB notifikationer aktiveret</string>
     <string name="omnipod_eros_preferences_notification_uncertain_bolus_sound_enabled">Lyd for usikre bolus notifikationer aktiveret</string>
@@ -16,12 +15,10 @@
     <string name="omnipod_eros_history_item_description">Beskrivelse</string>
     <string name="omnipod_eros_history_item_source">Kilde</string>
     <string name="omnipod_eros_history_item_date">Dato</string>
-    <string name="omnipod_eros_history_type">Type:</string>
     <string name="omnipod_eros_history_bolus_value">%1$.2f IE</string>
     <string name="omnipod_eros_history_bolus_value_with_carbs">%1$.2f IE, CH=%2$.1f g</string>
     <string name="omnipod_eros_history_tbr_value">Rate: %1$.2f IE, varighed: %2$d minutter</string>
     <!-- Omnipod Eros - Short Status -->
-    <string name="omnipod_eros_short_status_riley_link_battery">RLBatt: %1$d</string>
     <!-- Omnipod Eros - Error -->
     <string name="omnipod_eros_error_riley_link_address_invalid">RileyLink adresse ugyldig.</string>
     <string name="omnipod_eros_error_crc_mismatch">Kommunikation mislykkedes: Bekræftelse af meddelelsesintegritet mislykkedes</string>

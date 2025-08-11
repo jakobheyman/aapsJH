@@ -38,7 +38,6 @@
     <string name="time_last_month">Ultima lună</string>
     <!-- BLE Config -->
     <string name="ble_config_button_scan_start">Scanare</string>
-    <string name="ble_config_scan_stop">Stop</string>
     <string name="ble_config_scan_selected">Selectat</string>
     <string name="ble_config_scan_scanning">Scanează</string>
     <string name="ble_config_scan_finished">Scanare terminată</string>

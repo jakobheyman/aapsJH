@@ -47,7 +47,6 @@
     <string name="omnipod_common_overview_button_silence_alerts">경고 음소거</string>
     <string name="omnipod_common_overview_pod_status">Pod 상태</string>
     <string name="omnipod_common_overview_total_delivered">모두 주입됨</string>
-    <string name="omnipod_common_overview_total_delivered_value">%1$.2f U</string>
     <string name="omnipod_common_overview_pod_unique_id">고유 ID</string>
     <string name="omnipod_common_overview_lot_number">LOT 번호</string>
     <string name="omnipod_common_overview_pod_sequence_number">일련번호</string>

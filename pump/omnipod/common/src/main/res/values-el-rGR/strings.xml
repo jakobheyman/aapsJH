@@ -47,7 +47,6 @@
     <string name="omnipod_common_overview_button_silence_alerts">Σίγαση Ειδοποιήσεων</string>
     <string name="omnipod_common_overview_pod_status">Κατάσταση Pod</string>
     <string name="omnipod_common_overview_total_delivered">Σύνολο Χορηγήσεων</string>
-    <string name="omnipod_common_overview_total_delivered_value">%1$.2f U</string>
     <string name="omnipod_common_overview_pod_unique_id">Μοναδικό ID</string>
     <string name="omnipod_common_overview_lot_number">Αριθμός Παρτίδας</string>
     <string name="omnipod_common_overview_pod_sequence_number">Αριθμός Ακολουθίας</string>
@@ -174,14 +173,6 @@
     <string name="omnipod_common_less_than_a_minute_ago">Λιγότερο από 1 λεπτό πριν</string>
     <string name="omnipod_common_composite_time">%1$s και %2$s</string>
     <string name="omnipod_common_time_ago">%1$s πριν</string>
-    <plurals name="omnipod_common_minutes">
-        <item quantity="one">%1$d minute</item>
-        <item quantity="other">%1$d λεπτά</item>
-    </plurals>
-    <plurals name="omnipod_common_hours">
-        <item quantity="one">%1$d hour</item>
-        <item quantity="other">%1$d ώρες</item>
-    </plurals>
     <plurals name="omnipod_common_days">
         <item quantity="one">%1$d ημέρες</item>
         <item quantity="other">%1$d ημέρες</item>

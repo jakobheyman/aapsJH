@@ -15,7 +15,6 @@
     <string name="history_group_bolus">Bólus</string>
     <string name="history_group_prime">Purgar</string>
     <string name="history_group_alarm">Alarmes</string>
-    <string name="history_group_glucose">Glucose</string>
     <string name="history_group_other">Outro</string>
     <!-- Time -->
     <!-- BLE Config -->
