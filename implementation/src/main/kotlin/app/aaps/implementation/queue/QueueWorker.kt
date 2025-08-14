@@ -120,6 +120,12 @@ class QueueWorker internal constructor(
                     SystemClock.sleep(1000)
                     continue
                 }
+                if (pump.isBusy()) {
+                    aapsLogger.debug(LTag.PUMPQUEUE, "busy")
+                    rxBus.send(EventPumpStatusChanged(EventPumpStatusChanged.Status.CONNECTING, secondsElapsed.toInt()))
+                    SystemClock.sleep(1000)
+                    continue
+                }
                 if (queue.performing() == null) {
                     if (!connectLogged) {
                         connectLogged = true
