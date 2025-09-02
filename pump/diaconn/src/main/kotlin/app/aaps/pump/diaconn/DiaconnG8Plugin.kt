@@ -234,8 +234,7 @@ class DiaconnG8Plugin @Inject constructor(
     override fun isSuspended(): Boolean =
         diaconnG8Pump.basePauseStatus == 1
 
-    override fun isBusy(): Boolean =
-        diaconnG8Service?.isConnected == true || diaconnG8Service?.isConnecting == true
+    override fun isBusy(): Boolean = false
 
     override fun setNewBasalProfile(profile: Profile): PumpEnactResult {
         val result = instantiator.providePumpEnactResult()

@@ -4,6 +4,7 @@
     <string name="pump_driver_changed" comment="26 characters max for translation">Změněn ovladač pumpy.</string>
     <!--    DateUtil-->
     <string name="minago">před %1$d min</string>
+    <string name="secago">před %1$d s</string>
     <string name="minago_long">před %1$d minutamí</string>
     <string name="hoursago">před %1$.1f h</string>
     <string name="days_ago">Před %1$.1f dny</string>

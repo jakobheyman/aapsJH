@@ -4,6 +4,7 @@
     <string name="pump_driver_changed" comment="26 characters max for translation">Pumpedriver er endret.</string>
     <!--    DateUtil-->
     <string name="minago">%1$d min siden</string>
+    <string name="secago">%1$d s siden</string>
     <string name="minago_long">%1$d minutter siden</string>
     <string name="hoursago">%1$.1f timer siden</string>
     <string name="days_ago">%1$.1f dager siden</string>

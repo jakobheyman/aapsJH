@@ -253,8 +253,7 @@ class DanaRSPlugin @Inject constructor(
     override fun isSuspended(): Boolean =
         danaPump.pumpSuspended || danaPump.errorState != DanaPump.ErrorState.NONE
 
-    override fun isBusy(): Boolean =
-        danaRSService?.isConnected == true || danaRSService?.isConnecting == true
+    override fun isBusy(): Boolean = false
 
     override fun setNewBasalProfile(profile: Profile): PumpEnactResult {
         val result = instantiator.providePumpEnactResult()

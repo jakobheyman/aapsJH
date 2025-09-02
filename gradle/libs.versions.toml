@@ -1,11 +1,11 @@
 # libs.versions.toml
 [versions]
-gradlePlugin = "8.12.0"
+gradlePlugin = "8.12.2"
 googleServices = "4.4.3"
-kotlin = "2.1.21"
+kotlin = "2.2.10"
 wearable = "2.9.0"
 room = "2.7.2"
-dagger = "2.57"
+dagger = "2.57.1"
 mockito = "5.17.0"
 junit = "5.13.4"
 okhttp = "5.1.0"
@@ -18,9 +18,9 @@ annotation = "1.9.1"
 
 [plugins]
 android-library = { id = "com.android.library" }
-klint = { id = "org.jlleitschuh.gradle.ktlint", version = "13.0.0" }
+klint = { id = "org.jlleitschuh.gradle.ktlint", version = "13.1.0" }
 moduleDependencyGraph = { id = "com.savvasdalkitsis.module-dependency-graph", version = "0.12" }
-ksp = { id = "com.google.devtools.ksp", version = "2.1.21-2.0.1" }
+ksp = { id = "com.google.devtools.ksp", version = "2.2.10-2.0.2" }
 android-test = { id = "com.android.test", version.ref = "gradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
@@ -35,7 +35,7 @@ com-google-dagger-android-processor = { group = "com.google.dagger", name = "dag
 com-google-dagger-android-support = { group = "com.google.dagger", name = "dagger-android-support", version.ref = "dagger" }
 
 com-google-firebase-gradle = { group = "com.google.firebase", name = "firebase-crashlytics-gradle", version = "3.0.6" }
-com-google-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version = "34.1.0" }
+com-google-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version = "34.2.0" }
 com-google-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 com-google-firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 com-google-firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
@@ -87,7 +87,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version = "1.1.0" }
 androidx-browser = { group = "androidx.browser", name = "browser", version = "1.9.0" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version = "2.2.1" }
-androidx-core = { group = "androidx.core", name = "core-ktx", version = "1.16.0" }
+androidx-core = { group = "androidx.core", name = "core-ktx", version = "1.17.0" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version = "3.7.0" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version = "1.8.9" }
@@ -143,7 +143,7 @@ joda-time = { group = "joda-time", name = "joda-time", version = "2.14.0" }
 org-skyscreamer-jsonassert = { group = "org.skyscreamer", name = "jsonassert", version = "1.5.3" }
 com-scottyab-rootbeer-lib = { group = "com.scottyab", name = "rootbeer-lib", version = "0.1.1" }
 com-eatthepath-java-otp = { group = "com.eatthepath", name = "java-otp", version = "0.4.0" }
-com-github-bumptech-glide = { group = "com.github.bumptech.glide", name = "glide", version = "4.16.0" }
+com-github-bumptech-glide = { group = "com.github.bumptech.glide", name = "glide", version = "5.0.3" }
 com-github-kenglxn-qrgen-android = { group = "com.github.kenglxn.QRGen", name = "android", version = "3.0.1" }
 com-github-rtchagas-pingplacepicker = { group = "com.github.rtchagas", name = "pingplacepicker", version = "3.0.1" }
 io-socket-client = { group = "io.socket", name = "socket.io-client", version = "2.1.2" }

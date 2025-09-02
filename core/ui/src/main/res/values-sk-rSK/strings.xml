@@ -91,6 +91,7 @@
     <string name="alarm">Alarm</string>
     <string name="exportsettings">Export nastavení</string>
     <string name="disableloop">Deaktivovať uzavretý okruh</string>
+    <string name="disabled_loop">Uzavretý okruh deaktivovaný</string>
     <string name="resumeloop">Pokračovať v uzavretom okruhu</string>
     <string name="suspendloop">Pozastaviť uzavretý okruh</string>
     <string name="duration_min_label">Trvanie [min]</string>
@@ -118,6 +119,7 @@
     <string name="duration_label">Trvanie</string>
     <string name="shortgramm">g</string>
     <string name="pumpsuspended">Pumpa pozastavená</string>
+    <string name="pump_running">Pumpa beží</string>
     <string name="notconfigured">Nenakonfigurované</string>
     <string name="loopsuspended">Uzavretý okruh pozastavený</string>
     <string name="trend_arrow">Trendová šípka</string>
@@ -160,6 +162,9 @@
     <string name="closedloop">Uzavretý okruh</string>
     <string name="openloop">Otvorený okruh</string>
     <string name="lowglucosesuspend">Pozastavenie pri nízkej glykémii (LGS)</string>
+    <string name="pump_disconnected">Pumpa odpojená</string>
+    <string name="pump_suspended">Pumpa pozastavená</string>
+    <string name="mode_reverted">Režim bol obnovený</string>
     <string name="dia">DIA</string>
     <string name="ic_short">I:C</string>
     <string name="isf_short">ISF</string>
@@ -233,6 +238,7 @@
     <string name="careportal_openapsoffline">OpenAPS vypnuté</string>
     <string name="pump_battery_change">Výmena batérie v pumpe</string>
     <string name="temporary_target">Dočasný cieľ</string>
+    <string name="running_mode">Režim spustenia</string>
     <string name="careportal_temporarytargetvalue">Hodnota dočasného cieľa</string>
     <string name="careportal_temporarytargetcancel">Zrušiť dočasný cieľ</string>
     <string name="boluswizard">Bolusová kalkulačka</string>
@@ -295,6 +301,8 @@
     <string name="uel_lgs_loop_mode">REŽIM LGS</string>
     <string name="uel_open_loop_mode">REŽIM OTVORENÉHO OKRUHU</string>
     <string name="uel_loop_disabled">UZAVRETÝ OKRUH VYPNUTÝ</string>
+    <string name="uel_loop_resumed">UZAVRETÝ OKRUH OBNOVENÝ</string>
+    <string name="uel_pump_running">PUMPA BEŽÍ</string>
     <string name="uel_reconnect">ZNOVU PRIPOJIŤ</string>
     <string name="uel_disconnect">ODPOJIŤ</string>
     <string name="uel_resume">OBNOVIŤ</string>

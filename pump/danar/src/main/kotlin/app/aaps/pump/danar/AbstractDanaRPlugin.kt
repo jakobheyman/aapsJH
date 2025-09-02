@@ -116,8 +116,7 @@ abstract class AbstractDanaRPlugin protected constructor(
         return danaPump.pumpSuspended
     }
 
-    override fun isBusy(): Boolean =
-        executionService?.isConnected == true || executionService?.isConnecting == true
+    override fun isBusy(): Boolean = false
 
     // Pump interface
     override fun setNewBasalProfile(profile: Profile): PumpEnactResult {
