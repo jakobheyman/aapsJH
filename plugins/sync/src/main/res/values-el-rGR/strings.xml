@@ -55,17 +55,10 @@
     <string name="ns_use_ws_title">Σύνδεση σε websockets</string>
     <string name="ns_use_ws_summary">Ενεργοποίηση σημαίνει: ταχύτερες ενημερώσεις, λήψη ειδοποιήσεων και ανακοινώσεις και υψηλότερη κατανάλωση μπαταρίας παρόμοια με την v1. Όλοι οι άλλοι μεταφορτωτές στο NS πρέπει να χρησιμοποιούν το πρωτόκολλο v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Το όνομα χρήστη του Tidepool, συνήθως το mail σας</string>
-    <string name="title_tidepool_username">Όνομα Χρήστη</string>
-    <string name="summary_tidepool_password">Το συνθηματικό του Tidepool</string>
-    <string name="title_tidepool_password">Συνθηματικό εισόδου</string>
-    <string name="title_tidepool_test_login">Δοκιμή εισόδου Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Αν ενεργοποιήθηκε, τα δεδομένα θα ανέβουν στο https://int-app.tidepool.org αντί για το σύνηθες https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Χρησιμοποιήστε διακομιστές ολοκλήρωσης (δοκιμής)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Αποστολή δεδομένων στο Tidepool</string>
-    <string name="remove_all">Αφαίρεση όλων</string>
     <string name="upload_now">Ανέβασμα τώρα</string>
     <string name="not_connected">Μη συνδεδεμένο</string>
     <string name="read_only">Μόνο για ανάγνωση</string>

@@ -19,6 +19,8 @@ import android.os.SystemClock
 import android.util.Base64
 import androidx.core.app.ActivityCompat
 import app.aaps.core.data.time.T
+import app.aaps.core.data.ue.Sources
+import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.notifications.Notification
@@ -30,6 +32,7 @@ import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.ui.extensions.scanForActivity
 import app.aaps.core.ui.toast.ToastUtils
 import app.aaps.core.utils.notifyAll
 import app.aaps.core.utils.waitMillis
@@ -67,7 +70,8 @@ class BLEComm @Inject internal constructor(
     private val pumpSync: PumpSync,
     private val dateUtil: DateUtil,
     private val uiInteraction: UiInteraction,
-    private val preferences: Preferences
+    private val preferences: Preferences,
+    private val configBuilder: ConfigBuilder
 ) {
 
     companion object {
@@ -183,12 +187,17 @@ class BLEComm @Inject internal constructor(
             // assume pairing keys are invalid
             val lastClearRequest = preferences.get(DanaLongKey.LastClearKeyRequest)
             if (lastClearRequest != 0L && dateUtil.isOlderThan(lastClearRequest, 5)) {
+                /*
                 aapsLogger.error(LTag.PUMPBTCOMM, "Clearing pairing keys !!!")
                 preferences.remove(DanaStringComposedKey.V3RandomParingKey, danaRSPlugin.mDeviceName)
                 preferences.remove(DanaStringComposedKey.V3ParingKey, danaRSPlugin.mDeviceName)
                 preferences.remove(DanaStringComposedKey.V3RandomSyncKey, danaRSPlugin.mDeviceName)
                 ToastUtils.errorToast(context, R.string.invalidpairing)
                 danaRSPlugin.changePump()
+                */
+                // Behavior change - Try to restart app
+                context.scanForActivity()?.finish()
+                configBuilder.exitApp("Dana BLE encryption failed", Sources.Maintenance, true)
             } else if (lastClearRequest == 0L) {
                 aapsLogger.error(LTag.PUMPBTCOMM, "Clearing pairing keys postponed")
                 preferences.put(DanaLongKey.LastClearKeyRequest, dateUtil.now())
@@ -644,7 +653,7 @@ class BLEComm @Inject internal constructor(
 
     // 2nd packet BLE5
     private fun sendBLE5PairingInformation() {
-        val params = ByteArray(4) { 0.toByte() }
+        val params = ByteArray(4)
         val bytes: ByteArray = bleEncryption.getEncryptedPacket(BleEncryption.DANAR_PACKET__OPCODE_ENCRYPTION__TIME_INFORMATION, params, null)
         aapsLogger.debug(LTag.PUMPBTCOMM, ">>>>> " + "ENCRYPTION__TIME_INFORMATION BLE5" + " " + DanaRSPacket.toHexString(bytes))
         writeCharacteristicNoResponse(uartWriteBTGattChar, bytes)

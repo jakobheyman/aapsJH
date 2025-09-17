@@ -156,6 +156,7 @@
     <string name="treatments_wizard_basaliob_label">Basal IOB</string>
     <string name="invalid">UGYLDIG</string>
     <string name="login">Login</string>
+    <string name="logout">Logg ut</string>
     <string name="prime_fill">Prime/fylling</string>
     <string name="overview_insulin_label">Insulin</string>
     <string name="stoptemptarget">Avbryt midlertidig mål</string>

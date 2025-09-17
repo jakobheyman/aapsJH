@@ -3,6 +3,7 @@ package app.aaps.plugins.aps.openAPSAMA
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
+import app.aaps.plugins.aps.openAPSSMB.GlucoseStatusCalculatorSMB
 import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -20,7 +21,8 @@ class OpenAPSAMAPluginTest : TestBaseWithProfile() {
     @BeforeEach fun prepare() {
         openAPSAMAPlugin = OpenAPSAMAPlugin(
             injector, aapsLogger, rxBus, constraintChecker, rh, config, profileFunction, activePlugin,
-            iobCobCalculator, processedTbrEbData, hardLimits, dateUtil, persistenceLayer, glucoseStatusProvider, preferences, determineBasalAMA
+            iobCobCalculator, processedTbrEbData, hardLimits, dateUtil, persistenceLayer, glucoseStatusProvider, preferences, determineBasalAMA,
+            GlucoseStatusCalculatorSMB(aapsLogger, iobCobCalculator, dateUtil, decimalFormatter)
         )
     }
 

@@ -50,9 +50,6 @@ enum class StringKey(
     NsClientApiSecret("nsclientinternal_api_secret", "", isPassword = true),
     NsClientWifiSsids("ns_wifi_ssids", "", dependency = BooleanKey.NsClientUseWifi),
     NsClientAccessToken("nsclient_token", "", isPassword = true),
-    TidepoolUsername("tidepool_username", ""),
-    TidepoolPassword("tidepool_password", "", isPassword = true),
-    TidepoolTestLogin(key = "tidepool_test_login", ""),
 
     PumpCommonBolusStorage("pump_sync_storage_bolus", ""),
     PumpCommonTbrStorage("pump_sync_storage_tbr", ""),

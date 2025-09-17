@@ -28,7 +28,6 @@ import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.UnitDoubleKey
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.fromGv
-import app.aaps.implementation.iob.GlucoseStatusProviderImpl
 import app.aaps.plugins.aps.loop.LoopPlugin
 import app.aaps.plugins.main.R
 import app.aaps.plugins.main.general.smsCommunicator.otp.OneTimePassword
@@ -96,13 +95,12 @@ class SmsCommunicatorPluginTest : TestBaseWithProfile() {
             persistenceLayer.insertAndCancelCurrentTemporaryTarget(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())
         ).thenReturn(Single.just(PersistenceLayer.TransactionResult<TT>().apply {
         }))
-        val glucoseStatusProvider = GlucoseStatusProviderImpl(aapsLogger, iobCobCalculator, dateUtilMocked, decimalFormatter)
 
         smsCommunicatorPlugin = SmsCommunicatorPlugin(
             injector, aapsLogger, rh, smsManager, aapsSchedulers, preferences, constraintChecker, rxBus, profileFunction, profileUtil, fabricPrivacy, activePlugin, commandQueue,
             loop, iobCobCalculator, xDripBroadcast,
             otp, config, dateUtilMocked, uel,
-            glucoseStatusProvider, persistenceLayer, decimalFormatter, configBuilder
+            smbGlucoseStatusProvider, persistenceLayer, decimalFormatter, configBuilder
         )
         smsCommunicatorPlugin.setPluginEnabled(PluginType.GENERAL, true)
         Mockito.doAnswer { invocation: InvocationOnMock ->

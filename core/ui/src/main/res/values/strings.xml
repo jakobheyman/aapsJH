@@ -157,6 +157,7 @@
     <string name="format_percent" translatable="false">%1$d%%</string>
     <string name="invalid">INVALID</string>
     <string name="login">Login</string>
+    <string name="logout">Logout</string>
     <string name="prime_fill">Prime/Fill</string>
     <string name="overview_insulin_label">Insulin</string>
     <string name="stoptemptarget">Stop temp target</string>

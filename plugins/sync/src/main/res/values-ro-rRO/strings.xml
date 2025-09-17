@@ -56,17 +56,10 @@
     <string name="ns_use_ws_title">Conectează-te la websockets</string>
     <string name="ns_use_ws_summary">Activare înseamnă: actualizări mai rapide, primirea alarmelor și anunțurilor și un consum mai mare al bateriei similar cu v1. Restul upload-urilor NS trebuie să folosească protocolul v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Utilizatorul Tidepool (de obicei adresa de email)</string>
-    <string name="title_tidepool_username">Numele de utilizator</string>
-    <string name="summary_tidepool_password">Parola Tidepool</string>
-    <string name="title_tidepool_password">Parola utilizatorului</string>
-    <string name="title_tidepool_test_login">Testează conectarea la Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Dacă este activ, înregistrările vor fi transmise către https://int-app.tidepool.org, în loc să fie transmise către https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Folosește serverele Integration (test)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Înregistrează datele la Tidepool</string>
-    <string name="remove_all">Înlătură Tot</string>
     <string name="upload_now">Încarcă acum</string>
     <string name="not_connected">Neconectat</string>
     <string name="read_only">Doar vizualizare</string>

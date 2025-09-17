@@ -64,17 +64,11 @@
     <string name="ns_use_ws_title">התחבר ל-websockets</string>
     <string name="ns_use_ws_summary">משמעות ההפעלה: עדכונים, קבלת התראות והודעות במהירות גבוהה יותר תוך צריכת סוללה גבוהה יותר, בדומה ל-v1. כל שאר המעלים ל-NS חייבים להשתמש בפרוטוקול v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">שם המשתמש שלכם להתחברות ל-Tidepool, בדרך כלל כתובת הדוא\"ל שלכם</string>
-    <string name="title_tidepool_username">שם משתמש להתחברות</string>
-    <string name="summary_tidepool_password">סיסמת ההתחברות ל-Tidepool</string>
-    <string name="title_tidepool_password">סיסמת התחברות</string>
-    <string name="title_tidepool_test_login">בדיקת התחברות ל-Tidepool</string>
-    <string name="summary_tidepool_dev_servers">אם האפשרות מופעלת, נתונים יועלו לכתובת https://int-app.tidepool.org במקום https://app.tidepool.org/</string>
+    <string name="summary_tidepool_dev_servers">אם האפשרות מופעלת, נתונים יישלחו לשרתי ניסוי במקום לשרתים הרגילים</string>
     <string name="title_tidepool_dev_servers">שימוש בשרתי אינטגרציה (בדיקה)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">מעלה נתונים ל-Tidepool</string>
-    <string name="remove_all">הסר הכל</string>
     <string name="upload_now">העלה עכשיו</string>
     <string name="not_connected">לא מחובר</string>
     <string name="read_only">לקריאה בלבד</string>

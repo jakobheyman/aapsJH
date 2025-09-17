@@ -55,17 +55,10 @@
     <string name="ns_use_ws_title">Свържи се с websockets /протокола за връзка/</string>
     <string name="ns_use_ws_summary">Активирането означава: по-бързи актуализации, получаване на аларми и обявления и по-висока консумация на батерия, подобно на v1. Всички други програми за качване в NS трябва да използват v3 протокол.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Потребителското Ви име за Tidepool, обикновено е Вашия имейл</string>
-    <string name="title_tidepool_username">Потребителско име</string>
-    <string name="summary_tidepool_password">Tidepool парола</string>
-    <string name="title_tidepool_password">Парола </string>
-    <string name="title_tidepool_test_login">Тест на Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Когато е активирано, данните ще отиват към https://int-app.tidepool.org вместо към стандартния адрес https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Използвай тестовите сървъри</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Качване на данни в Tidepool</string>
-    <string name="remove_all">Премахване на всички</string>
     <string name="upload_now">Качи сега</string>
     <string name="not_connected">Няма активна връзка</string>
     <string name="read_only">Само за четене</string>

@@ -2,9 +2,10 @@ package app.aaps.plugins.aps.openAPSSMB
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.util.LongSparseArray
+import androidx.core.net.toUri
 import androidx.core.util.forEach
+import androidx.core.util.size
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
@@ -18,6 +19,8 @@ import app.aaps.core.interfaces.aps.APS
 import app.aaps.core.interfaces.aps.APSResult
 import app.aaps.core.interfaces.aps.AutosensResult
 import app.aaps.core.interfaces.aps.CurrentTemp
+import app.aaps.core.interfaces.aps.GlucoseStatus
+import app.aaps.core.interfaces.aps.GlucoseStatusSMB
 import app.aaps.core.interfaces.aps.OapsProfile
 import app.aaps.core.interfaces.bgQualityCheck.BgQualityCheck
 import app.aaps.core.interfaces.configuration.Config
@@ -102,6 +105,7 @@ open class OpenAPSSMBPlugin @Inject constructor(
     private val uiInteraction: UiInteraction,
     private val determineBasalSMB: DetermineBasalSMB,
     private val profiler: Profiler,
+    private val glucoseStatusCalculatorSMB: GlucoseStatusCalculatorSMB
 ) : PluginBase(
     PluginDescription()
         .mainType(PluginType.APS)
@@ -235,7 +239,7 @@ open class OpenAPSSMBPlugin @Inject constructor(
         // no cached result found, let's calculate the value
         //aapsLogger.debug("calculateVariableIsf $caller CAL ${dateUtil.dateAndTimeAndSecondsString(timestamp)} $sensitivity")
         dynIsfCache.put(key, dynIsfResult.variableSensitivity)
-        if (dynIsfCache.size() > 1000) dynIsfCache.clear()
+        if (dynIsfCache.size > 1000) dynIsfCache.clear()
         return Pair("CALC", dynIsfResult.variableSensitivity)
     }
 
@@ -265,7 +269,7 @@ open class OpenAPSSMBPlugin @Inject constructor(
         // DynamicISF specific
         // without these values DynISF doesn't work properly
         // Current implementation is fallback to SMB if TDD history is not available. Thus calculated here
-        val glucoseStatus = glucoseStatusProvider.glucoseStatusData
+        val glucoseStatus = glucoseStatusProvider.glucoseStatusData as GlucoseStatusSMB?
         dynIsfResult.tdd1D = tddCalculator.averageTDD(tddCalculator.calculate(1, allowMissingDays = false))?.data?.totalAmount
         tddCalculator.averageTDD(tddCalculator.calculate(7, allowMissingDays = false))?.let {
             dynIsfResult.tdd7D = it.data.totalAmount
@@ -364,11 +368,10 @@ open class OpenAPSSMBPlugin @Inject constructor(
         }
 
         var autosensResult = AutosensResult()
-        var dynIsfResult: DynIsfResult? = null
         // var variableSensitivity = 0.0
         // var tdd = 0.0
         // var insulinDivisor = 0
-        dynIsfResult = calculateRawDynIsf((profile as ProfileSealed.EPS).value.originalPercentage / 100.0)
+        val dynIsfResult = calculateRawDynIsf((profile as ProfileSealed.EPS).value.originalPercentage / 100.0)
         if (dynIsfMode && !dynIsfResult.tddPartsCalculated()) {
             uiInteraction.addNotificationValidTo(
                 Notification.SMB_FALLBACK, dateUtil.now(),
@@ -508,6 +511,8 @@ open class OpenAPSSMBPlugin @Inject constructor(
         rxBus.send(EventOpenAPSUpdateGui())
     }
 
+    override fun getGlucoseStatusData(allowOldData: Boolean): GlucoseStatus? = glucoseStatusCalculatorSMB.getGlucoseStatusData(allowOldData)
+
     override fun isSuperBolusEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
         value.set(false)
         return value
@@ -618,7 +623,7 @@ open class OpenAPSSMBPlugin @Inject constructor(
                     AdaptiveIntentPreference(
                         ctx = context,
                         intentKey = IntentKey.ApsLinkToDocs,
-                        intent = Intent().apply { action = Intent.ACTION_VIEW; data = Uri.parse(rh.gs(R.string.openapsama_link_to_preference_json_doc)) },
+                        intent = Intent().apply { action = Intent.ACTION_VIEW; data = rh.gs(R.string.openapsama_link_to_preference_json_doc).toUri() },
                         summary = R.string.openapsama_link_to_preference_json_doc_txt
                     )
                 )

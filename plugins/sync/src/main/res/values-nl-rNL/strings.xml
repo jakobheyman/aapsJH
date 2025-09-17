@@ -64,17 +64,10 @@
     <string name="ns_use_ws_title">Verbind met websockets</string>
     <string name="ns_use_ws_summary">Inschakelen betekent: snellere updates, ontvangen van alarmen, aankondigingen en een hoger batterijverbruik, vergelijkbaar met v1. Alle andere uploaders naar NS moeten gebruik maken van het v3 protocol.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Uw Tidepool login gebruikersnaam, normaliter uw e-mailadres</string>
-    <string name="title_tidepool_username">Inlog gebruikersnaam</string>
-    <string name="summary_tidepool_password">Uw Tidepool login wachtwoord</string>
-    <string name="title_tidepool_password">Login wachtwoord</string>
-    <string name="title_tidepool_test_login">Test Tidepool Login</string>
-    <string name="summary_tidepool_dev_servers">Indien ingeschakeld zullen uploads gaan naar https://int-app.tidepool.org in plaats van de reguliere https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Gebruik integratie (test) servers</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Upload gegevens naar Tidepool</string>
-    <string name="remove_all">Alles verwijderen</string>
     <string name="upload_now">Nu Uploaden</string>
     <string name="not_connected">Niet verbonden</string>
     <string name="read_only">Alleen lezen</string>

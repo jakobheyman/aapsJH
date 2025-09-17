@@ -75,17 +75,11 @@
     <string name="ns_use_ws_title">Koble til websockets</string>
     <string name="ns_use_ws_summary">Aktivering betyr: hurtigere oppdateringer, mottak av alarmer og kunngjøringer og høyere batteriforbruk som ligner v1 API. Alle andre opplastere til NS må bruke v3 API.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Ditt Tidepool brukernavn, normalt din e-postadresse</string>
-    <string name="title_tidepool_username">Brukernavn for innlogging</string>
-    <string name="summary_tidepool_password">Ditt passord for Tidepool</string>
-    <string name="title_tidepool_password">Passord</string>
-    <string name="title_tidepool_test_login">Test Tidepool innlogging</string>
-    <string name="summary_tidepool_dev_servers">Hvis aktivert, vil opplastinger gå til https://int-app.tidepool.org i stedet for vanlig https://app.tidepool.org/</string>
+    <string name="summary_tidepool_dev_servers">Hvis aktivert, vil opplastinger gå til testservere i stedet for den vanlige</string>
     <string name="title_tidepool_dev_servers">Bruk integrasjon (test) servere</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Laster opp data til Tidepool</string>
-    <string name="remove_all">Fjern alt</string>
     <string name="upload_now">Last opp nå</string>
     <string name="not_connected">Ikke tilkoblet</string>
     <string name="read_only">Skrivebeskyttet</string>

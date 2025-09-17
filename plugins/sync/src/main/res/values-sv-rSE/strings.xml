@@ -55,17 +55,10 @@
     <string name="ns_use_ws_title">Anslut till websockets</string>
     <string name="ns_use_ws_summary">Aktivering innebär: snabbare uppdateringar, mottagande av larm och meddelanden och högre batteriförbrukning liknande v1. OBS! Alla uppladdare till NS måste använda v3-protokollet.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Ditt användarnamn på Tidepool. Normalt din e-postadress</string>
-    <string name="title_tidepool_username">Användarnamn</string>
-    <string name="summary_tidepool_password">Ditt Tidepool-lösenord</string>
-    <string name="title_tidepool_password">Lösenord</string>
-    <string name="title_tidepool_test_login">Testlogin på Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Om man slår på denna, kommer datat skickas till https://int-app.tidepool.org istället för https://app.tidepool.org</string>
     <string name="title_tidepool_dev_servers">Använd Integration (test) servrar</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Laddar upp data till Tidepool</string>
-    <string name="remove_all">Ta bort allt</string>
     <string name="upload_now">Ladda upp nu</string>
     <string name="not_connected">Inte ansluten</string>
     <string name="read_only">Skrivskyddad</string>

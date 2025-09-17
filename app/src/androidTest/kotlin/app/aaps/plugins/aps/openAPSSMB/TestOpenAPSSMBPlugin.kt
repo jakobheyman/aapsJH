@@ -9,6 +9,7 @@ import app.aaps.core.interfaces.aps.APS
 import app.aaps.core.interfaces.aps.APSResult
 import app.aaps.core.interfaces.aps.AutosensResult
 import app.aaps.core.interfaces.aps.DetermineBasalAdapter
+import app.aaps.core.interfaces.aps.GlucoseStatus
 import app.aaps.core.interfaces.bgQualityCheck.BgQualityCheck
 import app.aaps.core.interfaces.constraints.Constraint
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
@@ -68,7 +69,8 @@ open class TestOpenAPSSMBPlugin @Inject constructor(
     private val persistenceLayer: PersistenceLayer,
     private val glucoseStatusProvider: GlucoseStatusProvider,
     private val bgQualityCheck: BgQualityCheck,
-    private val tddCalculator: TddCalculator
+    private val tddCalculator: TddCalculator,
+    private val glucoseStatusCalculatorSMB: GlucoseStatusCalculatorSMB
 ) : PluginBase(
     PluginDescription()
         .mainType(PluginType.APS)
@@ -320,6 +322,8 @@ open class TestOpenAPSSMBPlugin @Inject constructor(
         }
         rxBus.send(EventOpenAPSUpdateGui())
     }
+
+    override fun getGlucoseStatusData(allowOldData: Boolean): GlucoseStatus? = glucoseStatusCalculatorSMB.getGlucoseStatusData(allowOldData)
 
     override fun isSuperBolusEnabled(value: Constraint<Boolean>): Constraint<Boolean> {
         value.set(false)

@@ -64,17 +64,10 @@
     <string name="ns_use_ws_title">Prisijungti per WebSocket</string>
     <string name="ns_use_ws_summary">Įgalinimas reiškia: greitesni atnaujinimai, įspėjimų ir pranešimų gavimas ir didesnis baterijos eikvojimas, panašus į v1. Visi kiti įkėlėjai į NS turi naudoti v3 protokolą.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Jūsų Tidepool naudotojo vardas, įprastai tai Jūsų el. pašto adresas</string>
-    <string name="title_tidepool_username">Naudotojo vardas</string>
-    <string name="summary_tidepool_password">Jūsų Tidepool prisijungimo slaptažodis</string>
-    <string name="title_tidepool_password">Prisijungimo slaptažodis</string>
-    <string name="title_tidepool_test_login">Patikrinti Tidepool prisijungimą</string>
-    <string name="summary_tidepool_dev_servers">Jei įjungta, duomenys bus perduoti https://int-app.tidepool.org, vietoje https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Naudoti integracijos (test) serverius</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Sinchronizuoti duomenis su Tidepool</string>
-    <string name="remove_all">Pašalinti visus</string>
     <string name="upload_now">Įkelti dabar</string>
     <string name="not_connected">Neprisijungta</string>
     <string name="read_only">Tik skaityti</string>

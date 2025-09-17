@@ -55,17 +55,10 @@
     <string name="ns_use_ws_title">웹 소켓에 연결하기</string>
     <string name="ns_use_ws_summary">활성화 수단: 더 빠른 업데이트, 경보 및 알림 수신 및 v1과 유사한 배터리 소모 증가. NS에 대한 다른 모든 업로딩은 v3 프로토콜을 사용해야 합니다.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Tidepool 사용자명, 보통 이메일 주소입니다.</string>
-    <string name="title_tidepool_username">로그인 사용자명</string>
-    <string name="summary_tidepool_password">Tidepool 로그인 비밀번호</string>
-    <string name="title_tidepool_password">로그인 비밀번호</string>
-    <string name="title_tidepool_test_login">Tidepool 로그인 테스트하기</string>
-    <string name="summary_tidepool_dev_servers">활성화하면 업로드 정보가 https://app.tidepool.org/이 아닌 https://int-app.tidepool.org/로 전송됩니다.</string>
     <string name="title_tidepool_dev_servers">테스트 서버 사용</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">데이터를 Tidepool로 업로드</string>
-    <string name="remove_all">모두 제거하기</string>
     <string name="upload_now">지금 업로드하기</string>
     <string name="not_connected">연결되지 않았습니다</string>
     <string name="read_only">읽기 전용</string>

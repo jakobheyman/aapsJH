@@ -75,17 +75,10 @@
     <string name="ns_use_ws_title">Pripojiť k websocketom</string>
     <string name="ns_use_ws_summary">Povolenie znamená: rýchlejšie aktualizácie, príjem alarmov a oznámení a vyššiu spotrebu batérie podobnú v1. Všetky ostatné aplikácie nahrávajúce do NS musia používať takisto protokol v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Vaše meno používateľa na Tidepoole, obvykle Vaša E-mailová adresa</string>
-    <string name="title_tidepool_username">Meno používateľa</string>
-    <string name="summary_tidepool_password">Heslo na Tidepool</string>
-    <string name="title_tidepool_password">Heslo</string>
-    <string name="title_tidepool_test_login">Odtestovať prihlásenie na Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Pokiaľ bude aktivované, dáta sa budú nahrávať na https://int-app.tidepool.org namiesto https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Používať testovacie servery</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Nahrávánie dát na Tidepool</string>
-    <string name="remove_all">Odstrániť všetko</string>
     <string name="upload_now">Nahrať teraz</string>
     <string name="not_connected">Nepripojené</string>
     <string name="read_only">Iba na čítanie</string>

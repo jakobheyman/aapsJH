@@ -6,9 +6,11 @@ import androidx.preference.PreferenceManager
 import app.aaps.core.data.model.EPS
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.ICfg
+import app.aaps.core.interfaces.aps.GlucoseStatus
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.ProcessedTbrEbData
+import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
@@ -39,6 +41,7 @@ import app.aaps.implementation.instantiator.InstantiatorImpl
 import app.aaps.implementation.profile.ProfileStoreObject
 import app.aaps.implementation.profile.ProfileUtilImpl
 import app.aaps.implementation.utils.DecimalFormatterImpl
+import app.aaps.plugins.aps.openAPSSMB.GlucoseStatusCalculatorSMB
 import app.aaps.shared.impl.utils.DateUtilImpl
 import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
@@ -74,6 +77,15 @@ open class TestBaseWithProfile : TestBase() {
     lateinit var decimalFormatter: DecimalFormatter
     lateinit var hardLimits: HardLimits
     lateinit var instantiator: Instantiator
+    lateinit var glucoseStatusCalculatorSMB: GlucoseStatusCalculatorSMB
+
+    val smbGlucoseStatusProvider = object : GlucoseStatusProvider {
+        override val glucoseStatusData: GlucoseStatus?
+            get() = getGlucoseStatusData(false)
+
+        override fun getGlucoseStatusData(allowOldData: Boolean): GlucoseStatus? = glucoseStatusCalculatorSMB.getGlucoseStatusData(allowOldData)
+
+    }
 
     private val injectors = mutableListOf<(Any) -> Unit>()
     fun addInjector(fn: (Any) -> Unit) {
@@ -278,6 +290,7 @@ open class TestBaseWithProfile : TestBase() {
             String.format(rh.gs(string), arg1, arg2, arg3)
         }.`when`(rh).gs(anyInt(), anyString(), anyInt(), anyString())
         instantiator = InstantiatorImpl(injector, dateUtil, rh, aapsLogger, preferences, activePlugin, config, rxBus, hardLimits)
+        glucoseStatusCalculatorSMB = GlucoseStatusCalculatorSMB(aapsLogger, iobCobCalculator, dateUtil, decimalFormatter)
     }
 
     fun getValidProfileStore(): ProfileStore {

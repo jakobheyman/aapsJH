@@ -1,6 +1,7 @@
 package app.aaps.plugins.aps.openAPSAutoISF
 
 import app.aaps.core.data.aps.SMBDefaults
+import app.aaps.core.interfaces.aps.GlucoseStatusAutoIsf
 import app.aaps.core.interfaces.aps.OapsProfileAutoIsf
 import app.aaps.core.interfaces.bgQualityCheck.BgQualityCheck
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
@@ -34,7 +35,8 @@ class OpenAPSAutoISFPluginTest : TestBaseWithProfile() {
         openAPSAutoISFPlugin = OpenAPSAutoISFPlugin(
             injector, aapsLogger, rxBus, constraintChecker, rh, profileFunction, profileUtil, config, activePlugin,
             iobCobCalculator, hardLimits, preferences, dateUtil, processedTbrEbData, persistenceLayer, glucoseStatusProvider,
-            bgQualityCheck, uiInteraction, determineBasalSMB, profiler
+            bgQualityCheck, uiInteraction, determineBasalSMB, profiler,
+            GlucoseStatusCalculatorAutoIsf(aapsLogger, iobCobCalculator, dateUtil, decimalFormatter)
         )
     }
 
@@ -259,7 +261,7 @@ class OpenAPSAutoISFPluginTest : TestBaseWithProfile() {
         )
         assertThat(openAPSAutoISFPlugin.autoISF(now, profile)).isEqualTo(47.11)                             // inactive
         `when`(oapsProfile.enable_autoISF).thenReturn(true)
-        val glucoseStatus = glucoseStatusProvider.glucoseStatusData!!
+        val glucoseStatus = glucoseStatusProvider.glucoseStatusData as GlucoseStatusAutoIsf
         `when`(glucoseStatus.corrSqu).thenReturn(0.4711)
         assertThat(openAPSAutoISFPlugin.autoISF(now, profile)).isEqualTo(47.11)                             // bad parabola
         `when`(preferences.get(BooleanKey.ApsAutoIsfHighTtRaisesSens)).thenReturn(true)

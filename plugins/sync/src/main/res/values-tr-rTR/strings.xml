@@ -64,17 +64,10 @@
     <string name="ns_use_ws_title">Websockets\'e bağlanın</string>
     <string name="ns_use_ws_summary">Etkinleştirme şu anlama gelir: daha hızlı güncelleme, alarm ve duyuru alma ve v1 \'deki gibi daha yüksek pil tüketimi. NS\'ye diğer tüm yükleyiciler v3 protokolünü kullanmalıdır.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Tidepool oturum açma kullanıcı adınız, normalde e-posta adresiniz</string>
-    <string name="title_tidepool_username">Kullanıcı adınınız</string>
-    <string name="summary_tidepool_password">Tidepool şifreniz</string>
-    <string name="title_tidepool_password">Giriş Parolası</string>
-    <string name="title_tidepool_test_login">Tidepool girişini test et</string>
-    <string name="summary_tidepool_dev_servers">Etkinleştirilirse, yüklemeler https://app.tidepool.org/ yerine https://int-app.tidepool.org adresine gider</string>
     <string name="title_tidepool_dev_servers">Entegrasyon (test) sunucularını kullanın</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Tidepool\'a veri yükler</string>
-    <string name="remove_all">Tümünü kaldır</string>
     <string name="upload_now">Şimdi yükle</string>
     <string name="not_connected">Bağlantı yok</string>
     <string name="read_only">Salt okunur</string>

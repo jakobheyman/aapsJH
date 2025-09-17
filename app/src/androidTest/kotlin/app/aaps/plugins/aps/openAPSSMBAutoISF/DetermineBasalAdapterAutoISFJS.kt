@@ -7,6 +7,7 @@ import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.interfaces.aps.APSResult
 import app.aaps.core.interfaces.aps.DetermineBasalAdapter
 import app.aaps.core.interfaces.aps.GlucoseStatus
+import app.aaps.core.interfaces.aps.GlucoseStatusAutoIsf
 import app.aaps.core.interfaces.aps.IobTotal
 import app.aaps.core.interfaces.aps.MealData
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
@@ -189,7 +190,7 @@ class DetermineBasalAdapterAutoISFJS(private val scriptReader: ScriptReader, pri
         targetBg: Double,
         basalRate: Double,
         iobArray: Array<IobTotal>,
-        glucoseStatus: GlucoseStatus,
+        glucoseStatusParam: GlucoseStatus,
         mealData: MealData,
         autosensDataRatio: Double,
         tempTargetSet: Boolean,
@@ -205,6 +206,7 @@ class DetermineBasalAdapterAutoISFJS(private val scriptReader: ScriptReader, pri
     ) {
         val pump = activePlugin.activePump
         val pumpBolusStep = pump.pumpDescription.bolusStep
+        val glucoseStatus = glucoseStatusParam as GlucoseStatusAutoIsf
         this.profile.put("max_iob", maxIob)
         //mProfile.put("dia", profile.getDia());
         this.profile.put("type", "current")

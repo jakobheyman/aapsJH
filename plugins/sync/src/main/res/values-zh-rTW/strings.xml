@@ -75,17 +75,11 @@
     <string name="ns_use_ws_title">連線到 Websockets</string>
     <string name="ns_use_ws_summary">啟用意味著：更快的更新、接收警報和公告以及更高的電池消耗，類似於 v1。所有其他上傳器到 NS 必須使用 v3 協議。</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">您的 Tidepool 登錄用戶名，通常是您的電子郵件地址</string>
-    <string name="title_tidepool_username">登錄用戶名</string>
-    <string name="summary_tidepool_password">您的 Tidepool 登錄密碼</string>
-    <string name="title_tidepool_password">登錄密碼</string>
-    <string name="title_tidepool_test_login">測試 Tidepool 登錄</string>
-    <string name="summary_tidepool_dev_servers">如果啟用，上傳將轉到 https://int-app.tidepool.org 而不是一般的 https://app.tidepool.org/</string>
+    <string name="summary_tidepool_dev_servers">若啟用，資料上傳將會發送至測試伺服器，而非一般的伺服器。</string>
     <string name="title_tidepool_dev_servers">使用集成（測試）伺服器</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">將資料上傳到 Tidepool</string>
-    <string name="remove_all">移除全部</string>
     <string name="upload_now">立即上傳</string>
     <string name="not_connected">未連線</string>
     <string name="read_only">唯讀</string>

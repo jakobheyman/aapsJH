@@ -48,17 +48,10 @@
     <string name="ns_log_app_started_event">记录app启动事件到NS服务器</string>
     <string name="copy_existing_values">复制 NS 设置(如果存在的话)？</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">你的Tidepool登录用户名，通常是你的邮件地址</string>
-    <string name="title_tidepool_username">登录用户名</string>
-    <string name="summary_tidepool_password">登录密码</string>
-    <string name="title_tidepool_password">登录密码</string>
-    <string name="title_tidepool_test_login">测试Tidepool登录</string>
-    <string name="summary_tidepool_dev_servers">如果启用，则上载将转到https://intapp.tidepool.org，而不是常规https://app.tidepool.org/。</string>
     <string name="title_tidepool_dev_servers">使用集成（测试）服务器</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">数据上传到Tidepool</string>
-    <string name="remove_all">删除全部</string>
     <string name="upload_now">现在上传</string>
     <!-- Xdrip StatusLine -->
     <!--    DataBroadcast-->

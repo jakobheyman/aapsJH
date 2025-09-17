@@ -44,12 +44,6 @@
     <string name="ns_log_app_started_event">Enregistrar l\'inici de l\'app a NS</string>
     <string name="copy_existing_values">Copiar configuració NS (si existeix)?</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">El vostre nom d\'usuari de Tidepool, normalment és un email</string>
-    <string name="title_tidepool_username">Nom d\'usuari</string>
-    <string name="summary_tidepool_password">Clau d\'accés a Tidepool</string>
-    <string name="title_tidepool_password">Clau d\'accés</string>
-    <string name="title_tidepool_test_login">Prova d\'accés a Tidepool</string>
-    <string name="summary_tidepool_dev_servers">En cas d\'estar activat, les dades s\'enviaran a https://int-app.tidepool.org enlloc de a l\'habitual https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Utilitzar servidors d\'integració (test)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>

@@ -64,17 +64,10 @@
     <string name="ns_use_ws_title">Połącz używając websockets</string>
     <string name="ns_use_ws_summary">Włączenie tej opcji oznacza: szybsze aktualizacje, otrzymywanie alarmów i powiadomień z NS oraz większe zużycie baterii, podobne do v1. Wszystkie inne źródła nadające do NS muszą używać protokołu v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Twoja nazwa użytkownika Tidepool, zwykle Twój adres e-mail</string>
-    <string name="title_tidepool_username">Login nazwa użytkownika</string>
-    <string name="summary_tidepool_password">Twoje hasło logowania do Tidepool</string>
-    <string name="title_tidepool_password">Hasło logowania</string>
-    <string name="title_tidepool_test_login">Sprawdź dostęp do Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Jeśli ta opcja jest włączona, przesyłanie będzie dostępne na https://int-app.tidepool.org zamiast zwykłego https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Użyj serwerów integracyjnych (testowych)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Prześlij dane do Tidepool</string>
-    <string name="remove_all">Usuń wszystko</string>
     <string name="upload_now">Prześlij teraz</string>
     <string name="not_connected">Nie połączono</string>
     <string name="read_only">Tylko do odczytu</string>

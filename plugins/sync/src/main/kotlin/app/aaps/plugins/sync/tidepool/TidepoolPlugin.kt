@@ -27,21 +27,20 @@ import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.utils.HtmlHelper
-import app.aaps.core.validators.DefaultEditTextValidator
-import app.aaps.core.validators.EditTextValidator
-import app.aaps.core.validators.preferences.AdaptiveClickPreference
 import app.aaps.core.validators.preferences.AdaptiveStringPreference
 import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
 import app.aaps.plugins.sync.R
 import app.aaps.plugins.sync.nsShared.events.EventConnectivityOptionChanged
 import app.aaps.plugins.sync.nsclient.ReceiverDelegate
+import app.aaps.plugins.sync.tidepool.auth.AuthFlowOut
 import app.aaps.plugins.sync.tidepool.comm.TidepoolUploader
 import app.aaps.plugins.sync.tidepool.comm.UploadChunk
 import app.aaps.plugins.sync.tidepool.events.EventTidepoolDoUpload
-import app.aaps.plugins.sync.tidepool.events.EventTidepoolResetData
 import app.aaps.plugins.sync.tidepool.events.EventTidepoolStatus
 import app.aaps.plugins.sync.tidepool.events.EventTidepoolUpdateGUI
-import app.aaps.plugins.sync.tidepool.keys.TidepoolLongKey
+import app.aaps.plugins.sync.tidepool.keys.TidepoolBooleanKey
+import app.aaps.plugins.sync.tidepool.keys.TidepoolLongNonKey
+import app.aaps.plugins.sync.tidepool.keys.TidepoolStringNonKey
 import app.aaps.plugins.sync.tidepool.utils.RateLimit
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
@@ -61,7 +60,8 @@ class TidepoolPlugin @Inject constructor(
     private val uploadChunk: UploadChunk,
     private val rateLimit: RateLimit,
     private val receiverDelegate: ReceiverDelegate,
-    private val uiInteraction: UiInteraction
+    private val uiInteraction: UiInteraction,
+    private val authFlowOut: AuthFlowOut,
 ) : Sync, Tidepool, PluginBaseWithPreferences(
     PluginDescription()
         .mainType(PluginType.SYNC)
@@ -70,7 +70,10 @@ class TidepoolPlugin @Inject constructor(
         .fragmentClass(TidepoolFragment::class.qualifiedName)
         .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .description(R.string.description_tidepool),
-    ownPreferences = listOf(TidepoolLongKey::class.java),
+    ownPreferences = listOf(
+        TidepoolBooleanKey::class.java, TidepoolLongNonKey::class.java,
+        TidepoolStringNonKey::class.java
+    ),
     aapsLogger, rh, preferences
 ) {
 
@@ -88,24 +91,12 @@ class TidepoolPlugin @Inject constructor(
             .subscribe({ ev ->
                            rxBus.send(EventNSClientNewLog("● CONNECTIVITY", ev.blockingReason))
                            tidepoolUploader.resetInstance()
-                           if (isAllowed) doUpload()
+                           if (isAllowed) doUpload(EventConnectivityOptionChanged::class.simpleName)
                        }, fabricPrivacy::logException)
         disposable += rxBus
             .toObservable(EventTidepoolDoUpload::class.java)
             .observeOn(aapsSchedulers.io)
-            .subscribe({ doUpload() }, fabricPrivacy::logException)
-        disposable += rxBus
-            .toObservable(EventTidepoolResetData::class.java)
-            .observeOn(aapsSchedulers.io)
-            .subscribe({
-                           if (tidepoolUploader.connectionStatus != TidepoolUploader.ConnectionStatus.CONNECTED) {
-                               aapsLogger.debug(LTag.TIDEPOOL, "Not connected for delete Dataset")
-                           } else {
-                               tidepoolUploader.deleteDataSet()
-                               preferences.put(TidepoolLongKey.LastEnd, 0)
-                               tidepoolUploader.doLogin()
-                           }
-                       }, fabricPrivacy::logException)
+            .subscribe({ doUpload(EventTidepoolDoUpload::class.simpleName) }, fabricPrivacy::logException)
         disposable += rxBus
             .toObservable(EventTidepoolStatus::class.java)
             .observeOn(aapsSchedulers.io)
@@ -122,19 +113,19 @@ class TidepoolPlugin @Inject constructor(
                                if (bgReadingTimestamp < uploadChunk.getLastEnd())
                                    uploadChunk.setLastEnd(bgReadingTimestamp)
                                if (isAllowed && rateLimit.rateLimit("tidepool-new-data-upload", T.mins(4).secs().toInt()))
-                                   doUpload()
+                                   doUpload(EventNewBG::class.simpleName)
                            }
                        }, fabricPrivacy::logException)
         disposable += rxBus
             .toObservable(EventPreferenceChange::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ event ->
-                           if (event.isChanged(BooleanKey.TidepoolUseTestServers.key)
-                               || event.isChanged(StringKey.TidepoolUsername.key)
-                               || event.isChanged(StringKey.TidepoolPassword.key)
-                           )
+                           if (event.isChanged(TidepoolBooleanKey.UseTestServers.key)) {
+                               authFlowOut.clearAllSavedData()
                                tidepoolUploader.resetInstance()
+                           }
                        }, fabricPrivacy::logException)
+        authFlowOut.initAuthState()
     }
 
     override fun onStop() {
@@ -142,13 +133,17 @@ class TidepoolPlugin @Inject constructor(
         super.onStop()
     }
 
-    private fun doUpload() =
-        when (tidepoolUploader.connectionStatus) {
-            TidepoolUploader.ConnectionStatus.DISCONNECTED -> tidepoolUploader.doLogin(true)
-            TidepoolUploader.ConnectionStatus.CONNECTED    -> tidepoolUploader.doUpload()
+    private fun doUpload(from: String?) {
+        //aapsLogger.debug(LTag.TIDEPOOL, "doUpload from $from")
+        return when (authFlowOut.connectionStatus) {
+            AuthFlowOut.ConnectionStatus.NOT_LOGGED_IN       -> tidepoolUploader.doLogin(true, "doUpload $from NOT_LOGGED_IN")
+            AuthFlowOut.ConnectionStatus.FAILED              -> tidepoolUploader.doLogin(true, "doUpload $from FAILED")
+            AuthFlowOut.ConnectionStatus.NO_SESSION          -> tidepoolUploader.doLogin(true, "doUpload $from NO_SESSION")
+            AuthFlowOut.ConnectionStatus.SESSION_ESTABLISHED -> tidepoolUploader.doUpload(from)
 
-            else                                           -> {}
+            else                                             -> aapsLogger.debug(LTag.TIDEPOOL, "doUpload $from do nothing ${authFlowOut.connectionStatus}")
         }
+    }
 
     @Synchronized
     private fun addToLog(ev: EventTidepoolStatus) {
@@ -178,11 +173,11 @@ class TidepoolPlugin @Inject constructor(
     }
 
     override val status: String
-        get() = tidepoolUploader.connectionStatus.name
+        get() = authFlowOut.connectionStatus.name
     override val hasWritePermission: Boolean
-        get() = tidepoolUploader.connectionStatus == TidepoolUploader.ConnectionStatus.CONNECTED
+        get() = authFlowOut.connectionStatus == AuthFlowOut.ConnectionStatus.SESSION_ESTABLISHED
     override val connected: Boolean
-        get() = tidepoolUploader.connectionStatus == TidepoolUploader.ConnectionStatus.CONNECTED
+        get() = authFlowOut.connectionStatus == AuthFlowOut.ConnectionStatus.SESSION_ESTABLISHED
 
     override fun addPreferenceScreen(preferenceManager: PreferenceManager, parent: PreferenceScreen, context: Context, requiredKey: String?) {
         if (requiredKey != null && requiredKey != "tidepool_connection_options" && requiredKey != "tidepool_advanced") return
@@ -192,25 +187,6 @@ class TidepoolPlugin @Inject constructor(
             key = "tidepool_settings"
             title = rh.gs(R.string.tidepool)
             initialExpandedChildrenCount = 0
-            addPreference(
-                AdaptiveStringPreference(
-                    ctx = context, stringKey = StringKey.TidepoolUsername, summary = R.string.summary_tidepool_username, title = R.string.title_tidepool_username,
-                    validatorParams = DefaultEditTextValidator.Parameters(testType = EditTextValidator.TEST_EMAIL)
-                )
-            )
-            addPreference(
-                AdaptiveStringPreference(
-                    ctx = context, stringKey = StringKey.TidepoolPassword, dialogMessage = R.string.summary_tidepool_password, title = R.string.title_tidepool_password,
-                    validatorParams = DefaultEditTextValidator.Parameters(testType = EditTextValidator.TEST_MIN_LENGTH, minLength = 1)
-                )
-            )
-            addPreference(
-                AdaptiveClickPreference(ctx = context, stringKey = StringKey.TidepoolTestLogin, title = R.string.title_tidepool_test_login,
-                                        onPreferenceClickListener = {
-                                            tidepoolUploader.testLogin(preferenceManager.context)
-                                            true
-                                        })
-            )
             addPreference(preferenceManager.createPreferenceScreen(context).apply {
                 key = "tidepool_connection_options"
                 title = rh.gs(R.string.connection_settings_title)
@@ -224,7 +200,7 @@ class TidepoolPlugin @Inject constructor(
             addPreference(preferenceManager.createPreferenceScreen(context).apply {
                 key = "tidepool_advanced"
                 title = rh.gs(app.aaps.core.ui.R.string.advanced_settings_title)
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.TidepoolUseTestServers, summary = R.string.summary_tidepool_dev_servers, title = R.string.title_tidepool_dev_servers))
+                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = TidepoolBooleanKey.UseTestServers, summary = R.string.summary_tidepool_dev_servers, title = R.string.title_tidepool_dev_servers))
             })
         }
     }

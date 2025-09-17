@@ -2,6 +2,7 @@ package app.aaps.plugins.sync.tidepool
 
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.plugins.sync.nsclient.ReceiverDelegate
+import app.aaps.plugins.sync.tidepool.auth.AuthFlowOut
 import app.aaps.plugins.sync.tidepool.comm.TidepoolUploader
 import app.aaps.plugins.sync.tidepool.comm.UploadChunk
 import app.aaps.plugins.sync.tidepool.utils.RateLimit
@@ -17,6 +18,7 @@ class TidepoolPluginTest : TestBaseWithProfile() {
     @Mock lateinit var uploadChunk: UploadChunk
     @Mock lateinit var receiverDelegate: ReceiverDelegate
     @Mock lateinit var uiInteraction: UiInteraction
+    @Mock lateinit var authFlowOut: AuthFlowOut
 
     private lateinit var tidepoolPlugin: TidepoolPlugin
     private lateinit var rateLimit: RateLimit
@@ -24,7 +26,7 @@ class TidepoolPluginTest : TestBaseWithProfile() {
     @BeforeEach fun prepare() {
         rateLimit = RateLimit(dateUtil)
         tidepoolPlugin = TidepoolPlugin(
-            aapsLogger, rh, preferences, aapsSchedulers, rxBus, context, fabricPrivacy, tidepoolUploader, uploadChunk, rateLimit, receiverDelegate, uiInteraction
+            aapsLogger, rh, preferences, aapsSchedulers, rxBus, context, fabricPrivacy, tidepoolUploader, uploadChunk, rateLimit, receiverDelegate, uiInteraction, authFlowOut
         )
     }
 

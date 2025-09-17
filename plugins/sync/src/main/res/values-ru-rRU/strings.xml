@@ -64,17 +64,10 @@
     <string name="ns_use_ws_title">Подключаться к веб-сокету</string>
     <string name="ns_use_ws_summary">Активация означает: более быстрое обновление, получение оповещений и объявлений, более высокое потребление заряда батареи по аналогии с v1. Все остальные загрузчики NS будут использовать протокол v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Имя пользователя Tidepool, обычно ваш адрес электронной почты</string>
-    <string name="title_tidepool_username">Имя пользователя</string>
-    <string name="summary_tidepool_password">Ваш пароль для входа в Tidepool</string>
-    <string name="title_tidepool_password">Пароль для входа</string>
-    <string name="title_tidepool_test_login">Тест входа в Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Если активировано, загрузки перейдут на https://int-app.tidepool.org вместо обычного https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Использовать серверы интеграции (тест)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Загружает данные в Tidepool</string>
-    <string name="remove_all">Удалить всё</string>
     <string name="upload_now">Выгрузить (передать данные) сейчас</string>
     <string name="not_connected">Нет подключения</string>
     <string name="read_only">Только чтение</string>

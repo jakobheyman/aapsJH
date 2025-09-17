@@ -52,21 +52,9 @@ ActionsTestBase : TestBaseWithProfile() {
             if (it is ActionNotification) {
                 it.rxBus = rxBus
             }
-            if (it is ActionLoopSuspend) {
-                it.loop = loop
-                it.profileFunction = profileFunction
-            }
-            if (it is ActionLoopResume) {
-                it.loop = loop
-                it.profileFunction = profileFunction
-            }
-            if (it is ActionLoopClosed) {
-                it.loop = loop
-                it.profileFunction = profileFunction
-            }
-            if (it is ActionLoopDisable) {
-                it.loop = loop
-                it.profileFunction = profileFunction
+            if (it is ActionSMBChange) {
+                it.dateUtil = dateUtil
+                it.preferences = preferences
             }
             if (it is ActionCarePortalEvent) {
                 it.persistenceLayer = persistenceLayer

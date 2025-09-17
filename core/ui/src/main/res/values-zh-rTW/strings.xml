@@ -156,6 +156,7 @@
     <string name="treatments_wizard_basaliob_label">基礎率 IOB</string>
     <string name="invalid">無效</string>
     <string name="login">登入</string>
+    <string name="logout">登出</string>
     <string name="prime_fill">注射/填充</string>
     <string name="overview_insulin_label">胰島素</string>
     <string name="stoptemptarget">停止臨時目標</string>

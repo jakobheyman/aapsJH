@@ -75,17 +75,10 @@
     <string name="ns_use_ws_title">Se connecter aux websockets</string>
     <string name="ns_use_ws_summary">L\'activation signifie : des mises à jour plus rapides, la réception d\'alarmes et d\'annonces et une consommation de batterie plus élevée similaire à la v1. Tous les autres téléchargeurs vers NS doivent utiliser le protocole v3.</string>
     <!-- Tidepool -->
-    <string name="summary_tidepool_username">Votre nom d\'utilisateur Tidepool, normalement votre adresse e-mail</string>
-    <string name="title_tidepool_username">Nom d\'utilisateur</string>
-    <string name="summary_tidepool_password">Mot de passe de connexion Tidepool</string>
-    <string name="title_tidepool_password">Mot de passe de connexion</string>
-    <string name="title_tidepool_test_login">Test de la connexion Tidepool</string>
-    <string name="summary_tidepool_dev_servers">Si activé, les transferts iront vers https://int-app.tidepool.org au lieu de https://app.tidepool.org/</string>
     <string name="title_tidepool_dev_servers">Utiliser les serveurs d\'Intégration (test)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
     <string name="description_tidepool">Transfère les données vers Tidepool</string>
-    <string name="remove_all">Supprimer tout</string>
     <string name="upload_now">Télécharger maintenant</string>
     <string name="not_connected">Non connecté</string>
     <string name="read_only">Lecture seule</string>

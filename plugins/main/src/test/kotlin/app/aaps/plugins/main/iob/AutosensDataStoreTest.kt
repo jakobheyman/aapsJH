@@ -1,45 +1,25 @@
 package app.aaps.plugins.main.iob
 
-import android.content.Context
 import androidx.collection.LongSparseArray
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.model.SourceSensor
 import app.aaps.core.data.model.TrendArrow
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.aps.AutosensData
-import app.aaps.core.interfaces.iob.IobCobCalculator
-import app.aaps.core.interfaces.utils.DateUtil
-import app.aaps.core.interfaces.utils.DecimalFormatter
-import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.implementation.iob.AutosensDataObject
-import app.aaps.implementation.iob.GlucoseStatusProviderImpl
 import app.aaps.plugins.main.iob.iobCobCalculator.data.AutosensDataStoreObject
-import app.aaps.shared.impl.utils.DateUtilImpl
-import app.aaps.shared.tests.TestBase
+import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mock
-import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 
-class AutosensDataStoreTest : TestBase() {
-
-    @Mock lateinit var context: Context
-    @Mock lateinit var preferences: Preferences
-    @Mock lateinit var dateUtilMocked: DateUtil
-    @Mock lateinit var iobCobCalculator: IobCobCalculator
-    @Mock lateinit var decimalFormatter: DecimalFormatter
-
-    private lateinit var dateUtil: DateUtil
+class AutosensDataStoreTest : TestBaseWithProfile() {
 
     private val autosensDataStore = AutosensDataStoreObject()
-    private lateinit var glucoseStatusProvider: GlucoseStatusProviderImpl
 
     @BeforeEach
     fun mock() {
-        dateUtil = DateUtilImpl(context)
-        glucoseStatusProvider = GlucoseStatusProviderImpl(aapsLogger, iobCobCalculator, dateUtilMocked, decimalFormatter)
         `when`(iobCobCalculator.ads).thenReturn(autosensDataStore)
     }
 
@@ -1514,8 +1494,6 @@ class AutosensDataStoreTest : TestBase() {
 
     @Test
     fun threeMinDataWithRecalculation() {
-        val now = 1743937000000
-        `when`(dateUtilMocked.now()).thenReturn(now)
         val list = mutableListOf<GV>()
         list.add(GV(timestamp = now, value = 198.0, raw = 0.0, trendArrow = TrendArrow.FLAT, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
         list.add(GV(timestamp = now - T.mins(3).msecs(), value = 197.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
@@ -1530,7 +1508,7 @@ class AutosensDataStoreTest : TestBase() {
         list.add(GV(timestamp = now - T.mins(30).msecs(), value = 188.0, raw = 0.0, trendArrow = TrendArrow.NONE, noise = 0.0, sourceSensor = SourceSensor.UNKNOWN))
         autosensDataStore.bgReadings = list
         autosensDataStore.createBucketedData(aapsLogger, dateUtil)
-        val glucoseStatus = glucoseStatusProvider.glucoseStatusData!!
+        val glucoseStatus = glucoseStatusCalculatorSMB.glucoseStatusData!!
         assertThat(glucoseStatus.delta).isWithin(0.01).of(2.0)
         assertThat(glucoseStatus.shortAvgDelta).isWithin(0.01).of(1.72)
         assertThat(glucoseStatus.longAvgDelta).isWithin(0.01).of(1.67)
@@ -1538,17 +1516,15 @@ class AutosensDataStoreTest : TestBase() {
 
     @Test
     fun getLastAutosensDataTest() {
-        val now = 10000000L
-        Mockito.`when`(dateUtilMocked.now()).thenReturn(now)
         val ads = AutosensDataStoreObject()
         ads.storedLastAutosensResult = AutosensDataObject(aapsLogger, preferences, dateUtil).apply { time = now - 10 }
         // empty array, return last stored
         ads.autosensDataTable = LongSparseArray<AutosensData>()
-        assertThat(ads.getLastAutosensData("test", aapsLogger, dateUtilMocked)?.time).isEqualTo(now - 10)
+        assertThat(ads.getLastAutosensData("test", aapsLogger, dateUtil)?.time).isEqualTo(now - 10)
 
         // data is there, return it
         ads.autosensDataTable.append(now - 1, AutosensDataObject(aapsLogger, preferences, dateUtil).apply { time = now - 1 })
-        assertThat(ads.getLastAutosensData("test", aapsLogger, dateUtilMocked)?.time).isEqualTo(now - 1)
+        assertThat(ads.getLastAutosensData("test", aapsLogger, dateUtil)?.time).isEqualTo(now - 1)
         // and latest value should be saved
         assertThat(ads.storedLastAutosensResult?.time).isEqualTo(now - 1)
 
@@ -1556,6 +1532,6 @@ class AutosensDataStoreTest : TestBase() {
         ads.storedLastAutosensResult = AutosensDataObject(aapsLogger, preferences, dateUtil).apply { time = now - 1 }
         ads.autosensDataTable = LongSparseArray<AutosensData>()
         ads.autosensDataTable.append(now - T.mins(20).msecs(), AutosensDataObject(aapsLogger, preferences, dateUtil).apply { time = now - T.mins(20).msecs() })
-        assertThat(ads.getLastAutosensData("test", aapsLogger, dateUtilMocked)?.time).isEqualTo(now - 1)
+        assertThat(ads.getLastAutosensData("test", aapsLogger, dateUtil)?.time).isEqualTo(now - 1)
     }
 }

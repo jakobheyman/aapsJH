@@ -1,11 +1,8 @@
 package app.aaps.plugins.configuration.setupwizard.elements
 
-import android.content.Context
-import android.content.ContextWrapper
 import android.view.View
 import android.widget.LinearLayout
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatActivity
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.protection.PasswordCheck
@@ -90,14 +87,5 @@ open class SWItem(val injector: HasAndroidInjector, var type: Type) {
         scheduledEventPost?.cancel(false)
         val task: Runnable = PostRunnable()
         scheduledEventPost = eventWorker.schedule(task, updateDelay, TimeUnit.SECONDS)
-    }
-
-    fun scanForActivity(cont: Context?): AppCompatActivity? {
-        return when (cont) {
-            null                 -> null
-            is AppCompatActivity -> cont
-            is ContextWrapper    -> scanForActivity(cont.baseContext)
-            else                 -> null
-        }
     }
 }
