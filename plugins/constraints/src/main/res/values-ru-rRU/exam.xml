@@ -99,6 +99,7 @@ Context | Edit Context</string>
     <string name="insulin_fiasp">Fiasp®</string>
     <string name="insulin_novorapid">Novoapid ® /Novolog ®</string>
     <string name="insulin_humalog">Хумалог®</string>
+    <string name="insulin_actrapid">Actrapid ® /Humalin R ®/\"обычный\" человеческий инсулин.</string>
     <string name="insulin_hint1">https://wiki.aaps.app/ru/latest/SettingUpAaps/ConfigBuilder.html#insulin</string>
     <string name="sensitivity_label">Модули чувствительности</string>
     <string name="sensitivity_adjust">Модули чувствительности позволяют AAPS подстраиваться под временные или кратковременные изменения в чувствительности к инсулину (например, гормональные изменения или проблемы с поглощением в месте установки катетера).</string>

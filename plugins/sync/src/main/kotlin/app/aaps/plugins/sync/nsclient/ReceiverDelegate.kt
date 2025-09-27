@@ -4,6 +4,7 @@ import app.aaps.core.interfaces.receivers.ReceiverStatusStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.events.EventAppInitialized
 import app.aaps.core.interfaces.rx.events.EventChargingState
 import app.aaps.core.interfaces.rx.events.EventNetworkChange
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
@@ -48,6 +49,12 @@ class ReceiverDelegate @Inject constructor(
             .toObservable(EventChargingState::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ ev -> onChargingStateChange(ev) }, fabricPrivacy::logException)
+        // Until the app is fully initialized, some EventConnectivityOptionChanged may be lost
+        // Send again when app is initialized
+        disposable += rxBus
+            .toObservable(EventAppInitialized::class.java)
+            .observeOn(aapsSchedulers.io)
+            .subscribe({ rxBus.send(EventConnectivityOptionChanged("App start", receiverStatusStore.isConnected)) }, fabricPrivacy::logException)
     }
 
     fun grabReceiversState() {

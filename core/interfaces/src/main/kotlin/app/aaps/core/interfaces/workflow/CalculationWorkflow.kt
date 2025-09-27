@@ -3,12 +3,15 @@ package app.aaps.core.interfaces.workflow
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.overview.OverviewData
 import app.aaps.core.interfaces.rx.events.Event
+import app.aaps.core.interfaces.workflow.CalculationWorkflow.Companion.HISTORY_CALCULATION
+import app.aaps.core.interfaces.workflow.CalculationWorkflow.Companion.MAIN_CALCULATION
 
 interface CalculationWorkflow {
     companion object {
 
         const val MAIN_CALCULATION = "calculation"
         const val HISTORY_CALCULATION = "history_calculation"
+        const val UPDATE_PREDICTIONS = "update_predictions"
         const val JOB = "job"
         const val PASS = "pass"
     }
@@ -51,6 +54,11 @@ interface CalculationWorkflow {
         bgDataReload: Boolean,
         cause: Event?
     )
+
+    /**
+     * Update predictions in graph ofter new data from device status
+     */
+    fun runOnReceivedPredictions(overviewData: OverviewData)
 
     /**
      * Update treatments in graph ofter new therapy event

@@ -119,7 +119,7 @@ abstract class Trigger(val injector: HasAndroidInjector) {
                 else                                             -> TriggerConnector(injector)
             }
         } catch (e: Exception) {
-            aapsLogger.error(LTag.AUTOMATION, "Error parsing $obj")
+            aapsLogger.error(LTag.AUTOMATION, "Error parsing $obj : $e")
         }
         return TriggerConnector(injector)
     }

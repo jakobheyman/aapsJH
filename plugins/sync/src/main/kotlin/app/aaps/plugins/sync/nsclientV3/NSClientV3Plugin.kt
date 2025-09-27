@@ -29,6 +29,7 @@ import app.aaps.core.interfaces.nsclient.StoreDataForDb
 import app.aaps.core.interfaces.plugin.PluginBaseWithPreferences
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.Profile
+import app.aaps.core.interfaces.receivers.ReceiverStatusStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
@@ -36,10 +37,10 @@ import app.aaps.core.interfaces.rx.events.EventAppExit
 import app.aaps.core.interfaces.rx.events.EventDeviceStatusChange
 import app.aaps.core.interfaces.rx.events.EventNSClientNewLog
 import app.aaps.core.interfaces.rx.events.EventNewHistoryData
-import app.aaps.core.interfaces.rx.events.EventRunningModeChange
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.rx.events.EventProfileStoreChanged
 import app.aaps.core.interfaces.rx.events.EventProfileSwitchChanged
+import app.aaps.core.interfaces.rx.events.EventRunningModeChange
 import app.aaps.core.interfaces.rx.events.EventSWSyncStatus
 import app.aaps.core.interfaces.rx.events.EventTempTargetChange
 import app.aaps.core.interfaces.rx.events.EventTherapyEventChange
@@ -215,7 +216,10 @@ class NSClientV3Plugin @Inject constructor(
         disposable += rxBus
             .toObservable(EventAppExit::class.java)
             .observeOn(aapsSchedulers.io)
-            .subscribe({ stopService() }, fabricPrivacy::logException)
+            .subscribe({
+                           stopService()
+                           WorkManager.getInstance(context).cancelUniqueWork(JOB_NAME)
+                       }, fabricPrivacy::logException)
         disposable += rxBus
             .toObservable(EventConnectivityOptionChanged::class.java)
             .observeOn(aapsSchedulers.io)
@@ -224,7 +228,7 @@ class NSClientV3Plugin @Inject constructor(
                            nsClientV3Service?.let { service ->
                                if (ev.connected) {
                                    when {
-                                       isAllowed && service.storageSocket == null   -> setClient() // socket must be created
+                                       isAllowed && service.storageSocket == null  -> setClient() // socket must be created
                                        !isAllowed && service.storageSocket != null -> stopService()
                                    }
                                    if (isAllowed) executeLoop("CONNECTIVITY", forceNew = false)
@@ -251,10 +255,6 @@ class NSClientV3Plugin @Inject constructor(
                                executeUpload("PROFILE_CHANGE", forceNew = true)
 
                        }, fabricPrivacy::logException)
-        disposable += rxBus
-            .toObservable(EventAppExit::class.java)
-            .observeOn(aapsSchedulers.io)
-            .subscribe({ WorkManager.getInstance(context).cancelUniqueWork(JOB_NAME) }, fabricPrivacy::logException)
         disposable += rxBus
             .toObservable(EventNSClientNewLog::class.java)
             .observeOn(aapsSchedulers.io)
@@ -359,7 +359,8 @@ class NSClientV3Plugin @Inject constructor(
                 logger = { msg -> aapsLogger.debug(LTag.HTTP, msg) }
             )
         SystemClock.sleep(2000)
-        startService()
+        if (nsClientV3Service == null) startService()
+        else nsClientV3Service?.initializeWebSockets("setClient")
         rxBus.send(EventSWSyncStatus(status))
     }
 
@@ -694,7 +695,7 @@ class NSClientV3Plugin @Inject constructor(
                                 storeDataForDb.addToNsIdEffectiveProfileSwitches(dataPair.value)
                             }
 
-                            is DataSyncSelector.PairRunningMode           -> {
+                            is DataSyncSelector.PairRunningMode            -> {
                                 dataPair.value.ids.nightscoutId = it
                                 storeDataForDb.addToNsIdRunningModes(dataPair.value)
                             }

@@ -6,13 +6,18 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.protection.PasswordCheck
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.utils.SafeParse
 import app.aaps.core.keys.interfaces.DoublePreferenceKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.elements.NumberPicker
-import dagger.android.HasAndroidInjector
 import java.text.DecimalFormat
+import javax.inject.Inject
 
-class SWEditNumber(injector: HasAndroidInjector) : SWItem(injector, Type.DECIMAL_NUMBER) {
+class SWEditNumber @Inject constructor(aapsLogger: AAPSLogger, rh: ResourceHelper, rxBus: RxBus, preferences: Preferences, passwordCheck: PasswordCheck) : SWItem(aapsLogger, rh, rxBus, preferences, passwordCheck) {
 
     private val validator: (Double) -> Boolean = { value -> value in (preference as DoublePreferenceKey).min..(preference as DoublePreferenceKey).max }
     private var updateDelay = 0

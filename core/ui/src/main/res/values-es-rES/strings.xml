@@ -156,6 +156,7 @@
     <string name="treatments_wizard_basaliob_label">IOB de Basal</string>
     <string name="invalid">INVÁLIDO</string>
     <string name="login">Inicio de sesión</string>
+    <string name="logout">Cerrar sesión</string>
     <string name="prime_fill">Cebar/Llenar</string>
     <string name="overview_insulin_label">Insulina</string>
     <string name="stoptemptarget">Detener objetivo temporal</string>

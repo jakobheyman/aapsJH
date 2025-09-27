@@ -75,6 +75,7 @@
     <string name="ns_use_ws_title">Se connecter aux websockets</string>
     <string name="ns_use_ws_summary">L\'activation signifie : des mises à jour plus rapides, la réception d\'alarmes et d\'annonces et une consommation de batterie plus élevée similaire à la v1. Tous les autres téléchargeurs vers NS doivent utiliser le protocole v3.</string>
     <!-- Tidepool -->
+    <string name="summary_tidepool_dev_servers">Si activé, les téléchargements iront vers les serveurs de test au lieu des serveurs habituels</string>
     <string name="title_tidepool_dev_servers">Utiliser les serveurs d\'Intégration (test)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>

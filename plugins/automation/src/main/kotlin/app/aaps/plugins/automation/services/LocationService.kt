@@ -102,8 +102,8 @@ class LocationService : DaggerService() {
 
         // Get last location once until we get regular update
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            LocationServices.getFusedLocationProviderClient(this).lastLocation.addOnSuccessListener {
-                lastLocationDataContainer.lastLocation = it
+            LocationServices.getFusedLocationProviderClient(this).lastLocation.addOnSuccessListener { location ->
+                lastLocationDataContainer.lastLocation = location
                 initializeLocationManager()
 
                 try {

@@ -6,7 +6,9 @@ import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.nsclient.ProcessedDeviceStatusData
+import app.aaps.core.interfaces.overview.OverviewData
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.workflow.CalculationWorkflow
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.nssdk.interfaces.RunningConfiguration
@@ -79,7 +81,9 @@ class NSDeviceStatusHandler @Inject constructor(
     private val runningConfiguration: RunningConfiguration,
     private val processedDeviceStatusData: ProcessedDeviceStatusData,
     private val aapsLogger: AAPSLogger,
-    private val persistenceLayer: PersistenceLayer
+    private val persistenceLayer: PersistenceLayer,
+    private val overviewData: OverviewData,
+    private val calculationWorkflow: CalculationWorkflow
 ) {
 
     private val disposable = CompositeDisposable()
@@ -92,6 +96,7 @@ class NSDeviceStatusHandler @Inject constructor(
                 updateDeviceData(nsDeviceStatus)
                 updateOpenApsData(nsDeviceStatus)
                 updateUploaderData(nsDeviceStatus)
+                calculationWorkflow.runOnReceivedPredictions(overviewData)
             }
             if (config.AAPSCLIENT && !configurationDetected)
                 nsDeviceStatus.configuration?.let {

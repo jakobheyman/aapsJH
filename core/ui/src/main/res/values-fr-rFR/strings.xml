@@ -156,6 +156,7 @@
     <string name="treatments_wizard_basaliob_label">IA Basal</string>
     <string name="invalid">INVALIDE</string>
     <string name="login">Connexion</string>
+    <string name="logout">Déconnexion</string>
     <string name="prime_fill">Amorcer/Remplir</string>
     <string name="overview_insulin_label">Insuline</string>
     <string name="stoptemptarget">Arrêter la cible temp</string>

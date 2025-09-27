@@ -8,7 +8,6 @@ import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.plugins.automation.triggers.Trigger
 import dagger.android.HasAndroidInjector
-import org.json.JSONException
 import org.json.JSONObject
 import javax.inject.Inject
 
@@ -71,13 +70,7 @@ abstract class Action(val injector: HasAndroidInjector) {
                 ActionStopTempTarget::class.java.simpleName       -> ActionStopTempTarget(injector).fromJSON(data.toString())
                 else                                              -> throw ClassNotFoundException(type)
             }
-        } catch (e: ClassNotFoundException) {
-            aapsLogger.error("Unhandled exception", e)
-        } catch (e: InstantiationException) {
-            aapsLogger.error("Unhandled exception", e)
-        } catch (e: IllegalAccessException) {
-            aapsLogger.error("Unhandled exception", e)
-        } catch (e: JSONException) {
+        } catch (e: Exception) {
             aapsLogger.error("Unhandled exception", e)
         }
         return null

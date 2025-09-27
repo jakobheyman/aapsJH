@@ -8,17 +8,20 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
+import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.profile.ProfileUtil
+import app.aaps.core.interfaces.protection.PasswordCheck
+import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.utils.SafeParse
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.interfaces.UnitDoublePreferenceKey
 import app.aaps.core.ui.elements.NumberPicker
-import dagger.android.HasAndroidInjector
 import java.text.DecimalFormat
 import javax.inject.Inject
 
-class SWEditNumberWithUnits(injector: HasAndroidInjector) : SWItem(injector, Type.UNIT_NUMBER) {
-
-    @Inject lateinit var profileUtil: ProfileUtil
+class SWEditNumberWithUnits @Inject constructor(aapsLogger: AAPSLogger, rh: ResourceHelper, rxBus: RxBus, preferences: Preferences, passwordCheck: PasswordCheck, private val profileUtil: ProfileUtil) :
+    SWItem(aapsLogger, rh, rxBus, preferences, passwordCheck) {
 
     private val validator: (Double) -> Boolean =
         if (profileUtil.units == GlucoseUnit.MGDL) { value -> value in (preference as UnitDoublePreferenceKey).minMgdl.toDouble()..(preference as UnitDoublePreferenceKey).maxMgdl.toDouble() }

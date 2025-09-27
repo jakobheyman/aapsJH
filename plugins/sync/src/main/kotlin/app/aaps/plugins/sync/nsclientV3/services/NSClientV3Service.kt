@@ -115,7 +115,6 @@ class NSClientV3Service : DaggerService() {
     }
 
     @Suppress("SameParameterValue")
-    @OpenForTesting
     fun initializeWebSockets(reason: String) {
         if (preferences.get(StringKey.NsClientUrl).isEmpty()) return
         val urlStorage = preferences.get(StringKey.NsClientUrl).lowercase().replace(Regex("/$"), "") + "/storage"

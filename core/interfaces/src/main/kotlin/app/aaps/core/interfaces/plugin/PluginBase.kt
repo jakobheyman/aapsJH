@@ -9,6 +9,10 @@ import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.resources.ResourceHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /**
  * Created by mike on 09.06.2016.
@@ -18,6 +22,8 @@ abstract class PluginBase(
     val aapsLogger: AAPSLogger,
     val rh: ResourceHelper
 ) {
+
+    private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     enum class State {
         NOT_INITIALIZED, ENABLED, DISABLED
@@ -79,13 +85,13 @@ abstract class PluginBase(
                     onStateChange(type, state, State.ENABLED)
                     state = State.ENABLED
                     aapsLogger.debug(LTag.CORE, "Starting: $name")
-                    onStart()
+                    scope.launch { onStart() }
                 }
             } else { // disabling plugin
                 if (state == State.ENABLED) {
                     onStateChange(type, state, State.DISABLED)
                     state = State.DISABLED
-                    onStop()
+                    scope.launch { onStop() }
                     aapsLogger.debug(LTag.CORE, "Stopping: $name")
                 }
             }

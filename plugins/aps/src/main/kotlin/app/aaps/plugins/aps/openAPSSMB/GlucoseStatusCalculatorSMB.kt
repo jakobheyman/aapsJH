@@ -12,8 +12,6 @@ import app.aaps.plugins.aps.openAPSSMB.extensions.asRounded
 import app.aaps.plugins.aps.openAPSSMB.extensions.log
 import dagger.Reusable
 import javax.inject.Inject
-import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 
 @Reusable
 class GlucoseStatusCalculatorSMB @Inject constructor(
@@ -62,7 +60,7 @@ class GlucoseStatusCalculatorSMB @Inject constructor(
                 val then = data[i]
                 val thenDate = then.timestamp
 
-                val minutesAgo = ((nowDate - thenDate) / (1000.0 * 60)).roundToLong()
+                val minutesAgo = ((nowDate - thenDate) / (1000.0 * 60))
                 // multiply by 5 to get the same units as delta, i.e. mg/dL/5m
                 change = now.recalculated - then.recalculated
                 val avgDel = change / minutesAgo * 5
@@ -75,14 +73,14 @@ class GlucoseStatusCalculatorSMB @Inject constructor(
                 //     now.value = average(nowValueList)
                 //     // short_deltas are calculated from everything ~5-15 minutes ago
                 // } else
-                if (2.5 < minutesAgo && minutesAgo < 17.5) {
+                if (minutesAgo in 2.5 .. 17.5) {
                     shortDeltas.add(avgDel)
                     // last_deltas are calculated from everything ~5 minutes ago
-                    if (2.5 < minutesAgo && minutesAgo < 7.5) {
+                    if (minutesAgo in 2.5 .. 7.5) {
                         lastDeltas.add(avgDel)
                     }
                     // long_deltas are calculated from everything ~20-40 minutes ago
-                } else if (17.5 < minutesAgo && minutesAgo < 42.5) {
+                } else if (minutesAgo in 17.5 .. 42.5) {
                     longDeltas.add(avgDel)
                 } else {
                     // Do not process any more records after >= 42.5 minutes
@@ -95,32 +93,6 @@ class GlucoseStatusCalculatorSMB @Inject constructor(
             shortAverageDelta
         } else {
             average(lastDeltas)
-        }
-
-        // calculate 2 variables for 5% range; still using 5 minute data
-        val bw = 0.05
-        var sumBG: Double = now.recalculated
-        var oldAvg: Double = sumBG
-        var minutesDur = 0L
-        var n = 1
-        for (i in 1 until sizeRecords) {
-            if (data[i].value > 39 && !data[i].filledGap) {
-                n += 1
-                val then = data[i]
-                val thenDate: Long = then.timestamp
-                //  stop the series if there was a CGM gap greater than 13 minutes, i.e. 2 regular readings
-                //  needs shorter gap for Libre?
-                if (((nowDate - thenDate) / (1000.0 * 60)).roundToInt() - minutesDur > 13) {
-                    break
-                }
-                if (then.recalculated > oldAvg * (1 - bw) && then.recalculated < oldAvg * (1 + bw)) {
-                    sumBG += then.recalculated
-                    oldAvg = sumBG / n  // was: (i + 1)
-                    minutesDur = ((nowDate - thenDate) / (1000.0 * 60)).roundToInt().toLong()
-                } else {
-                    break
-                }
-            }
         }
 
         return GlucoseStatusSMB(

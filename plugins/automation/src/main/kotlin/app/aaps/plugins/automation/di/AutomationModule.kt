@@ -80,7 +80,7 @@ abstract class AutomationModule {
     @ContributesAndroidInjector abstract fun triggerBolusAgoInjector(): TriggerBolusAgo
     @ContributesAndroidInjector abstract fun triggerSensorAgeInjector(): TriggerSensorAge
     @ContributesAndroidInjector abstract fun triggerPadChangeInjector(): TriggerPodChange
-    @ContributesAndroidInjector abstract fun triggerCanulaAgeInjector(): TriggerCannulaAge
+    @ContributesAndroidInjector abstract fun triggerCannulaAgeInjector(): TriggerCannulaAge
     @ContributesAndroidInjector abstract fun triggerInsulinAgeInjector(): TriggerInsulinAge
     @ContributesAndroidInjector abstract fun triggerReservoirLevelInjector(): TriggerReservoirLevel
     @ContributesAndroidInjector abstract fun triggerPumpBatteryAgeInjector(): TriggerPumpBatteryAge

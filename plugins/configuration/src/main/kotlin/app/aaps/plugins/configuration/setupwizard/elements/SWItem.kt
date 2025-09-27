@@ -3,6 +3,7 @@ package app.aaps.plugins.configuration.setupwizard.elements
 import android.view.View
 import android.widget.LinearLayout
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.protection.PasswordCheck
@@ -14,33 +15,22 @@ import app.aaps.core.keys.interfaces.PreferenceKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.interfaces.StringNonPreferenceKey
 import app.aaps.core.keys.interfaces.StringPreferenceKey
-import dagger.android.HasAndroidInjector
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-open class SWItem(val injector: HasAndroidInjector, var type: Type) {
+open class SWItem @Inject constructor(
+    val aapsLogger: AAPSLogger,
+    val rh: ResourceHelper,
+    val rxBus: RxBus,
+    val preferences: Preferences,
+    val passwordCheck: PasswordCheck
+) {
 
-    @Inject lateinit var aapsLogger: AAPSLogger
-    @Inject lateinit var rxBus: RxBus
-    @Inject lateinit var rh: ResourceHelper
-    @Inject lateinit var preferences: Preferences
-    @Inject lateinit var passwordCheck: PasswordCheck
 
     private val eventWorker = Executors.newSingleThreadScheduledExecutor()
     private var scheduledEventPost: ScheduledFuture<*>? = null
-
-    init {
-        @Suppress("LeakingThis")
-        injector.androidInjector().inject(this)
-    }
-
-    @Suppress("unused")
-    enum class Type {
-
-        NONE, TEXT, HTML_LINK, BREAK, LISTENER, URL, STRING, NUMBER, DECIMAL_NUMBER, RADIOBUTTON, PLUGIN, BUTTON, FRAGMENT, UNIT_NUMBER, PREFERENCE
-    }
 
     var label: Int? = null
     var comment: Int? = null
@@ -71,7 +61,7 @@ open class SWItem(val injector: HasAndroidInjector, var type: Type) {
     }
 
     open fun generateDialog(layout: LinearLayout) {}
-    open fun processVisibility() {}
+    open fun processVisibility(activity: AppCompatActivity) {}
 
     fun scheduleChange(updateDelay: Long) {
         class PostRunnable : Runnable {

@@ -75,6 +75,7 @@
     <string name="ns_use_ws_title">Conectar a websockets</string>
     <string name="ns_use_ws_summary">Activarlo significa: actualizaciones más rápidas, recepción de alarmas y avisos con un mayor consumo de batería, similar a v1. El resto de cargadores a NS deben utilizar el protocolo v3.</string>
     <!-- Tidepool -->
+    <string name="summary_tidepool_dev_servers">Si se activa, las subidas irán a los servidores de prueba en lugar de a los servidores habituales</string>
     <string name="title_tidepool_dev_servers">Usar servidores de integración (prueba)</string>
     <string name="tidepool">Tidepool</string>
     <string name="tidepool_shortname">TDP</string>
