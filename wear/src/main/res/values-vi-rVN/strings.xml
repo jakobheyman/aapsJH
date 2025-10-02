@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="app_name">AAPS</string>
+    <string name="label_actions_activity">AAPS</string>
+    <string name="label_watchface_circle">AAPS (Vòng tròn)</string>
+    <string name="label_watchface_digital_style">AAPS (Kỹ thuật số)</string>
+    <string name="label_watchface_custom">AAPS (Tùy chỉnh)</string>
+    <string name="label_actions_tile">AAPS(Actions)</string>
+    <string name="label_temp_target_tile">AAPS (Mục tiêu tạm thời)</string>
+    <string name="label_quick_wizard_tile">AAPS(Quick Wizard)</string>
+    <string name="label_user_action_tile">AAPS(User Action)</string>
+    <string name="label_warning_sync">Không có dữ liệu!</string>
+    <string name="label_warning_old">Dữ liệu cũ!</string>
+    <string name="label_warning_since">Từ %1$s</string>
+    <string name="label_warning_sync_aaps">Đồng bộ với AAPS!</string>
+    <string name="msg_warning_sync">Không nhận được dữ liệu kể từ %1$s! Kiểm tra xem AAPS trên điện thoại có gửi dữ liệu cho đồng hồ hay không</string>
+    <string name="menu_carb">Carbs</string>
+    <string name="menu_ecarb">eCarbs</string>
+    <string name="action_ecarb_confirmation">Lượng carb cần nạp</string>
+    <string name="action_carbs">Carbs</string>
+    <string name="action_carbs_gram">Carbs [g]</string>
+    <string name="action_ecarbs">eCarbs</string>
+    <string name="action_start_minutes">Bắt đầu\n[phút]</string>
+</resources>

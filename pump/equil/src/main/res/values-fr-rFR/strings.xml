@@ -10,7 +10,6 @@
     <string name="equil_date_device">Dernière connexion</string>
     <string name="equil_dressing">Changer le réservoir</string>
     <string name="equil_dressing_onkey_msg">Déplacement automatique du piston vers le bas du réservoir. Il s\'arrêtera automatiquement lorsque le fond sera atteint. Cliquez sur \'Arrêter\' pour interrompre si nécessaire.</string>
-    <string name="equil_finish">Terminé</string>
     <string name="equil_next">Suivant</string>
     <string name="equil_hint_dressing">Cette opération arrêtera l\'injection de l\'insuline et fera en sorte que le piston de la pompe se rétracte vers le bas !</string>
     <string name="equil_history">Historique</string>

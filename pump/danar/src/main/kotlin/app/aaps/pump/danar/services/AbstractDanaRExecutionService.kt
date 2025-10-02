@@ -15,7 +15,6 @@ import androidx.core.app.ActivityCompat
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.notifications.Notification
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.pump.PumpEnactResult
@@ -57,6 +56,7 @@ import io.reactivex.rxjava3.kotlin.plusAssign
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -78,7 +78,7 @@ abstract class AbstractDanaRExecutionService : DaggerService() {
     @Inject lateinit var pumpSync: PumpSync
     @Inject lateinit var activePlugin: ActivePlugin
     @Inject lateinit var uiInteraction: UiInteraction
-    @Inject lateinit var instantiator: Instantiator
+    @Inject lateinit var pumpEnactResultProvider: Provider<PumpEnactResult>
 
     private val disposable = CompositeDisposable()
     private var mDevName: String? = null
@@ -206,7 +206,7 @@ abstract class AbstractDanaRExecutionService : DaggerService() {
     }
 
     fun loadHistory(type: Byte): PumpEnactResult {
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         if (!isConnected) return result
         val msg: MessageBase = when (type) {
             RecordTypes.RECORD_TYPE_ALARM     -> MsgHistoryAlarm(injector)

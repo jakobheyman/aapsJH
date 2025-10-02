@@ -19,7 +19,6 @@ import app.aaps.core.data.time.T.Companion.mins
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
@@ -61,6 +60,7 @@ import app.aaps.pump.danarv2.services.DanaRv2ExecutionService
 import io.reactivex.rxjava3.kotlin.plusAssign
 import java.util.Vector
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.math.abs
 import kotlin.math.max
@@ -85,7 +85,7 @@ class DanaRv2Plugin @Inject constructor(
     uiInteraction: UiInteraction,
     danaHistoryDatabase: DanaHistoryDatabase,
     decimalFormatter: DecimalFormatter,
-    instantiator: Instantiator
+    pumpEnactResultProvider: Provider<PumpEnactResult>
 ) : AbstractDanaRPlugin(
     danaPump,
     aapsLogger,
@@ -101,7 +101,7 @@ class DanaRv2Plugin @Inject constructor(
     uiInteraction,
     danaHistoryDatabase,
     decimalFormatter,
-    instantiator
+    pumpEnactResultProvider
 ) {
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
@@ -181,7 +181,7 @@ class DanaRv2Plugin @Inject constructor(
         val t = EventOverviewBolusProgress.Treatment(0.0, 0, detailedBolusInfo.bolusType === BS.Type.SMB, detailedBolusInfo.id)
         var connectionOK = false
         if (detailedBolusInfo.insulin > 0 || carbs > 0) connectionOK = executionService?.bolus(detailedBolusInfo.insulin, carbs.toInt(), carbTimeStamp, t) == true
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         result.success(connectionOK && abs(detailedBolusInfo.insulin - t.insulin) < pumpDescription.bolusStep)
             .bolusDelivered(t.insulin)
         if (!result.success) result.comment(
@@ -202,7 +202,7 @@ class DanaRv2Plugin @Inject constructor(
     // This is called from APS
     override fun setTempBasalAbsolute(absoluteRate: Double, durationInMinutes: Int, profile: Profile, enforceNew: Boolean, tbrType: TemporaryBasalType): PumpEnactResult {
         var absoluteRateReq = absoluteRate
-        var result = instantiator.providePumpEnactResult()
+        var result = pumpEnactResultProvider.get()
         absoluteRateReq = constraintChecker.applyBasalConstraints(ConstraintObject(absoluteRateReq, aapsLogger), profile).value()
         var doTempOff = baseBasalRate - absoluteRateReq == 0.0 && absoluteRateReq >= 0.10
         val doLowTemp = absoluteRateReq < baseBasalRate || absoluteRateReq < 0.10
@@ -263,7 +263,7 @@ class DanaRv2Plugin @Inject constructor(
     override fun setTempBasalPercent(percent: Int, durationInMinutes: Int, profile: Profile, enforceNew: Boolean, tbrType: TemporaryBasalType): PumpEnactResult {
         var percentReq = percent
         val pump = danaPump
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         percentReq = constraintChecker.applyBasalPercentConstraints(ConstraintObject(percentReq, aapsLogger), profile).value()
         if (percentReq < 0) {
             result.isTempCancel(false).enacted(false).success(false).comment(app.aaps.core.ui.R.string.invalid_input)
@@ -295,7 +295,7 @@ class DanaRv2Plugin @Inject constructor(
 
     private fun setHighTempBasalPercent(percent: Int, durationInMinutes: Int): PumpEnactResult {
         val pump = danaPump
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         val connectionOK = executionService?.highTempBasal(percent, durationInMinutes) == true
         if (connectionOK && pump.isTempBasalInProgress && pump.tempBasalPercent == percent) {
             result.enacted(true).success(true).comment(app.aaps.core.ui.R.string.ok).isTempCancel(false).duration(pump.tempBasalRemainingMin).percent(pump.tempBasalPercent).isPercent(true)
@@ -308,7 +308,7 @@ class DanaRv2Plugin @Inject constructor(
     }
 
     override fun cancelTempBasal(enforceNew: Boolean): PumpEnactResult {
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         if (danaPump.isTempBasalInProgress) {
             executionService?.tempBasalStop()
             result.success(true).enacted(true).isTempCancel(true)
@@ -326,7 +326,7 @@ class DanaRv2Plugin @Inject constructor(
         // needs to be rounded
         val durationInHalfHours = max(durationInMinutes / 30, 1)
         insulinReq = roundTo(insulinReq, pumpDescription.extendedBolusStep)
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         if (danaPump.isExtendedInProgress && abs(danaPump.extendedBolusAmount - insulinReq) < pumpDescription.extendedBolusStep) {
             result.enacted(false)
                 .success(true)
@@ -357,7 +357,7 @@ class DanaRv2Plugin @Inject constructor(
     }
 
     override fun cancelExtendedBolus(): PumpEnactResult {
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         if (danaPump.isExtendedInProgress) {
             executionService?.extendedBolusStop()
             result.enacted(true).success(!danaPump.isExtendedInProgress).isTempCancel(true)

@@ -18,12 +18,12 @@ import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.logging.UserEntryLogger
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBaseWithPreferences
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventLocalProfileChanged
@@ -50,6 +50,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.TimeZone
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /*
@@ -74,7 +75,7 @@ class AutotunePlugin @Inject constructor(
     private val autotuneCore: AutotuneCore,
     private val config: Config,
     private val uel: UserEntryLogger,
-    private val instantiator: Instantiator
+    private val profileStoreProvider: Provider<ProfileStore>
 ) : PluginBaseWithPreferences(
     pluginDescription = PluginDescription()
         .mainType(PluginType.GENERAL)
@@ -366,7 +367,7 @@ class AutotunePlugin @Inject constructor(
         if (newProfile == null) return
         val profilePlugin = activePlugin.activeProfileSource
         val circadian = preferences.get(BooleanKey.AutotuneCircadianIcIsf)
-        val profileStore = activePlugin.activeProfileSource.profile ?: instantiator.provideProfileStore(JSONObject())
+        val profileStore = activePlugin.activeProfileSource.profile ?: profileStoreProvider.get().with(JSONObject())
         val profileList: ArrayList<CharSequence> = profileStore.getProfileList()
         var indexLocalProfile = -1
         for (p in profileList.indices)

@@ -1,6 +1,8 @@
 package app.aaps.implementation.di
 
 import app.aaps.core.interfaces.alerts.LocalAlertUtils
+import app.aaps.core.interfaces.aps.APSResult
+import app.aaps.core.interfaces.aps.AutosensData
 import app.aaps.core.interfaces.db.ProcessedTbrEbData
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.logging.LoggerUtils
@@ -9,6 +11,7 @@ import app.aaps.core.interfaces.notifications.NotificationHolder
 import app.aaps.core.interfaces.overview.LastBgData
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.profiling.Profiler
 import app.aaps.core.interfaces.protection.ExportPasswordDataStore
@@ -17,6 +20,7 @@ import app.aaps.core.interfaces.protection.ProtectionCheck
 import app.aaps.core.interfaces.protection.SecureEncrypt
 import app.aaps.core.interfaces.pump.BlePreCheck
 import app.aaps.core.interfaces.pump.DetailedBolusInfoStorage
+import app.aaps.core.interfaces.pump.PumpEnactResult
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.TemporaryBasalStorage
 import app.aaps.core.interfaces.pump.WarnColors
@@ -37,6 +41,7 @@ import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.implementation.alerts.LocalAlertUtilsImpl
 import app.aaps.implementation.androidNotification.NotificationHolderImpl
+import app.aaps.implementation.aps.DetermineBasalResult
 import app.aaps.implementation.db.ProcessedTbrEbDataImpl
 import app.aaps.implementation.iob.AutosensDataObject
 import app.aaps.implementation.iob.GlucoseStatusProviderImpl
@@ -54,6 +59,7 @@ import app.aaps.implementation.protection.ProtectionCheckImpl
 import app.aaps.implementation.protection.SecureEncryptImpl
 import app.aaps.implementation.pump.BlePreCheckImpl
 import app.aaps.implementation.pump.DetailedBolusInfoStorageImpl
+import app.aaps.implementation.pump.PumpEnactResultObject
 import app.aaps.implementation.pump.PumpSyncImplementation
 import app.aaps.implementation.pump.TemporaryBasalStorageImpl
 import app.aaps.implementation.pump.WarnColorsImpl
@@ -90,9 +96,7 @@ class ImplementationModule {
     @Module
     interface Bindings {
 
-        @ContributesAndroidInjector fun profileStoreInjector(): ProfileStoreObject
         @ContributesAndroidInjector fun contributesNetworkChangeReceiver(): NetworkChangeReceiver
-        @ContributesAndroidInjector fun autosensDataObjectInjector(): AutosensDataObject
 
         @Binds fun bindPreferences(preferencesImpl: PreferencesImpl): Preferences
         @Binds fun bindFabricPrivacy(fabricPrivacyImpl: FabricPrivacyImpl): FabricPrivacy
@@ -130,5 +134,9 @@ class ImplementationModule {
         @Binds fun bindsUserEntryPresentationHelper(userEntryPresentationHelperImpl: UserEntryPresentationHelperImpl): UserEntryPresentationHelper
         @Binds fun bindsGlucoseStatusProvider(glucoseStatusProviderImpl: GlucoseStatusProviderImpl): GlucoseStatusProvider
         @Binds fun bindsDecimalFormatter(decimalFormatterImpl: DecimalFormatterImpl): DecimalFormatter
+        @Binds fun bindsProfileStore(profileStoreObject: ProfileStoreObject): ProfileStore
+        @Binds fun bindsAutosensData(autosensDataObject: AutosensDataObject): AutosensData
+        @Binds fun bindsAPSResult(determineBasalResult: DetermineBasalResult): APSResult
+        @Binds fun bindsPumpEnactResult(pumpEnactResultObject: PumpEnactResultObject): PumpEnactResult
     }
 }

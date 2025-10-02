@@ -58,7 +58,7 @@ class DanaRsPacketBolusSetStepBolusStartTest : DanaRSTestBase() {
             DanaRSPlugin(
                 aapsLogger, rh, preferences, commandQueue, aapsSchedulers, rxBus, context, constraintChecker, profileFunction, danaPump,
                 pumpSync, detailedBolusInfoStorage, temporaryBasalStorage, fabricPrivacy, dateUtil, uiInteraction, danaHistoryDatabase,
-                decimalFormatter, instantiator
+                decimalFormatter, pumpEnactResultProvider
             )
         Mockito.`when`(constraintChecker.applyBolusConstraints(anyObject())).thenReturn(ConstraintObject(0.0, aapsLogger))
     }

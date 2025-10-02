@@ -1,2 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="danarspump">Dana-i/RS</string>
+    <string name="danarspump_shortname">Dana</string>
+    <string name="pumperror">Lỗi bơm</string>
+    <string name="lowbattery">Pin yếu</string>
+    <string name="basalcompare">Đang cung cấp ít hơn tốc độ liều nền đã cài đặt</string>
+    <string name="pumpshutdown">Tắt bơm</string>
+    <string name="startingbolus">Đang tiêm liều bolus</string>
+    <string name="carbs_store_error">Carb có thể chưa được lưu đúng cách. Hãy kiểm tra thủ công và lưu lại nếu cần.</string>
+</resources>

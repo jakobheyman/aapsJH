@@ -7,9 +7,9 @@ import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
 import app.aaps.core.objects.extensions.pureProfileFromJson
 import app.aaps.core.objects.profile.ProfileSealed
-import com.google.common.truth.Truth.assertThat
 import app.aaps.pump.medtrum.comm.enums.BasalType
 import app.aaps.pump.medtrum.comm.enums.ModelType
+import com.google.common.truth.Truth.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -599,6 +599,7 @@ class MedtrumPumpTest : MedtrumTestBase() {
 
         // Expected values
         Mockito.verify(pumpSync, Mockito.never()).syncStopTemporaryBasalWithPumpId(
+            anyOrNull(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull(),

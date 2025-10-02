@@ -485,7 +485,7 @@ internal class NSClientV3PluginTest : TestBaseWithProfile() {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun nsAddProfile() = runTest {
 
-        val dataPair = DataSyncSelector.PairProfileStore(getValidProfileStore().data, 1000)
+        val dataPair = DataSyncSelector.PairProfileStore(getValidProfileStore().getData(), 1000)
         // create
         Mockito.`when`(nsAndroidClient.createProfileStore(anyObject())).thenReturn(CreateUpdateResponse(201, "aaa"))
         sut.nsAdd("profile", dataPair, "1/3")

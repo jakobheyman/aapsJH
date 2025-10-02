@@ -10,7 +10,6 @@
     <string name="equil_date_device">Прошлое соединение</string>
     <string name="equil_dressing">Замена резервуара</string>
     <string name="equil_dressing_onkey_msg">Плунжер автоматически перемещается в нижнюю часть резервуара. По достижении нижней части он остановится автоматически. Нажмите \'Остановить\', чтобы прервать при необходимости.</string>
-    <string name="equil_finish">Завершено</string>
     <string name="equil_next">Далее</string>
     <string name="equil_hint_dressing">Эта операция прекратит инфузию инсулина и переместит плунжер помпы на дно!</string>
     <string name="equil_history">Журнал</string>

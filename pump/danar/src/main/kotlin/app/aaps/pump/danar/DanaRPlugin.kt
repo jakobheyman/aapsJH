@@ -18,7 +18,6 @@ import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
@@ -58,6 +57,7 @@ import app.aaps.pump.danar.services.DanaRExecutionService
 import io.reactivex.rxjava3.kotlin.plusAssign
 import java.util.Vector
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.math.abs
 import kotlin.math.max
@@ -80,7 +80,7 @@ class DanaRPlugin @Inject constructor(
     uiInteraction: UiInteraction,
     danaHistoryDatabase: DanaHistoryDatabase,
     decimalFormatter: DecimalFormatter,
-    instantiator: Instantiator
+    pumpEnactResultProvider: Provider<PumpEnactResult>
 ) : AbstractDanaRPlugin(
     danaPump,
     aapsLogger,
@@ -96,7 +96,7 @@ class DanaRPlugin @Inject constructor(
     uiInteraction,
     danaHistoryDatabase,
     decimalFormatter,
-    instantiator
+    pumpEnactResultProvider
 ) {
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
@@ -174,7 +174,7 @@ class DanaRPlugin @Inject constructor(
                 detailedBolusInfo.carbsTimestamp ?: detailedBolusInfo.timestamp,
                 t
             ) == true
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         result.success(connectionOK && abs(detailedBolusInfo.insulin - t.insulin) < pumpDescription.bolusStep)
             .bolusDelivered(t.insulin)
         if (!result.success) result.comment(
@@ -211,7 +211,7 @@ class DanaRPlugin @Inject constructor(
         // Recheck pump status if older than 30 min
         //This should not be needed while using queue because connection should be done before calling this
         var absoluteRateReq = absoluteRate
-        var result = instantiator.providePumpEnactResult()
+        var result = pumpEnactResultProvider.get()
         absoluteRateReq = constraintChecker.applyBasalConstraints(ConstraintObject(absoluteRateReq, aapsLogger), profile).value()
         var doTempOff = baseBasalRate - absoluteRateReq == 0.0 && absoluteRateReq >= 0.10
         val doLowTemp = absoluteRateReq < baseBasalRate || absoluteRateReq < 0.10
@@ -328,7 +328,7 @@ class DanaRPlugin @Inject constructor(
         if (danaPump.isExtendedInProgress && preferences.get(DanaBooleanKey.UseExtended)) {
             return cancelExtendedBolus()
         }
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         result.success(true).enacted(false).comment(app.aaps.core.ui.R.string.ok).isTempCancel(true)
         return result
     }
@@ -338,7 +338,7 @@ class DanaRPlugin @Inject constructor(
     }
 
     private fun cancelRealTempBasal(): PumpEnactResult {
-        val result = instantiator.providePumpEnactResult()
+        val result = pumpEnactResultProvider.get()
         if (danaPump.isTempBasalInProgress) {
             executionService?.tempBasalStop()
             if (!danaPump.isTempBasalInProgress) {
@@ -358,7 +358,7 @@ class DanaRPlugin @Inject constructor(
     }
 
     override fun loadEvents(): PumpEnactResult =
-        instantiator.providePumpEnactResult() // no history, not needed
+        pumpEnactResultProvider.get() // no history, not needed
 
     override fun setUserOptions(): PumpEnactResult =
         executionService?.setUserOptions() ?: throw Exception("No execution service")

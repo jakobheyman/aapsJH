@@ -1,4 +1,4 @@
-package app.aaps.core.objects.aps
+package app.aaps.implementation.aps
 
 import android.text.Spanned
 import app.aaps.core.data.model.GV
@@ -31,23 +31,24 @@ import app.aaps.core.objects.extensions.convertedToAbsolute
 import app.aaps.core.objects.extensions.convertedToPercent
 import app.aaps.core.ui.R
 import app.aaps.core.utils.HtmlHelper
-import dagger.android.HasAndroidInjector
 import org.json.JSONObject
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.math.abs
 import kotlin.math.max
 
-class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector) : APSResult {
-
-    @Inject lateinit var aapsLogger: AAPSLogger
-    @Inject lateinit var constraintChecker: ConstraintsChecker
-    @Inject lateinit var preferences: Preferences
-    @Inject lateinit var activePlugin: ActivePlugin
-    @Inject lateinit var processedTbrEbData: ProcessedTbrEbData
-    @Inject lateinit var profileFunction: ProfileFunction
-    @Inject lateinit var rh: ResourceHelper
-    @Inject lateinit var decimalFormatter: DecimalFormatter
-    @Inject lateinit var dateUtil: DateUtil
+class DetermineBasalResult @Inject constructor(
+    private val aapsLogger: AAPSLogger,
+    private val constraintChecker: ConstraintsChecker,
+    private val preferences: Preferences,
+    private val activePlugin: ActivePlugin,
+    private val processedTbrEbData: ProcessedTbrEbData,
+    private val profileFunction: ProfileFunction,
+    private val rh: ResourceHelper,
+    private val decimalFormatter: DecimalFormatter,
+    private val dateUtil: DateUtil,
+    private val apsResultProvider: Provider<APSResult>
+) : APSResult {
 
     override var date: Long = 0
     override var reason: String = ""
@@ -75,7 +76,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
     override var smbConstraint: Constraint<Double>? = null
 
     // Inputs
-    override var algorithm: APSResult.Algorithm
+    override var algorithm: APSResult.Algorithm = APSResult.Algorithm.UNKNOWN
     override var autosensResult: AutosensResult? = null
     override var iobData: Array<IobTotal>? = null
     override var glucoseStatus: GlucoseStatus? = null
@@ -86,12 +87,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
 
     lateinit var result: RT
 
-    init {
-        injector.androidInjector().inject(this)
-        algorithm = APSResult.Algorithm.UNKNOWN
-    }
-
-    constructor(injector: HasAndroidInjector, result: RT) : this(injector) {
+    override fun with(result: RT): APSResult = this.also {
         this.algorithm = result.algorithm
         this.result = result
         hasPredictions = true
@@ -167,7 +163,7 @@ class DetermineBasalResult @Inject constructor(val injector: HasAndroidInjector)
         } else HtmlHelper.fromHtml(rh.gs(R.string.nochangerequested))
     }
 
-    override fun newAndClone(): DetermineBasalResult = DetermineBasalResult(injector, result)
+    override fun newAndClone(): APSResult = apsResultProvider.get().with(result)
     override fun json(): JSONObject = JSONObject(result.serialize())
 
     override fun predictions(): Predictions? = result.predBGs

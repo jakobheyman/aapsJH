@@ -35,7 +35,7 @@ class AutotunePluginTest : TestBaseWithProfile() {
     @BeforeEach fun prepare() {
         autotunePlugin = AutotunePlugin(
             injector, aapsLogger, rh, preferences, rxBus, profileFunction, dateUtil, activePlugin,
-            autotuneFS, autotuneIob, autotunePrep, autotuneCore, config, uel, instantiator
+            autotuneFS, autotuneIob, autotunePrep, autotuneCore, config, uel, profileStoreProvider
         )
     }
 

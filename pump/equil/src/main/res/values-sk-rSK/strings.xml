@@ -10,7 +10,6 @@
     <string name="equil_date_device">Posledné spojenie</string>
     <string name="equil_dressing">Vymeniť zásobník</string>
     <string name="equil_dressing_onkey_msg">Automatické pretáčanie piestu do východzej polohy. Po dosiahnutí dna sa automaticky zastaví. V prípade potreby akciu prerušte kliknutím na tlačítko \"Stop\".</string>
-    <string name="equil_finish">Dokončené</string>
     <string name="equil_next">Ďalšia</string>
     <string name="equil_hint_dressing">Táto operácia zastaví vydávanie inzulínu, a spôsobí pretočenie piestu do východzej polohy!</string>
     <string name="equil_history">História</string>

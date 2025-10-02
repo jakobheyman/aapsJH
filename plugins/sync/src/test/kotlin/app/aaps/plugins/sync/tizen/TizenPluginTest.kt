@@ -52,7 +52,7 @@ internal class TizenPluginTest : TestBaseWithProfile() {
         Mockito.`when`(processedDeviceStatusData.uploaderStatus).thenReturn("100%")
         Mockito.`when`(loop.lastRun).thenReturn(Loop.LastRun().also {
             it.lastTBREnact = 1000
-            it.tbrSetByPump = instantiator.providePumpEnactResult().success(true).enacted(true)
+            it.tbrSetByPump = pumpEnactResultProvider.get().success(true).enacted(true)
         }
         )
         Mockito.`when`(activePlugin.activePump).thenReturn(testPumpPlugin)

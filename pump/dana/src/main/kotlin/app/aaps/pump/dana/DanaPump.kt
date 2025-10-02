@@ -6,7 +6,6 @@ import app.aaps.core.data.pump.defs.PumpType
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.pump.PumpSync
@@ -25,6 +24,7 @@ import java.security.InvalidParameterException
 import java.text.DecimalFormat
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.math.max
 import kotlin.math.min
@@ -36,8 +36,8 @@ class DanaPump @Inject constructor(
     private val aapsLogger: AAPSLogger,
     private val preferences: Preferences,
     private val dateUtil: DateUtil,
-    private val instantiator: Instantiator,
-    private val decimalFormatter: DecimalFormatter
+    private val decimalFormatter: DecimalFormatter,
+    private val profileStoreProvider: Provider<ProfileStore>
 ) {
 
     @Suppress("unused")
@@ -368,7 +368,7 @@ class DanaPump @Inject constructor(
             } catch (e: Exception) {
                 return null
             }
-            return instantiator.provideProfileStore(json)
+            return profileStoreProvider.get().with(json)
         }
         return null
     }

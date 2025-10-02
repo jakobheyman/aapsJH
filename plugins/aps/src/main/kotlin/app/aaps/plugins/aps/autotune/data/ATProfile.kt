@@ -7,7 +7,6 @@ import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileStore
@@ -32,6 +31,7 @@ import org.json.JSONObject
 import java.text.DecimalFormat
 import java.util.TimeZone
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.math.min
 
 class ATProfile(profile: Profile, var localInsulin: LocalInsulin, val injector: HasAndroidInjector) {
@@ -43,7 +43,7 @@ class ATProfile(profile: Profile, var localInsulin: LocalInsulin, val injector: 
     @Inject lateinit var config: Config
     @Inject lateinit var rxBus: RxBus
     @Inject lateinit var rh: ResourceHelper
-    @Inject lateinit var instantiator: Instantiator
+    @Inject lateinit var profileStoreProvider: Provider<ProfileStore>
     @Inject lateinit var aapsLogger: AAPSLogger
 
     var profile: ProfileSealed
@@ -186,7 +186,7 @@ class ATProfile(profile: Profile, var localInsulin: LocalInsulin, val injector: 
             json.put("defaultProfile", profileName)
             json.put("store", store)
             json.put("startDate", dateUtil.toISOAsUTC(dateUtil.now()))
-            profileStore = instantiator.provideProfileStore(json)
+            profileStore = profileStoreProvider.get().with(json)
         } catch (e: JSONException) {
             aapsLogger.error(LTag.CORE, e.stackTraceToString())
         }

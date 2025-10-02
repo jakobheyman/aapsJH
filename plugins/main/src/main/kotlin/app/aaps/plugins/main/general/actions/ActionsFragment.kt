@@ -118,7 +118,7 @@ class ActionsFragment : DaggerFragment() {
                 protectionCheck.queryProtection(activity, ProtectionCheck.Protection.BOLUS, UIRunnable {
                     OKDialog.showConfirmation(
                         activity, rh.gs(app.aaps.core.ui.R.string.extended_bolus), rh.gs(R.string.ebstopsloop),
-                        Runnable {
+                        {
                             uiInteraction.runExtendedBolusDialog(childFragmentManager)
                         }, null
                     )
@@ -148,7 +148,7 @@ class ActionsFragment : DaggerFragment() {
         binding.cancelTempBasal.setOnClickListener {
             if (processedTbrEbData.getTempBasalIncludingConvertedExtended(dateUtil.now()) != null) {
                 uel.log(Action.CANCEL_TEMP_BASAL, Sources.Actions)
-                commandQueue.cancelTempBasal(true, object : Callback() {
+                commandQueue.cancelTempBasal(enforceNew = true, callback = object : Callback() {
                     override fun run() {
                         if (!result.success) {
                             uiInteraction.runAlarm(result.comment, rh.gs(app.aaps.core.ui.R.string.temp_basal_delivery_error), app.aaps.core.ui.R.raw.boluserror)

@@ -25,7 +25,6 @@ import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.logging.UserEntryLogger
-import app.aaps.core.interfaces.objects.Instantiator
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileStore
@@ -61,6 +60,7 @@ import org.json.JSONObject
 import java.text.DecimalFormat
 import java.util.Locale
 import javax.inject.Inject
+import javax.inject.Provider
 
 class AutotuneFragment : DaggerFragment() {
 
@@ -78,8 +78,8 @@ class AutotuneFragment : DaggerFragment() {
     @Inject lateinit var injector: HasAndroidInjector
     @Inject lateinit var aapsSchedulers: AapsSchedulers
     @Inject lateinit var uiInteraction: UiInteraction
-    @Inject lateinit var instantiator: Instantiator
     @Inject lateinit var loop: Loop
+    @Inject lateinit var profileStoreProvider: Provider<ProfileStore>
 
     private var disposable: CompositeDisposable = CompositeDisposable()
     private var handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
@@ -109,7 +109,7 @@ class AutotuneFragment : DaggerFragment() {
         if (autotunePlugin.lastNbDays.isEmpty())
             autotunePlugin.lastNbDays = preferences.get(IntKey.AutotuneDefaultTuneDays).toString()
         val defaultValue = preferences.get(IntKey.AutotuneDefaultTuneDays).toDouble()
-        profileStore = activePlugin.activeProfileSource.profile ?: instantiator.provideProfileStore(JSONObject())
+        profileStore = activePlugin.activeProfileSource.profile ?: profileStoreProvider.get().with(JSONObject())
         profileName = if (binding.profileList.text.toString() == rh.gs(app.aaps.core.ui.R.string.active)) "" else binding.profileList.text.toString()
         profileFunction.getProfile()?.let { currentProfile ->
             profile = ATProfile(profileStore.getSpecificProfile(profileName)?.let { ProfileSealed.Pure(value = it, activePlugin = null) } ?: currentProfile, LocalInsulin(""), injector)
@@ -162,7 +162,7 @@ class AutotuneFragment : DaggerFragment() {
                 OKDialog.showConfirmation(requireContext(),
                                           rh.gs(R.string.autotune_copy_localprofile_button),
                                           rh.gs(R.string.autotune_copy_local_profile_message) + "\n" + localName,
-                                          Runnable {
+                                          {
                                               val profilePlugin = activePlugin.activeProfileSource
                                               profilePlugin.addProfile(profilePlugin.copyFrom(tunedProfile.getProfile(circadian), localName))
                                               rxBus.send(EventLocalProfileChanged())
@@ -181,7 +181,7 @@ class AutotuneFragment : DaggerFragment() {
             OKDialog.showConfirmation(requireContext(),
                                       rh.gs(R.string.autotune_update_input_profile_button),
                                       rh.gs(R.string.autotune_update_local_profile_message, localName),
-                                      Runnable {
+                                      {
                                           autotunePlugin.tunedProfile?.profileName = localName
                                           autotunePlugin.updateProfile(autotunePlugin.tunedProfile)
                                           autotunePlugin.updateButtonVisibility = View.GONE
@@ -201,7 +201,7 @@ class AutotuneFragment : DaggerFragment() {
             OKDialog.showConfirmation(requireContext(),
                                       rh.gs(R.string.autotune_revert_input_profile_button),
                                       rh.gs(R.string.autotune_revert_local_profile_message, localName),
-                                      Runnable {
+                                      {
                                           autotunePlugin.tunedProfile?.profileName = ""
                                           autotunePlugin.updateProfile(autotunePlugin.pumpProfile)
                                           autotunePlugin.updateButtonVisibility = View.VISIBLE
@@ -324,7 +324,7 @@ class AutotuneFragment : DaggerFragment() {
     @Synchronized
     private fun updateGui() {
         _binding ?: return
-        profileStore = activePlugin.activeProfileSource.profile ?: instantiator.provideProfileStore(JSONObject())
+        profileStore = activePlugin.activeProfileSource.profile ?: profileStoreProvider.get().with(JSONObject())
         profileName = if (binding.profileList.text.toString() == rh.gs(app.aaps.core.ui.R.string.active)) "" else binding.profileList.text.toString()
         profileFunction.getProfile()?.let { currentProfile ->
             profile = ATProfile(profileStore.getSpecificProfile(profileName)?.let { ProfileSealed.Pure(value = it, activePlugin = null) } ?: currentProfile, LocalInsulin(""), injector)

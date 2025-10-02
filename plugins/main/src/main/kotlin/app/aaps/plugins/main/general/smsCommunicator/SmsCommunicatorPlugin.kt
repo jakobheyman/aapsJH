@@ -80,7 +80,6 @@ import dagger.android.HasAndroidInjector
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import kotlinx.coroutines.Dispatchers
-import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.Strings
 import org.joda.time.DateTime
 import java.text.Normalizer
@@ -269,7 +268,6 @@ class SmsCommunicatorPlugin @Inject constructor(
             rxBus.send(EventSmsCommunicatorUpdateGui())
             return
         }
-        val pump = activePlugin.activePump
         messages.add(receivedSms)
         aapsLogger.debug(LTag.SMS, receivedSms.toString())
         val divided = receivedSms.text.trim().split(Regex("\\s+")).toTypedArray()
@@ -473,7 +471,7 @@ class SmsCommunicatorPlugin @Inject constructor(
                     receivedSms.processed = true
                     messageToConfirm = AuthRequest(injector, receivedSms, reply, passCode, object : SmsAction(pumpCommand = true, duration) {
                         override fun run() {
-                            commandQueue.cancelTempBasal(true, object : Callback() {
+                            commandQueue.cancelTempBasal(enforceNew = true, callback = object : Callback() {
                                 override fun run() {
                                     if (result.success) {
                                         loop.handleRunningModeChange(
@@ -718,7 +716,7 @@ class SmsCommunicatorPlugin @Inject constructor(
             receivedSms.processed = true
             messageToConfirm = AuthRequest(injector, receivedSms, reply, passCode, object : SmsAction(pumpCommand = true) {
                 override fun run() {
-                    commandQueue.cancelTempBasal(true, object : Callback() {
+                    commandQueue.cancelTempBasal(enforceNew = true, callback = object : Callback() {
                         override fun run() {
                             if (result.success) {
                                 var replyText = rh.gs(R.string.smscommunicator_tempbasal_canceled)

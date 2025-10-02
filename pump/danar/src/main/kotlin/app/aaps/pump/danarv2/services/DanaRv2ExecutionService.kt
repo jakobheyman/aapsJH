@@ -360,11 +360,11 @@ class DanaRv2ExecutionService : AbstractDanaRExecutionService() {
 
     override fun loadEvents(): PumpEnactResult {
         if (!danaRv2Plugin.isInitialized()) {
-            val result = instantiator.providePumpEnactResult().success(false)
+            val result = pumpEnactResultProvider.get().success(false)
             result.comment("pump not initialized")
             return result
         }
-        if (!isConnected) return instantiator.providePumpEnactResult().success(false)
+        if (!isConnected) return pumpEnactResultProvider.get().success(false)
         SystemClock.sleep(300)
         val msg = MsgHistoryEventsV2(injector, danaPump.readHistoryFrom)
         aapsLogger.debug(LTag.PUMP, "Loading event history from: " + dateUtil.dateAndTimeString(danaPump.readHistoryFrom))
@@ -375,7 +375,7 @@ class DanaRv2ExecutionService : AbstractDanaRExecutionService() {
         SystemClock.sleep(200)
         if (danaPump.lastEventTimeLoaded != 0L) danaPump.readHistoryFrom = danaPump.lastEventTimeLoaded - mins(1).msecs() else danaPump.readHistoryFrom = 0
         danaPump.lastConnection = System.currentTimeMillis()
-        return instantiator.providePumpEnactResult().success(true)
+        return pumpEnactResultProvider.get().success(true)
     }
 
     override fun updateBasalsInPump(profile: Profile): Boolean {
@@ -393,12 +393,12 @@ class DanaRv2ExecutionService : AbstractDanaRExecutionService() {
     }
 
     override fun setUserOptions(): PumpEnactResult {
-        if (!isConnected) return instantiator.providePumpEnactResult().success(false)
+        if (!isConnected) return pumpEnactResultProvider.get().success(false)
         SystemClock.sleep(300)
         val msg = MsgSetUserOptions(injector)
         mSerialIOThread?.sendMessage(msg)
         SystemClock.sleep(200)
-        return instantiator.providePumpEnactResult().success(!msg.failed)
+        return pumpEnactResultProvider.get().success(!msg.failed)
     }
 
     inner class LocalBinder : Binder() {

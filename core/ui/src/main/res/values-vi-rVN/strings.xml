@@ -116,6 +116,7 @@
     <string name="alarminxmin">Báo động sau %1$d phút</string>
     <string name="treatmentdeliveryerror">Bolus gặp lỗi. Hãy kiểm tra thủ công lượng insulin và carb đã bơm</string>
     <string name="bolus_reminder">Nhắc nhở bolus</string>
+    <string name="duration_label">Thời lượng</string>
     <string name="shortgramm">g</string>
     <string name="pumpsuspended">Bơm đã tạm dừng</string>
     <string name="pump_running">Pump đang chạy</string>
@@ -200,6 +201,7 @@
     <string name="cancel_temp">Huỷ liều basal tạm</string>
     <string name="let_temp_basal_run">Cho basal tạm thời tiếp tục</string>
     <string name="rate">Rate</string>
+    <string name="duration">Thời lượng</string>
     <string name="reason">Lý do</string>
     <string name="nochangerequested">Không có thay đổi nào được yêu cầu</string>
     <!--    ProfileSwitch-->
@@ -207,7 +209,10 @@
     <!--    Temptarget-->
     <string name="mins">%1$d phút</string>
     <!--    Translator-->
+    <string name="careportal">Careportal</string>
+    <string name="careportal_bgcheck">BG Check</string>
     <string name="careportal_mbg">Đường huyết nhập tay hoặc hiệu chuẩn</string>
+    <string name="careportal_announcement">Thông báo</string>
     <string name="careportal_settings_export">Xuất cài đặt</string>
     <string name="careportal_note">Ghi chú</string>
     <string name="careportal_question">Câu hỏi</string>
@@ -270,6 +275,7 @@
     <string name="bolus">Bolus</string>
     <string name="tdd">TDD</string>
     <string name="ratio">Ratio</string>
+    <string name="amount_days"># Ngày</string>
     <string name="weight">Cân nặng</string>
     <string name="warning_Message">Kết quả có thể sai lệch nếu tính cả bolus dùng để mồi/đổ đầy ống!</string>
     <string name="olddata_Message">Dữ liệu cũ, vui lòng nhấn \'RELOAD\'</string>
@@ -279,13 +285,73 @@
     <string name="timedetection">Nhận diện thời gian</string>
     <!-- User Entry -->
     <string name="uel_bolus">BOLUS</string>
+    <string name="uel_bolus_calculator">TÍNH TOÁN BOLUS</string>
+    <string name="uel_bolus_advisor">GỌI Ý BOLUS</string>
+    <string name="uel_extended_bolus">BOLUS MỞ RỘNG</string>
+    <string name="uel_superbolus_tbr">SUPERBOLUS TBR</string>
+    <string name="uel_carbs">CARBS</string>
+    <string name="uel_extended_carbs">CARBS MỞ RỘNG</string>
+    <string name="uel_temp_basal">TEMP BASAL</string>
+    <string name="uel_tt">TEMP TARGET</string>
+    <string name="uel_new_profile">CẤU HÌNH MỚI</string>
+    <string name="uel_clone_profile">NHÂN BẢN CẤU HÌNH</string>
+    <string name="uel_store_profile">LƯU CẤU HÌNH</string>
+    <string name="uel_profile_switch">CHUYỂN CẤU HÌNH</string>
+    <string name="uel_profile_switch_cloned">ĐÃ NHÂN BẢN CHUYỂN CẤU HÌNH</string>
+    <string name="uel_closed_loop_mode">CHẾ ĐỘ VÒNG KÍN</string>
+    <string name="uel_lgs_loop_mode">CHẾ ĐỘ VÒNG KÍN LGS</string>
+    <string name="uel_open_loop_mode">MỞ VÒNG LẶP</string>
+    <string name="uel_loop_disabled">VÒNG LẶP TẮT</string>
+    <string name="uel_loop_resumed">BẬT LẠI VÒNG LẶP</string>
     <string name="uel_pump_running">BƠM ĐANG CHẠY</string>
+    <string name="uel_reconnect">KẾT NỐI LẠI</string>
     <string name="uel_disconnect">NGẮT KẾT NỐI</string>
     <string name="uel_resume">TIẾP TỤC</string>
     <string name="uel_suspend">TẠM NGƯNG</string>
+    <string name="uel_hw_pump_allowed">CHO PHÉP PHẦN CỨNG PUMP</string>
+    <string name="uel_clear_pairing_keys">XÓA KHÓA GHÉP NỐI</string>
+    <string name="uel_accepts_temp_basal">CHO PHÉP BASAL TẠM THỜI</string>
+    <string name="uel_cancel_temp_basal">HỦY TEMP BASAL</string>
+    <string name="uel_cancel_bolus">HỦY BOLUS</string>
+    <string name="uel_cancel_extended_bolus">HỦY BOLUS MỞ RỘNG</string>
+    <string name="uel_cancel_tt">CANCEL TEMP TARGET</string>
+    <string name="uel_careportal">CAREPORTAL</string>
+    <string name="uel_site_change">THAY ĐIỂM GẮN</string>
+    <string name="uel_reservoir_change">THAY RESERVOIR</string>
+    <string name="uel_calibration">CALIBRATION</string>
+    <string name="uel_prime_bolus">BOLUS MỒI</string>
+    <string name="uel_treatment">ĐIỀU TRỊ</string>
+    <string name="uel_careportal_ns_refresh">CẬP NHẬT CAREPORTAL TỪ NS</string>
+    <string name="uel_profile_switch_ns_refresh">CẬP NHẬT CHUYỂN CẤU HÌNH TỪ NS</string>
+    <string name="uel_treatments_ns_refresh">CẬP NHẬT ĐIỀU TRỊ TỪ NS</string>
+    <string name="uel_tt_ns_refresh">CẬP NHẬT MỤC TIÊU TẠM THỜI TỪ NS</string>
+    <string name="uel_automation_removed">ĐÃ XÓA AUTOMATION</string>
+    <string name="uel_bg_removed">BG REMOVED</string>
+    <string name="uel_careportal_removed">ĐÃ XÓA CAREPORTAL</string>
+    <string name="uel_bolus_removed">ĐÃ XÓA BOLUS</string>
+    <string name="uel_carbs_removed">ĐÃ XÓA CARBS</string>
+    <string name="uel_temp_basal_removed">ĐÃ XÓA TEMP BASAL</string>
+    <string name="uel_extended_bolus_removed">ĐÃ XÓA BOLUS MỞ RỘNG</string>
+    <string name="uel_food">BỮA ĂN</string>
+    <string name="uel_food_removed">ĐÃ XÓA BỮA ĂN</string>
+    <string name="uel_profile_removed">ĐÃ XÓA CẤU HÌNH</string>
+    <string name="uel_profile_switch_removed">ĐÃ XÓA CHUYỂN CẤU HÌNH</string>
+    <string name="uel_restart_events_removed">SỰ KIỆN KHỞI ĐỘNG LẠI ĐÃ BỊ XÓA</string>
+    <string name="uel_treatment_removed">ĐÃ XÓA ĐIỀU TRỊ</string>
+    <string name="uel_tt_removed">ĐÃ XÓA TEMP TARGET</string>
+    <string name="uel_ns_paused">NS TẠM DỪNG</string>
     <string name="uel_ns_resume">TIẾP TỤC NS</string>
+    <string name="uel_ns_queue_cleared">DÃ XOÁ HÀNG ĐỢI NS</string>
+    <string name="uel_ns_settings_copied">ĐÃ SAO CHÉP CÀI ĐẶT NS</string>
+    <string name="uel_error_dialog_ok">ĐỒNG Ý (HỘP THOẠI LỖI)</string>
+    <string name="uel_error_dialog_mute">TẮT TIẾNG (HỘP THOẠI LỖI) </string>
+    <string name="uel_error_dialog_mute_5min">TẮT TIẾNG 5 PHÚT (HỘP THOẠI LỖI)</string>
+    <string name="uel_objective_started">MỤC TIÊU ĐÃ BẮT ĐẦU</string>
+    <string name="uel_objective_unstarted">MỤC TIÊU CHƯA BẮT ĐẦU</string>
+    <string name="uel_objectives_skipped">CÁC MỤC TIÊU ĐÃ BỎ QUA</string>
     <string name="uel_stat_reset">ĐẶT LẠI THỐNG KÊ</string>
     <string name="uel_delete_logs">XOÁ NHẬT KÝ</string>
+    <string name="uel_delete_future_treatments">XOÁ LIỆU TRÌNH SẮP TỚI</string>
     <string name="delete_future_treatments">Xoá liệu trình sắp tới</string>
     <string name="uel_export_settings">XUẤT CÀI ĐẶT</string>
     <string name="uel_import_settings">NHẬP CÀI ĐẶT</string>
@@ -306,19 +372,28 @@
     <string name="uel_unknown">KHÔNG XÁC ĐỊNH</string>
     <string name="ue_string">Chuỗi</string>
     <string name="ue_source">Nguồn</string>
+    <string name="ue_utc_offset">UTC Offset</string>
+    <string name="ue_action">Action</string>
     <string name="ue_timestamp">Mốc thời gian</string>
     <string name="ue_none">Không có đơn vị</string>
+    <string name="uel_loop_change">VÒNG LẶP ĐÃ THAY ĐỔI</string>
+    <string name="uel_loop_removed">VÒNG LẶP ĐÃ BỊ XOÁ</string>
     <string name="uel_other">KHÁC</string>
     <!-- HardLimits -->
     <string name="profile_low_target">Mục tiêu thấp của cấu hình</string>
     <string name="profile_high_target">Cấu hình Mục tiêu cao</string>
+    <string name="temp_target_low_target">Giá trị thấp nhất của mục tiêu tạm thời</string>
+    <string name="temp_target_high_target">Giá trị cao nhất của mục tiêu tạm thời</string>
+    <string name="temp_target_value">Giá trị mục tiêu tạm thời</string>
     <string name="profile_dia">Giá trị DIA của cấu hình</string>
     <string name="profile_sensitivity_value">Giá trị độ nhạy của cấu hình</string>
     <string name="profile_max_daily_basal_value">Giá trị basal tối đa của cấu hình</string>
+    <string name="current_basal_value">Giá trị basal hiện tại</string>
     <string name="profile_carbs_ratio_value">Giá trị tỷ lệ carb của cấu hình</string>
     <string name="valuelimitedto">%1$.2f bị giới hạn ở %2$.2f</string>
     <string name="valueoutofrange">»%1$s« nằm ngoài giới hạn an toàn</string>
     <string name="value_out_of_hard_limits">»%1$s« %2$.2f nằm ngoài giới hạn an toàn</string>
+    <string name="basal_value">Giá trị Basal</string>
     <!-- Command Queue + readStatus reasons -->
     <string name="bolus_u_min">BOLUS %1$.2f U</string>
     <string name="carbs_g">CARBS %1$d g</string>
@@ -326,18 +401,25 @@
     <string name="load_events">TẢI SỰ KIỆN</string>
     <string name="clear_alarms">XOÁ CẢNH BÁO</string>
     <string name="deactivate">HUỶ KÍCH HOẠT</string>
+    <string name="update_time">CẬP NHẬT THỜI GIAN</string>
     <string name="load_history">TẢI LỊCH SỬ %1$d</string>
     <string name="load_tdds">TẢI TDDs</string>
     <string name="set_profile">THIẾT LẬP CẤU HÌNH</string>
+    <string name="set_user_settings">CÀI ĐẶT NGƯỜI DÙNG</string>
+    <string name="smb_bolus_u">SMB BOLUS %1$.2f U</string>
     <string name="start_pump">KHỞI ĐỘNG PUMP</string>
     <string name="stop_pump">DỪNG PUMP</string>
     <string name="temp_basal_absolute">LIỀU BASAL TẠM THỜI %1$.2f U/h %2$d min</string>
     <string name="temp_basal_percent">LIỀU BASAL TẠM THỜI %1$d%% %2$d min</string>
+    <string name="insight_set_tbr_over_notification">INSIGHT: Đặt TBR thông qua thông báo</string>
     <string name="read_status" comment="10 characters max for READSTATUS translation">TRẠNG THÁI %1$s</string>
     <string name="keepalive_status_outdated" comment="26 characters max for translation">KeepAlive: Trạng thái lỗi thời.</string>
+    <string name="keepalive_basal_outdated" comment="26 characters max for translation">KeepAlive. Liều Basal lỗi thời.</string>
     <string name="sms" comment="26 characters max for translation">SMS</string>
     <string name="formatPercent">%1$.0f%%</string>
+    <string name="basal">Liều Basal</string>
     <string name="basalpct">Liều Basal %</string>
+    <string name="sensitivity">Độ nhạy</string>
     <string name="isf_for_carbs">ISF dùng cho tính toán và hấp thụ carb: %1$.1f</string>
     <string name="autosens_long">Giá trị Autosens: %.0f%%</string>
     <string name="autosens_short">AS: %.0f%%</string>
@@ -354,6 +436,7 @@
     <string name="urgent_alarm">Cảnh báo khẩn cấp</string>
     <string name="info">THÔNG TIN</string>
     <!-- BolusWizard -->
+    <string name="bolus_advisor">Gợi ý bolus</string>
     <string name="bolus_advisor_message">Bạn đang có đường huyết cao. Thay vì ăn ngay, nên chờ đến khi đường huyết ổn định hơn. Bạn có muốn thực hiện bolus chỉnh sửa ngay và được nhắc khi đến giờ ăn? Trong trường hợp này, không có carbs nào được ghi nhận và bạn sẽ phải sử dụng wizard một lần nữa khi được nhắc.</string>
     <string name="cobvsiob">COB với IOB</string>
     <string name="slowabsorptiondetected"><![CDATA[<font color=\'%1$s\'>!!!!! Phát hiện hấp thụ carb chậm: %2$d%% thời gian. Kiểm tra lại tính toán của bạn. COB có thể bị đánh giá quá cao, dẫn đến việc bơm insulin nhiều hơn !!!!!</font>]]></string>
@@ -376,6 +459,7 @@
     <string name="wizard_explain_iob">IOB: %1$.2fU</string>
     <string name="wizard_explain_superbolus">Superbolus: %1$.2fU</string>
     <string name="wizard_explain_trend">Xu hướng 15\': %1$.2fU</string>
+    <string name="wizard_explain_percent">Tỷ lệ/Phần trăm: %1$.2fU x %2$d%% ≈ %3$.2fU</string>
     <string name="wizard_constraint_bolus_size">Vượt giới hạn insulin!\nKhông thể tiêm %1$.2fU</string>
     <string name="wizard_explain_tt">TempT: %1$s</string>
     <string name="wizard_explain_tt_to">%1$s to %2$s</string>
@@ -459,6 +543,7 @@
     <string name="you_are_on_allowed_limit">Đã đạt giới hạn cho phép</string>
     <string name="format_hour_minute">%1$dh %2$dm</string>
     <!-- datetime layout -->
+    <string name="event_time_label">Thời gian sự kiện</string>
     <!-- BluetoothDevicePreference -->
     <string name="need_connect_permission">Ứng dụng yêu cầu quyền Bluetooth</string>
     <!--    Combo-->

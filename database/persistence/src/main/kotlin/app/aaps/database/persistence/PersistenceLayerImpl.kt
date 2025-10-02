@@ -104,7 +104,6 @@ import app.aaps.database.transactions.UpdateNsIdTherapyEventTransaction
 import app.aaps.database.transactions.UserEntryTransaction
 import app.aaps.database.transactions.VersionChangeTransaction
 import dagger.Reusable
-import dagger.android.HasAndroidInjector
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Single
@@ -113,6 +112,7 @@ import io.reactivex.rxjava3.kotlin.plusAssign
 import java.util.Collections.emptyList
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Provider
 
 @Reusable
 class PersistenceLayerImpl @Inject constructor(
@@ -120,7 +120,7 @@ class PersistenceLayerImpl @Inject constructor(
     private val repository: AppRepository,
     private val dateUtil: DateUtil,
     private val config: Config,
-    private val injector: HasAndroidInjector
+    private val apsResultProvider: Provider<APSResult>
 ) : PersistenceLayer {
 
     @Suppress("unused")
@@ -1902,10 +1902,10 @@ class PersistenceLayerImpl @Inject constructor(
         repository.collectNewEntriesSince(since, until, limit, offset).fromDb()
 
     override fun getApsResultCloseTo(timestamp: Long): APSResult? =
-        repository.getApsResultCloseTo(timestamp).blockingGet()?.fromDb(injector)
+        repository.getApsResultCloseTo(timestamp).blockingGet()?.fromDb(apsResultProvider)
 
     override fun getApsResults(start: Long, end: Long): List<APSResult> =
-        repository.getApsResults(start, end).map { list -> list.asSequence().map { it.fromDb(injector) }.toList() }.blockingGet()
+        repository.getApsResults(start, end).map { list -> list.asSequence().map { it.fromDb(apsResultProvider) }.toList() }.blockingGet()
 
     override fun insertOrUpdateApsResult(apsResult: APSResult): Single<PersistenceLayer.TransactionResult<APSResult>> =
         repository.runTransactionForResult(InsertOrUpdateApsResultTransaction(apsResult.toDb()))
@@ -1914,11 +1914,11 @@ class PersistenceLayerImpl @Inject constructor(
                 val transactionResult = PersistenceLayer.TransactionResult<APSResult>()
                 result.inserted.forEach {
                     aapsLogger.debug(LTag.DATABASE, "Inserted APSResult $it")
-                    transactionResult.inserted.add(it.fromDb(injector))
+                    transactionResult.inserted.add(it.fromDb(apsResultProvider))
                 }
                 result.updated.forEach {
                     aapsLogger.debug(LTag.DATABASE, "Updated APSResult $it")
-                    transactionResult.updated.add(it.fromDb(injector))
+                    transactionResult.updated.add(it.fromDb(apsResultProvider))
                 }
                 transactionResult
             }
