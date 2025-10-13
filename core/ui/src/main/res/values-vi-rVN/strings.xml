@@ -446,7 +446,7 @@
     <string name="bolus_recorded_only">Bolus chỉ được ghi lại (không tiêm qua pump)</string>
     <string name="advisoralarm">Báo thức sẽ phát khi đến giờ ăn</string>
     <string name="no_action_selected">Chưa chọn hành động, sẽ không có gì xảy ra</string>
-    <string name="carb_equal_zero_no_action">Carb = 0. Không thực hiện hành động nào!</string>
+    <string name="carb_equal_zero_no_action">Carb = 0. Không có hành động nào được thực hiện!</string>
     <string name="wizard_no_insulin_required">Không cần insulin!</string>
     <string name="wizard_no_actual_bg">Chưa có BG gần đây để tính toán!</string>
     <string name="wizard_no_active_profile">Chưa có cấu hình nào hoạt động!</string>

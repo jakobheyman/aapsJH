@@ -70,6 +70,7 @@ import java.util.Optional
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+import kotlin.math.min
 
 @Singleton
 class EquilManager @Inject constructor(
@@ -285,6 +286,8 @@ class EquilManager @Inject constructor(
                     percent = percent + percent1
                     aapsLogger.debug(LTag.PUMPCOMM, "isCmdStatus===" + percent + "====" + bolusProfile.stop)
                 }
+                // constraint percent.
+                percent = min(percent, 100.0f)
                 result.comment = rh.gs(app.aaps.core.ui.R.string.virtualpump_resultok)
             } else {
                 result.success = false

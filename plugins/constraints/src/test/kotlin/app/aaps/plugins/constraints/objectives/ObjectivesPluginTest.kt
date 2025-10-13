@@ -1,47 +1,56 @@
 package app.aaps.plugins.constraints.objectives
 
+import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.constraints.Objectives
-import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.core.interfaces.utils.DateUtil
-import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.protection.PasswordCheck
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.plugins.constraints.R
-import app.aaps.plugins.constraints.objectives.objectives.Objective
-import app.aaps.shared.tests.TestBase
+import app.aaps.plugins.constraints.objectives.objectives.Objective0
+import app.aaps.plugins.constraints.objectives.objectives.Objective1
+import app.aaps.plugins.constraints.objectives.objectives.Objective2
+import app.aaps.plugins.constraints.objectives.objectives.Objective3
+import app.aaps.plugins.constraints.objectives.objectives.Objective4
+import app.aaps.plugins.constraints.objectives.objectives.Objective5
+import app.aaps.plugins.constraints.objectives.objectives.Objective6
+import app.aaps.plugins.constraints.objectives.objectives.Objective7
+import app.aaps.plugins.constraints.objectives.objectives.Objective8
+import app.aaps.plugins.constraints.objectives.objectives.Objective9
+import app.aaps.pump.virtual.VirtualPumpPlugin
+import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
-import dagger.android.AndroidInjector
-import dagger.android.HasAndroidInjector
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 
-class ObjectivesPluginTest : TestBase() {
+class ObjectivesPluginTest : TestBaseWithProfile() {
 
-    @Mock lateinit var rh: ResourceHelper
-    @Mock lateinit var preferences: Preferences
-    @Mock lateinit var dateUtil: DateUtil
+    @Mock lateinit var virtualPumpPlugin: VirtualPumpPlugin
+    @Mock lateinit var persistenceLayer: PersistenceLayer
+    @Mock lateinit var loop: Loop
+    @Mock lateinit var passwordCheck: PasswordCheck
 
     private lateinit var objectivesPlugin: ObjectivesPlugin
 
-    private val injector = HasAndroidInjector {
-        AndroidInjector {
-            if (it is Objective) {
-                it.preferences = preferences
-                it.rh = rh
-                it.dateUtil = dateUtil
-            }
-        }
-    }
-
-    @BeforeEach fun prepareMock() {
-        objectivesPlugin = ObjectivesPlugin(injector, aapsLogger, rh, preferences)
+    @BeforeEach
+    fun setupMock() {
+        val objectives = listOf(
+            Objective0(preferences, rh, dateUtil, activePlugin, virtualPumpPlugin, persistenceLayer, loop, iobCobCalculator, passwordCheck),
+            Objective1(preferences, rh, dateUtil, activePlugin),
+            Objective2(preferences, rh, dateUtil),
+            Objective3(preferences, rh, dateUtil),
+            Objective4(preferences, rh, dateUtil, profileFunction),
+            Objective5(preferences, rh, dateUtil),
+            Objective6(preferences, rh, dateUtil, constraintsChecker, loop),
+            Objective7(preferences, rh, dateUtil),
+            Objective8(preferences, rh, dateUtil),
+            Objective9(preferences, rh, dateUtil)
+        )
+        objectivesPlugin = ObjectivesPlugin(aapsLogger, rh, preferences, config, objectives)
         objectivesPlugin.onStart()
-        `when`(rh.gs(R.string.objectivenotstarted, 9)).thenReturn("Objective 9 not started")
-        `when`(rh.gs(R.string.objectivenotstarted, 8)).thenReturn("Objective 8 not started")
-        `when`(rh.gs(R.string.objectivenotfinished, 6)).thenReturn("Objective 6 not finished")
-        `when`(rh.gs(R.string.objectivenotstarted, 7)).thenReturn("Objective 7 not started")
-        `when`(rh.gs(R.string.objectivenotstarted, 1)).thenReturn("Objective 1 not started")
+        `when`(rh.gs(R.string.objectivenotstarted)).thenReturn("Objective %1\$d not started")
+        `when`(rh.gs(R.string.objectivenotfinished)).thenReturn("Objective %1\$d not finished")
     }
 
     @Test fun notStartedObjectivesShouldLimitLoopInvocation() {

@@ -73,4 +73,6 @@ enum class IntKey(
     BgSourceRandomInterval("randombg_interval_min", 5, 1, 15, defaultedBySM = true),
     NsClientAlarmStaleData("ns_alarm_stale_data_value", 16, 15, 120),
     NsClientUrgentAlarmStaleData("ns_alarm_urgent_stale_data_value", 31, 30, 180),
+
+    SiteRotationUserProfile("site_rotation_user_profile", 0, 0, 2),
 }

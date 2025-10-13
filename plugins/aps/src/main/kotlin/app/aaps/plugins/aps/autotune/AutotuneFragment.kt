@@ -262,7 +262,7 @@ class AutotuneFragment : DaggerFragment() {
                 tunedProfile?.let { tunedP ->
                     tunedP.profileStore(circadian)?.let {
                         OKDialog.showConfirmation(requireContext(),
-                                                  rh.gs(app.aaps.core.ui.R.string.activate_profile) + ": " + tunedP.profileName + " ?",
+                                                  rh.gs(app.aaps.core.ui.R.string.activate_profile) + ": " + tunedP.profileName + "?",
                                                   {
                                                       uel.log(
                                                           action = Action.STORE_PROFILE,

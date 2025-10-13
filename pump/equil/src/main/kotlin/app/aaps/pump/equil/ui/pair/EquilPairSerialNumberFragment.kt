@@ -12,7 +12,6 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -249,7 +248,7 @@ class EquilPairSerialNumberFragment : EquilPairFragmentBase() {
         if (scanning) {
             scanning = false
             if (bluetoothAdapter?.isEnabled == true && bluetoothAdapter?.state == BluetoothAdapter.STATE_ON)
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || context?.let { ActivityCompat.checkSelfPermission(it, Manifest.permission.BLUETOOTH_SCAN) } == PackageManager.PERMISSION_GRANTED) {
+                if (context?.let { ActivityCompat.checkSelfPermission(it, Manifest.permission.BLUETOOTH_SCAN) } == PackageManager.PERMISSION_GRANTED) {
                     bleScanner?.stopScan(bleScanCallback)
                 }
             aapsLogger.debug(LTag.PUMPBTCOMM, "stopLeDeviceScan: Scanning Stop")

@@ -16,7 +16,7 @@ class MessageHashTableR @Inject constructor(
         put(MsgBolusStart(injector, 0.0))                // 0x0102 CMD_MEALINS_START_DATA
         put(MsgBolusStartWithSpeed(injector, 0.0, 0))       // 0x0104 CMD_MEALINS_START_DATA_SPEED
         put(MsgBolusProgress(injector))             // 0x0202 CMD_PUMP_THIS_REMAINDER_MEAL_INS
-        put(MsgStatusProfile(injector))             // 0x0204 CMD_PUMP_CALCULATION_SETTING
+        //put(MsgStatusProfile(injector))             // 0x0204 CMD_PUMP_CALCULATION_SETTING
         put(MsgStatusTempBasal(injector))           // 0x0205 CMD_PUMP_EXERCISE_MODE
         put(MsgStatusBolusExtended(injector))       // 0x0207 CMD_PUMP_EXPANS_INS_I
         put(MsgStatusBasic(injector))               // 0x020A CMD_PUMP_INITVIEW_I
@@ -24,7 +24,7 @@ class MessageHashTableR @Inject constructor(
         // 0x0301 CMD_PUMPINIT_TIME_INFO
         put(MsgInitConnStatusTime(injector))
         put(MsgInitConnStatusBolus(injector))       // 0x0302 CMD_PUMPINIT_BOLUS_INFO
-        put(MsgInitConnStatusBasic(injector))       // 0x0303 CMD_PUMPINIT_INIT_INFO
+        //put(MsgInitConnStatusBasic(injector))       // 0x0303 CMD_PUMPINIT_INIT_INFO
         put(MsgInitConnStatusOption(injector))      // 0x0304 CMD_PUMPINIT_OPTION
         put(MsgSetTempBasalStart(injector, 0, 0))         // 0x0401 CMD_PUMPSET_EXERCISE_S
         put(MsgSetCarbsEntry(injector, 0, 0))             // 0x0402 CMD_PUMPSET_HIS_S
@@ -50,7 +50,7 @@ class MessageHashTableR @Inject constructor(
         put(MsgSettingMeal(injector))
         put(MsgSettingProfileRatios(injector))      // 0x3204 CMD_SETTING_V_CCC_I
         put(MsgSettingMaxValues(injector))          // 0x3205 CMD_SETTING_V_MAX_VALUE_I
-        put(MsgSettingBasalProfileAll(injector))    // 0x3206 CMD_SETTING_V_BASAL_PROFILE_ALL
+        //put(MsgSettingBasalProfileAll(injector))    // 0x3206 CMD_SETTING_V_BASAL_PROFILE_ALL
         put(MsgSettingShippingInfo(injector))       // 0x3207 CMD_SETTING_V_SHIPPING_I
         put(MsgSettingGlucose(injector))            // 0x3209 CMD_SETTING_V_GLUCOSEandEASY
         put(MsgSettingPumpTime(injector))           // 0x320A CMD_SETTING_V_TIME_I

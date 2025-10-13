@@ -35,6 +35,7 @@ import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.toStringMedium
@@ -184,6 +185,9 @@ class ActionsFragment : DaggerFragment() {
         }
         binding.announcement.setOnClickListener {
             uiInteraction.runCareDialog(childFragmentManager, UiInteraction.EventType.ANNOUNCEMENT, app.aaps.core.ui.R.string.careportal_announcement)
+        }
+        binding.siteRotation.setOnClickListener {
+            uiInteraction.runSiteRotationDialog(childFragmentManager)
         }
 
         preferences.put(BooleanNonKey.ObjectivesActionsUsed, true)

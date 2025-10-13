@@ -19,6 +19,7 @@ import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventDismissBolusProgressIfRunning
 import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
+import app.aaps.core.interfaces.rx.events.EventOverviewBolusStopDeliveryEnabled
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.ui.activities.TranslatedDaggerAppCompatActivity
 import app.aaps.ui.databinding.DialogBolusprogressBinding
@@ -137,6 +138,13 @@ class BolusProgressDialog : DaggerDialogFragment() {
                     }
                     state = it.status
                 }
+            }
+        disposable += rxBus
+            .toObservable(EventOverviewBolusStopDeliveryEnabled::class.java)
+            .observeOn(aapsSchedulers.main)
+            .subscribe {
+                aapsLogger.debug(LTag.UI, "StopDeliveryButton enabled=${it.isEnabled}")
+                binding.stop.isEnabled = it.isEnabled
             }
     }
 

@@ -12,7 +12,6 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import app.aaps.core.interfaces.configuration.Config
@@ -171,9 +170,7 @@ class RileyLinkBLE @Inject constructor(
             aapsLogger.error(LTag.PUMPBTCOMM, "RileyLink device is null, can't do connectGatt.")
             return
         }
-        if (config.PUMPDRIVERS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            ContextCompat.checkSelfPermission(context, "android.permission.BLUETOOTH_CONNECT") != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (config.PUMPDRIVERS && ContextCompat.checkSelfPermission(context, "android.permission.BLUETOOTH_CONNECT") != PackageManager.PERMISSION_GRANTED) {
             aapsLogger.debug(LTag.PUMPBTCOMM, "no permission")
             return
         } else bluetoothConnectionGatt = rileyLinkDevice?.connectGatt(context, true, bluetoothGattCallback)

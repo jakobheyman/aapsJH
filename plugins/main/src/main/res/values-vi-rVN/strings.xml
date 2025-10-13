@@ -24,7 +24,7 @@
     <string name="smscommunicator_otp_reset_header">Đặt lại Xác thực (Authenticator)</string>
     <string name="smscommunicator_otp_install_info">Trên mỗi điện thoại follower, cài ứng dụng Authenticator hỗ trợ TOTP (RFC 6238). Ví dụ miễn phí phổ biến:\n • Authy\n • Google Authenticator\n • LastPass Authenticator\n • FreeOTP Authenticator</string>
     <string name="smscommunicator_otp_reset_warning">Việc đặt lại Authenticator sẽ làm vô hiệu hóa tất cả các Authenticator đã được cấu hình. Bạn sẽ cần thiết lập lại chúng!</string>
-    <string name="smscommunicator_otp_verification_ok">OK</string>
+    <string name="smscommunicator_otp_verification_ok">ĐỒNG Ý</string>
     <string name="smscommunicator_otp_verification_ivalid_size">KÍCH THƯỚC KHÔNG HỢP LỆ!</string>
     <string name="smscommunicator_otp_verification_wrong_pin">Mã PIN sai</string>
     <string name="smscommunicator_otp_verification_wrong_otp">MÃ OTP SAI</string>

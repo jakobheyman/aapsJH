@@ -121,7 +121,7 @@
     <!--QuickWizard-->
     <string name="a11y_only_on_watch">僅在手錶上</string>
     <string name="a11y_only_on_phone">僅在手機上</string>
-    <string name="quickwizard_settings">QuickWizard 設定</string>
+    <string name="quickwizard_settings">快速響導設定</string>
     <string name="overview_edit_quickwizard_button_text">按鈕文字</string>
     <string name="overview_edit_quickwizard_valid">有效：</string>
     <string name="overview_edit_quickwizard_use_positive_iob_only">僅使用正 IOB</string>

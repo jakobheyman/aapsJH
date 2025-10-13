@@ -21,7 +21,6 @@ import app.aaps.pump.danar.comm.MsgHistoryNew
 import app.aaps.pump.danar.comm.MsgHistoryNewDone
 import app.aaps.pump.danar.comm.MsgHistoryRefill
 import app.aaps.pump.danar.comm.MsgHistorySuspend
-import app.aaps.pump.danar.comm.MsgInitConnStatusBasic
 import app.aaps.pump.danar.comm.MsgInitConnStatusBolus
 import app.aaps.pump.danar.comm.MsgInitConnStatusOption
 import app.aaps.pump.danar.comm.MsgInitConnStatusTime
@@ -39,7 +38,6 @@ import app.aaps.pump.danar.comm.MsgSetTime
 import app.aaps.pump.danar.comm.MsgSetUserOptions
 import app.aaps.pump.danar.comm.MsgSettingActiveProfile
 import app.aaps.pump.danar.comm.MsgSettingBasal
-import app.aaps.pump.danar.comm.MsgSettingBasalProfileAll
 import app.aaps.pump.danar.comm.MsgSettingGlucose
 import app.aaps.pump.danar.comm.MsgSettingMaxValues
 import app.aaps.pump.danar.comm.MsgSettingMeal
@@ -51,7 +49,6 @@ import app.aaps.pump.danar.comm.MsgSettingUserOptions
 import app.aaps.pump.danar.comm.MsgStatus
 import app.aaps.pump.danar.comm.MsgStatusBasic
 import app.aaps.pump.danar.comm.MsgStatusBolusExtended
-import app.aaps.pump.danar.comm.MsgStatusProfile
 import app.aaps.pump.danar.comm.MsgStatusTempBasal
 import app.aaps.pump.danarkorean.comm.MsgCheckValueK
 import app.aaps.pump.danarkorean.comm.MsgInitConnStatusBasicK
@@ -85,7 +82,7 @@ abstract class DanaRCommModule {
     @ContributesAndroidInjector abstract fun contributesMsgHistoryAllDone(): MsgHistoryAllDone
     @ContributesAndroidInjector abstract fun contributesMsgHistoryDone(): MsgHistoryDone
     @ContributesAndroidInjector abstract fun contributesMsgHistoryNewDone(): MsgHistoryNewDone
-    @ContributesAndroidInjector abstract fun contributesMsgInitConnStatusBasic(): MsgInitConnStatusBasic
+    //@ContributesAndroidInjector abstract fun contributesMsgInitConnStatusBasic(): MsgInitConnStatusBasic
     @ContributesAndroidInjector abstract fun contributesMsgInitConnStatusBolus(): MsgInitConnStatusBolus
     @ContributesAndroidInjector abstract fun contributesMsgInitConnStatusOption(): MsgInitConnStatusOption
     @ContributesAndroidInjector abstract fun contributesMsgInitConnStatusTime(): MsgInitConnStatusTime
@@ -102,7 +99,7 @@ abstract class DanaRCommModule {
     @ContributesAndroidInjector abstract fun contributesMsgSetUserOptions(): MsgSetUserOptions
     @ContributesAndroidInjector abstract fun contributesMsgSettingActiveProfile(): MsgSettingActiveProfile
     @ContributesAndroidInjector abstract fun contributesMsgSettingBasal(): MsgSettingBasal
-    @ContributesAndroidInjector abstract fun contributesMsgSettingBasalProfileAll(): MsgSettingBasalProfileAll
+    //@ContributesAndroidInjector abstract fun contributesMsgSettingBasalProfileAll(): MsgSettingBasalProfileAll
     @ContributesAndroidInjector abstract fun contributesMsgSettingGlucose(): MsgSettingGlucose
     @ContributesAndroidInjector abstract fun contributesMsgSettingMaxValues(): MsgSettingMaxValues
     @ContributesAndroidInjector abstract fun contributesMsgSettingMeal(): MsgSettingMeal
@@ -114,7 +111,7 @@ abstract class DanaRCommModule {
     @ContributesAndroidInjector abstract fun contributesMsgStatus(): MsgStatus
     @ContributesAndroidInjector abstract fun contributesMsgStatusBasic(): MsgStatusBasic
     @ContributesAndroidInjector abstract fun contributesMsgStatusBolusExtended(): MsgStatusBolusExtended
-    @ContributesAndroidInjector abstract fun contributesMsgStatusProfile(): MsgStatusProfile
+    //@ContributesAndroidInjector abstract fun contributesMsgStatusProfile(): MsgStatusProfile
     @ContributesAndroidInjector abstract fun contributesMsgStatusTempBasal(): MsgStatusTempBasal
     @ContributesAndroidInjector abstract fun contributesMsgHistoryBolus(): MsgHistoryBolus
     @ContributesAndroidInjector abstract fun contributesMsgHistoryDailyInsulin(): MsgHistoryDailyInsulin

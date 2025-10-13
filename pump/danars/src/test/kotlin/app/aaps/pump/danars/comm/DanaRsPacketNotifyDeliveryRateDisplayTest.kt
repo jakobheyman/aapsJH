@@ -9,8 +9,6 @@ import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
 import app.aaps.pump.dana.database.DanaHistoryDatabase
 import app.aaps.pump.danars.DanaRSPlugin
 import app.aaps.pump.danars.DanaRSTestBase
-import dagger.android.AndroidInjector
-import dagger.android.HasAndroidInjector
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,21 +27,11 @@ class DanaRsPacketNotifyDeliveryRateDisplayTest : DanaRSTestBase() {
 
     private lateinit var danaRSPlugin: DanaRSPlugin
 
-    private val packetInjector = HasAndroidInjector {
-        AndroidInjector {
-            if (it is DanaRSPacketNotifyDeliveryRateDisplay) {
-                it.aapsLogger = aapsLogger
-                it.rxBus = rxBus
-                it.rh = rh
-                it.danaPump = danaPump
-            }
-        }
-    }
-
-    @Test fun runTest() {
+    @Test
+    fun runTest() {
         `when`(rh.gs(ArgumentMatchers.anyInt(), anyObject())).thenReturn("SomeString")
         // val packet = DanaRS_Packet_Notify_Delivery_Rate_Display(1.0, Treatment(treatmentInjector))
-        val packet = DanaRSPacketNotifyDeliveryRateDisplay(packetInjector)
+        val packet = DanaRSPacketNotifyDeliveryRateDisplay(aapsLogger, rh, rxBus, danaPump)
         // test params
         Assertions.assertEquals(0, packet.getRequestParams().size)
         // test message decoding

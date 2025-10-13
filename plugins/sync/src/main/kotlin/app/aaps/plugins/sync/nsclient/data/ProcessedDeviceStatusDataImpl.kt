@@ -108,7 +108,7 @@ class ProcessedDeviceStatusDataImpl @Inject constructor(
                 else                                                                                                                        -> ProcessedDeviceStatusData.Levels.INFO
             }
             string.append("<span style=\"color:${level.toColor()}\">")
-            if (openAPSData.clockSuggested != 0L) string.append(dateUtil.minAgo(rh, openAPSData.clockSuggested)).append(" ")
+            if (openAPSData.clockSuggested != 0L) string.append(dateUtil.minOrSecAgo(rh, openAPSData.clockSuggested)).append(" ")
             string.append("</span>") // color
             return HtmlHelper.fromHtml(string.toString())
         }

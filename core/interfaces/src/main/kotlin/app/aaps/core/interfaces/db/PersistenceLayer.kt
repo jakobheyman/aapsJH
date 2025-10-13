@@ -1142,6 +1142,15 @@ interface PersistenceLayer {
     ): Single<TransactionResult<TE>>
 
     /**
+     * Insert or update if exists record
+     *
+     * Create new scratch file from selection
+     * @return List of inserted/updated records
+     */
+    fun insertOrUpdateTherapyEvent(therapyEvent: TE): Single<TransactionResult<TE>>
+
+
+    /**
      * Invalidate record with id
      *
      * @param id record id

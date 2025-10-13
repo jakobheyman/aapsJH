@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.ActivityCompat
 import androidx.preference.PreferenceCategory
@@ -367,7 +366,7 @@ class DanaRPlugin @Inject constructor(
         if (requiredKey != null) return
 
         var entries = emptyArray<CharSequence>()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
             val devices = Vector<CharSequence>()
             (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?)?.adapter?.let { bta ->
                 for (dev in bta.bondedDevices)

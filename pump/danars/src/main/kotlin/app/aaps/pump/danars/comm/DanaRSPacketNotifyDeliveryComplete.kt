@@ -1,22 +1,21 @@
 package app.aaps.pump.danars.comm
 
+import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
 import app.aaps.pump.dana.DanaPump
-import dagger.android.HasAndroidInjector
-import info.nightscout.androidaps.danars.encryption.BleEncryption
+import app.aaps.pump.danars.encryption.BleEncryption
 import javax.inject.Inject
 import kotlin.math.min
 
-class DanaRSPacketNotifyDeliveryComplete(
-    injector: HasAndroidInjector
-) : DanaRSPacket(injector) {
-
-    @Inject lateinit var rxBus: RxBus
-    @Inject lateinit var rh: ResourceHelper
-    @Inject lateinit var danaPump: DanaPump
+class DanaRSPacketNotifyDeliveryComplete @Inject constructor(
+    private val aapsLogger: AAPSLogger,
+    private val rh: ResourceHelper,
+    private val rxBus: RxBus,
+    private val danaPump: DanaPump
+) : DanaRSPacket() {
 
     init {
         type = BleEncryption.DANAR_PACKET__TYPE_NOTIFY

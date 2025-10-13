@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.ActivityCompat
@@ -164,7 +163,7 @@ abstract class AbstractDanaRExecutionService : DaggerService() {
 
     protected fun getBTSocketForSelectedPump() {
         mDevName = preferences.get(DanaStringKey.RName)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
             val bluetoothAdapter = (context.getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
             if (bluetoothAdapter != null) {
                 val bondedDevices = bluetoothAdapter.bondedDevices

@@ -59,8 +59,8 @@ class DanaPump @Inject constructor(
 
     var lastConnection: Long = 0
     var lastSettingsRead: Long = 0
-    @JvmField var readHistoryFrom: Long = 0 // start next history read from this timestamp
-    @JvmField var historyDoneReceived: Boolean = false // true when last history message is received
+    var readHistoryFrom: Long = 0 // start next history read from this timestamp
+    var historyDoneReceived: Boolean = false // true when last history message is received
 
     // Info
     var serialNumber = ""

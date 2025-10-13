@@ -36,12 +36,6 @@ class MedtronicUITask {
     var parameters: List<Any?>? = null
     var responseType: MedtronicUIResponseType? = null
 
-    constructor(injector: HasAndroidInjector, commandType: MedtronicCommandType) {
-        this.injector = injector
-        this.injector.androidInjector().inject(this)
-        this.commandType = commandType
-    }
-
     constructor(injector: HasAndroidInjector, commandType: MedtronicCommandType, parameters: List<Any>?) {
         this.injector = injector
         this.injector.androidInjector().inject(this)

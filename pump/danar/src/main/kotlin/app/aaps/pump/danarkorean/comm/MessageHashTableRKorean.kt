@@ -29,7 +29,6 @@ import app.aaps.pump.danar.comm.MsgSettingProfileRatios
 import app.aaps.pump.danar.comm.MsgSettingPumpTime
 import app.aaps.pump.danar.comm.MsgSettingShippingInfo
 import app.aaps.pump.danar.comm.MsgStatusBolusExtended
-import app.aaps.pump.danar.comm.MsgStatusProfile
 import app.aaps.pump.danar.comm.MsgStatusTempBasal
 import dagger.android.HasAndroidInjector
 import javax.inject.Inject
@@ -46,7 +45,7 @@ class MessageHashTableRKorean @Inject constructor(
         put(MsgBolusStop(injector))                 // 0x0101 CMD_MEALINS_STOP
         put(MsgBolusStart(injector, 0.0))                // 0x0102 CMD_MEALINS_START_DATA
         put(MsgBolusProgress(injector))             // 0x0202 CMD_PUMP_THIS_REMAINDER_MEAL_INS
-        put(MsgStatusProfile(injector))             // 0x0204 CMD_PUMP_CALCULATION_SETTING
+        //put(MsgStatusProfile(injector))             // 0x0204 CMD_PUMP_CALCULATION_SETTING
         put(MsgStatusTempBasal(injector))           // 0x0205 CMD_PUMP_EXERCISE_MODE
         put(MsgStatusBolusExtended(injector))       // 0x0207 CMD_PUMP_EXPANS_INS_I
         put(MsgStatusBasic_k(injector))               // 0x020A CMD_PUMP_INITVIEW_I

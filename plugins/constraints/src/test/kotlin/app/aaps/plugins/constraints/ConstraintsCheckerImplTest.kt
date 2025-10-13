@@ -11,6 +11,7 @@ import app.aaps.core.interfaces.constraints.PluginConstraints
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.profiling.Profiler
+import app.aaps.core.interfaces.protection.PasswordCheck
 import app.aaps.core.interfaces.pump.DetailedBolusInfoStorage
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.TemporaryBasalStorage
@@ -28,6 +29,16 @@ import app.aaps.plugins.aps.openAPSSMB.GlucoseStatusCalculatorSMB
 import app.aaps.plugins.aps.openAPSSMB.OpenAPSSMBPlugin
 import app.aaps.plugins.constraints.objectives.ObjectivesPlugin
 import app.aaps.plugins.constraints.objectives.objectives.Objective
+import app.aaps.plugins.constraints.objectives.objectives.Objective0
+import app.aaps.plugins.constraints.objectives.objectives.Objective1
+import app.aaps.plugins.constraints.objectives.objectives.Objective2
+import app.aaps.plugins.constraints.objectives.objectives.Objective3
+import app.aaps.plugins.constraints.objectives.objectives.Objective4
+import app.aaps.plugins.constraints.objectives.objectives.Objective5
+import app.aaps.plugins.constraints.objectives.objectives.Objective6
+import app.aaps.plugins.constraints.objectives.objectives.Objective7
+import app.aaps.plugins.constraints.objectives.objectives.Objective8
+import app.aaps.plugins.constraints.objectives.objectives.Objective9
 import app.aaps.plugins.constraints.safety.SafetyPlugin
 import app.aaps.plugins.source.GlimpPlugin
 import app.aaps.pump.dana.DanaPump
@@ -69,6 +80,7 @@ class ConstraintsCheckerImplTest : TestBaseWithProfile() {
     @Mock lateinit var determineBasalSMB: DetermineBasalSMB
     @Mock lateinit var determineBasalAMA: DetermineBasalAMA
     @Mock lateinit var loop: Loop
+    @Mock lateinit var passwordCheck: PasswordCheck
 
     private lateinit var danaPump: DanaPump
     private lateinit var insightDbHelper: InsightDbHelper
@@ -80,15 +92,6 @@ class ConstraintsCheckerImplTest : TestBaseWithProfile() {
     private lateinit var insightPlugin: InsightPlugin
     private lateinit var openAPSSMBPlugin: OpenAPSSMBPlugin
     private lateinit var openAPSAMAPlugin: OpenAPSAMAPlugin
-
-    init {
-        addInjector {
-            if (it is Objective) {
-                it.preferences = preferences
-                it.dateUtil = dateUtil
-            }
-        }
-    }
 
     @BeforeEach
     fun prepare() {
@@ -128,7 +131,19 @@ class ConstraintsCheckerImplTest : TestBaseWithProfile() {
 
         insightDbHelper = InsightDbHelper(insightDatabaseDao)
         danaPump = DanaPump(aapsLogger, preferences, dateUtil, decimalFormatter, profileStoreProvider)
-        objectivesPlugin = ObjectivesPlugin(injector, aapsLogger, rh, preferences)
+        val objectives = listOf(
+            Objective0(preferences, rh, dateUtil, activePlugin, virtualPumpPlugin, persistenceLayer, loop, iobCobCalculator, passwordCheck),
+            Objective1(preferences, rh, dateUtil, activePlugin),
+            Objective2(preferences, rh, dateUtil),
+            Objective3(preferences, rh, dateUtil),
+            Objective4(preferences, rh, dateUtil, profileFunction),
+            Objective5(preferences, rh, dateUtil),
+            Objective6(preferences, rh, dateUtil, constraintsChecker, loop),
+            Objective7(preferences, rh, dateUtil),
+            Objective8(preferences, rh, dateUtil),
+            Objective9(preferences, rh, dateUtil)
+        )
+        objectivesPlugin = ObjectivesPlugin(aapsLogger, rh, preferences, config, objectives)
         objectivesPlugin.onStart()
         danaRPlugin = DanaRPlugin(
             aapsLogger, rh, preferences, commandQueue, aapsSchedulers, rxBus, context, constraintChecker, activePlugin, danaPump, dateUtil, fabricPrivacy, pumpSync,

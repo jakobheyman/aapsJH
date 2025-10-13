@@ -62,6 +62,11 @@ interface UiInteraction {
     fun runTempTargetDialog(fragmentManager: FragmentManager)
     fun runExtendedBolusDialog(fragmentManager: FragmentManager)
     fun runFillDialog(fragmentManager: FragmentManager)
+    enum class SiteMode(val i: Int) {
+        VIEW(1),
+        EDIT(2)
+    }
+    fun runSiteRotationDialog(fragmentManager: FragmentManager)
     fun runBolusProgressDialog(fragmentManager: FragmentManager, insulin: Double, id: Long)
     enum class Mode(val i: Int) {
         RUNNING_PROFILE(1),

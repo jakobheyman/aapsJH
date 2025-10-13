@@ -13,20 +13,17 @@ import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.plugins.constraints.R
 import app.aaps.plugins.constraints.objectives.keys.ObjectivesBooleanComposedKey
 import app.aaps.plugins.constraints.objectives.keys.ObjectivesLongComposedKey
-import dagger.android.HasAndroidInjector
 import kotlinx.coroutines.Runnable
-import javax.inject.Inject
 import kotlin.math.floor
 
-abstract class Objective(injector: HasAndroidInjector, spName: String, @StringRes objective: Int, @StringRes gate: Int) {
-
-    @Inject lateinit var preferences: Preferences
-    @Inject lateinit var rh: ResourceHelper
-    @Inject lateinit var dateUtil: DateUtil
-
-    private val spName: String
-    @StringRes val objective: Int
+abstract class Objective(
+    val preferences: Preferences,
+    val rh: ResourceHelper,
+    val dateUtil: DateUtil,
+    private val spName: String,
+    @StringRes val objective: Int,
     @StringRes val gate: Int
+) {
     var startedOn: Long = 0
         set(value) {
             field = value
@@ -50,10 +47,6 @@ abstract class Objective(injector: HasAndroidInjector, spName: String, @StringRe
 
     init {
         @Suppress("LeakingThis")
-        injector.androidInjector().inject(this)
-        this.spName = spName
-        this.objective = objective
-        this.gate = gate
         startedOn = preferences.get(ObjectivesLongComposedKey.Started, spName)
         accomplishedOn = preferences.get(ObjectivesLongComposedKey.Accomplished, spName)
         if (accomplishedOn - dateUtil.now() > T.hours(3).msecs() || startedOn - dateUtil.now() > T.hours(3).msecs()) { // more than 3 hours in the future
