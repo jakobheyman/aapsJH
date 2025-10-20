@@ -158,6 +158,7 @@
     <string name="login">Login</string>
     <string name="logout">Esci</string>
     <string name="prime_fill">Carica/Riempi</string>
+    <string name="site_rotation">Rotazione del Sito</string>
     <string name="overview_insulin_label">Insulina</string>
     <string name="stoptemptarget">Stoppa target temporaneo</string>
     <string name="closedloop">Loop chiuso</string>
@@ -224,6 +225,8 @@
     <string name="careportal_exercise_message">Esercizio : %1$s</string>
     <string name="careportal_pump_site_change">Cambio posizione cannula</string>
     <string name="cgm_sensor_insert">Inserimento sensore</string>
+    <string name="careportal_pump_site_management">Siti del micro</string>
+    <string name="careportal_cgm_site_management">Siti del CGM</string>
     <string name="careportal_cgmsensorstart">Avvio sensore</string>
     <string name="careportal_cgm_sensor_stop">Arresto Sensore CGM</string>
     <string name="careportal_dad_alert">Avviso D.A.D.</string>
@@ -257,6 +260,39 @@
     <string name="loop">Loop</string>
     <string name="ns">NS</string>
     <string name="record">Record</string>
+    <string name="location_front_right_upper_chest">Fianco destro</string>
+    <string name="location_front_left_upper_chest">Fianco sinistro</string>
+    <string name="location_side_right_upper_arm">Braccio Esterno Superiore Destro</string>
+    <string name="location_side_left_upper_arm">Braccio Esterno Superiore Sinistro</string>
+    <string name="location_back_right_upper_arm">Braccio Posteriore Superiore Destro</string>
+    <string name="location_back_left_upper_arm">Braccio Posteriore Superiore Sinistro</string>
+    <string name="location_side_right_upper_abdomen">Addome Esterno Superiore Destro</string>
+    <string name="location_side_left_upper_abdomen">Addome Esterno Superiore Sinistro</string>
+    <string name="location_side_right_lower_abdomen">Addome Esterno Inferiore Destro</string>
+    <string name="location_side_left_lower_abdomen">Addome Esterno Inferiore Sinistro</string>
+    <string name="location_front_right_upper_abdomen">Addome Anteriore Alto Destro</string>
+    <string name="location_front_left_upper_abdomen">Addome Anteriore Alto Sinistro</string>
+    <string name="location_front_right_lower_abdomen">Addome Anteriore Basso Destro</string>
+    <string name="location_front_left_lower_abdomen">Addome Anteriore Basso Sinistro</string>
+    <string name="location_back_right_buttock">Natica Destra</string>
+    <string name="location_back_left_buttock">Natica Sinistra</string>
+    <string name="location_side_right_upper_thigh">Coscia Superiore Destra Esterna</string>
+    <string name="location_side_left_upper_thigh">Coscia Superiore Esterna Sinistra</string>
+    <string name="location_side_right_lower_thigh">Coscia Inferiore Esterna Destra</string>
+    <string name="location_side_left_lower_thigh">Coscia Inferiore Esterna Sinistra</string>
+    <string name="location_front_right_upper_thigh">Coscia Superiore Frontale Destra</string>
+    <string name="location_front_left_upper_thigh">Coscia Superiore Frontale Sinistra</string>
+    <string name="location_front_right_lower_thigh">Coscia Inferiore Frontale Destra</string>
+    <string name="location_front_left_lower_thigh">Coscia Inferiore Frontale Sinistra</string>
+    <string name="arrow_up">Su</string>
+    <string name="arrow_up_right">Alto a destra</string>
+    <string name="arrow_right">Destra</string>
+    <string name="arrow_down_right">Basso a destra</string>
+    <string name="arrow_down">Giù</string>
+    <string name="arrow_down_left">Basso a sinistra</string>
+    <string name="arrow_left">Sinistra</string>
+    <string name="arrow_up_left">Alto a sinistra</string>
+    <string name="arrow_center">Centro</string>
     <!--    Command-->
     <string name="connectiontimedout">Time out connessione</string>
     <!--    PumpEnactResult-->
@@ -316,7 +352,9 @@
     <string name="uel_cancel_extended_bolus">CANCELLA BOLO ESTESO</string>
     <string name="uel_cancel_tt">CANCELLA TARGET TEMPORANEO</string>
     <string name="uel_careportal">PORTALE</string>
+    <string name="uel_sensor_location">LOCAZIONE SENSORE</string>
     <string name="uel_site_change">CAMBIO POSIZIONE CANNULA</string>
+    <string name="uel_site_location">LOCAZIONE SITO</string>
     <string name="uel_reservoir_change">CAMBIO SERBATOIO</string>
     <string name="uel_calibration">CALIBRAZIONE</string>
     <string name="uel_prime_bolus">BOLO DI CARICAMENTO</string>

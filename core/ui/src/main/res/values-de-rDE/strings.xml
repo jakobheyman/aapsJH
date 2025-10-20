@@ -103,7 +103,6 @@
     <string name="name_short">Name:</string>
     <string name="time">Zeit</string>
     <string name="ns_wifi_ssids">WLAN SSID</string>
-    <string name="loading">Lade…</string>
     <string name="notes_label">Notizen</string>
     <string name="remove_button">Löschen</string>
     <string name="add_new">Neu hinzufügen</string>

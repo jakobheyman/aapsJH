@@ -98,7 +98,6 @@ import app.aaps.pump.medtronic.keys.MedtronicStringPreferenceKey
 import app.aaps.pump.medtronic.service.RileyLinkMedtronicService
 import app.aaps.pump.medtronic.util.MedtronicUtil
 import app.aaps.pump.medtronic.util.MedtronicUtil.Companion.isSame
-import dagger.android.HasAndroidInjector
 import org.joda.time.LocalDateTime
 import java.util.Calendar
 import java.util.GregorianCalendar
@@ -116,7 +115,6 @@ import kotlin.math.floor
  */
 @Singleton
 class MedtronicPumpPlugin @Inject constructor(
-    private val injector: HasAndroidInjector,
     aapsLogger: AAPSLogger,
     rh: ResourceHelper,
     preferences: Preferences,
@@ -136,7 +134,9 @@ class MedtronicPumpPlugin @Inject constructor(
     pumpSync: PumpSync,
     pumpSyncStorage: PumpSyncStorage,
     decimalFormatter: DecimalFormatter,
-    pumpEnactResultProvider: Provider<PumpEnactResult>
+    pumpEnactResultProvider: Provider<PumpEnactResult>,
+    private val wakeAndTuneTaskProvider: Provider<WakeAndTuneTask>,
+    private val resetRileyLinkConfigurationTaskProvider: Provider<ResetRileyLinkConfigurationTask>
 ) : PumpPluginAbstract(
     pluginDescription = PluginDescription()
         .mainType(PluginType.PUMP)
@@ -473,7 +473,7 @@ class MedtronicPumpPlugin @Inject constructor(
         if (errorCount >= 5) {
             aapsLogger.error("Number of error counts was 5 or more. Starting tuning.")
             setRefreshButtonEnabled(true)
-            serviceTaskExecutor.startTask(WakeAndTuneTask(injector))
+            serviceTaskExecutor.startTask(wakeAndTuneTaskProvider.get())
             return true
         }
         medtronicPumpStatus.setLastCommunicationToNow()
@@ -1209,7 +1209,7 @@ class MedtronicPumpPlugin @Inject constructor(
         when (customActionType as? MedtronicCustomActionType) {
             MedtronicCustomActionType.WakeUpAndTune               -> {
                 if (rileyLinkMedtronicService?.verifyConfiguration() == true) {
-                    serviceTaskExecutor.startTask(WakeAndTuneTask(injector))
+                    serviceTaskExecutor.startTask(wakeAndTuneTaskProvider.get())
                 } else {
                     uiInteraction.runAlarm(rh.gs(R.string.medtronic_error_operation_not_possible_no_configuration), rh.gs(R.string.medtronic_warning), app.aaps.core.ui.R.raw.boluserror)
                 }
@@ -1222,7 +1222,7 @@ class MedtronicPumpPlugin @Inject constructor(
             }
 
             MedtronicCustomActionType.ResetRileyLinkConfiguration -> {
-                serviceTaskExecutor.startTask(ResetRileyLinkConfigurationTask(injector))
+                serviceTaskExecutor.startTask(resetRileyLinkConfigurationTaskProvider.get())
             }
 
             null                                                  -> { // do nothing

@@ -69,7 +69,6 @@ import app.aaps.plugins.configuration.maintenance.dialogs.PrefImportSummaryDialo
 import app.aaps.plugins.configuration.maintenance.formats.EncryptedPrefsFormat
 import app.aaps.shared.impl.weardata.ZipWatchfaceFormat
 import dagger.Reusable
-import dagger.android.HasAndroidInjector
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import kotlinx.coroutines.Dispatchers
@@ -458,7 +457,6 @@ class ImportExportPrefsImpl @Inject constructor(
         params: WorkerParameters
     ) : LoggingWorker(context, params, Dispatchers.IO) {
 
-        @Inject lateinit var injector: HasAndroidInjector
         @Inject lateinit var rh: ResourceHelper
         @Inject lateinit var prefFileList: FileListProvider
         @Inject lateinit var userEntryPresentationHelper: UserEntryPresentationHelper

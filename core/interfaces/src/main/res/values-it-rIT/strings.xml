@@ -3,10 +3,10 @@
     <!-- PumpPluginBase -->
     <string name="pump_driver_changed" comment="26 characters max for translation">Driver micro cambiato.</string>
     <!--    DateUtil-->
-    <string name="minago">%1$d m fa</string>
-    <string name="secago">%1$d s fa</string>
+    <string name="minago">%1$dm fa</string>
+    <string name="secago">%1$ds fa</string>
     <string name="minago_long">%1$d minuti fa</string>
-    <string name="hoursago">%1$.1f h fa</string>
+    <string name="hoursago">%1$.1fh fa</string>
     <string name="days_ago">%1$.1f giorni fa</string>
     <string name="days_ago_round">%1$.0f giorni fa</string>
     <string name="in_days">in %1$.0f giorni</string>

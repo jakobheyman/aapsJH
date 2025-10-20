@@ -158,6 +158,7 @@
     <string name="login">Логин</string>
     <string name="logout">Выход из системы</string>
     <string name="prime_fill">Прайм/заполнение</string>
+    <string name="site_rotation">Вращение места установки</string>
     <string name="overview_insulin_label">Инсулин</string>
     <string name="stoptemptarget">Остановить врем цель</string>
     <string name="closedloop">Замкнутый цикл</string>
@@ -224,6 +225,8 @@
     <string name="careportal_exercise_message">Нагрузка: %1$s</string>
     <string name="careportal_pump_site_change">Смена места катетера помпы</string>
     <string name="cgm_sensor_insert">Установка сенсора мониторинга глюкозы</string>
+    <string name="careportal_pump_site_management">Места установки помпы</string>
+    <string name="careportal_cgm_site_management">Места установки сенсора НМГ</string>
     <string name="careportal_cgmsensorstart">Сарт сенсора</string>
     <string name="careportal_cgm_sensor_stop">Останов сенсора мониторинга</string>
     <string name="careportal_dad_alert">Сигнал служебной собаки</string>
@@ -257,6 +260,12 @@
     <string name="loop">Замкнутый цикл</string>
     <string name="ns">NS</string>
     <string name="record">Запись</string>
+    <string name="location_front_right_upper_chest">Правая сторона груди</string>
+    <string name="location_front_left_upper_chest">Левая сторона груди</string>
+    <string name="location_side_right_upper_arm">Верхняя внешняя часть правого плеча</string>
+    <string name="location_side_left_upper_arm">Верхняя внешняя часть левого плеча</string>
+    <string name="location_back_right_upper_arm">Верхняя внутренняя часть правого плеча</string>
+    <string name="location_back_left_upper_arm">Верхняя внутренняя часть левого плеча</string>
     <!--    Command-->
     <string name="connectiontimedout">Истекло время ожидания соединения</string>
     <!--    PumpEnactResult-->

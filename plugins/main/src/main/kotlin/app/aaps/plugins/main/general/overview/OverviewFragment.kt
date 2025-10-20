@@ -65,6 +65,7 @@ import app.aaps.core.interfaces.rx.events.EventExtendedBolusChange
 import app.aaps.core.interfaces.rx.events.EventInitializationChanged
 import app.aaps.core.interfaces.rx.events.EventMobileToWear
 import app.aaps.core.interfaces.rx.events.EventNewOpenLoopNotification
+import app.aaps.core.interfaces.rx.events.EventOverviewBolusProgress
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.rx.events.EventRefreshOverview
@@ -110,7 +111,6 @@ import app.aaps.plugins.main.general.overview.notifications.events.EventUpdateOv
 import app.aaps.plugins.main.general.overview.ui.StatusLightHandler
 import app.aaps.plugins.main.skins.SkinProvider
 import com.jjoe64.graphview.GraphView
-import dagger.android.HasAndroidInjector
 import dagger.android.support.DaggerFragment
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
@@ -123,7 +123,6 @@ import kotlin.math.min
 
 class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickListener {
 
-    @Inject lateinit var injector: HasAndroidInjector
     @Inject lateinit var aapsLogger: AAPSLogger
     @Inject lateinit var aapsSchedulers: AapsSchedulers
     @Inject lateinit var preferences: Preferences
@@ -159,8 +158,8 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
     @Inject lateinit var bgQualityCheck: BgQualityCheck
     @Inject lateinit var uiInteraction: UiInteraction
     @Inject lateinit var decimalFormatter: DecimalFormatter
-    @Inject lateinit var commandQueue: CommandQueue
     @Inject lateinit var graphDataProvider: Provider<GraphData>
+    @Inject lateinit var commandQueue: CommandQueue
 
     private val disposable = CompositeDisposable()
 
@@ -248,6 +247,7 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         binding.activeProfile.setOnLongClickListener(this)
         binding.tempTarget.setOnClickListener(this)
         binding.tempTarget.setOnLongClickListener(this)
+        binding.pumpStatusLayout.setOnClickListener(this)
         binding.buttonsLayout.acceptTempButton.setOnClickListener(this)
         binding.buttonsLayout.treatmentButton.setOnClickListener(this)
         binding.buttonsLayout.wizardButton.setOnClickListener(this)
@@ -366,6 +366,8 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
         handler.post { refreshAll() }
         updatePumpStatus()
         updateCalcProgress()
+
+        popupBolusDialogIfRunning()
     }
 
     fun refreshAll() {
@@ -484,6 +486,10 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
                     commandQueue.cancelAllBoluses(null)
                 }
 
+                R.id.pump_status_layout  -> {
+                    // Check if there is a bolus in progress
+                    popupBolusDialogIfRunning()
+                }
             }
         }
     }
@@ -1254,5 +1260,27 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
     private fun updateNotification() {
         _binding ?: return
         binding.notifications.let { notificationStore.updateNotifications(it) }
+    }
+
+    fun popupBolusDialogIfRunning() {
+        // Check if bolus is in progress and show dialog if needed
+        // Only show for manual bolus (not SMB) with progress > 0
+        if (commandQueue.bolusInQueue()) {
+            val treatment = EventOverviewBolusProgress.t
+            val percent = EventOverviewBolusProgress.percent
+
+            // Show bolus progress dialog automatically only for manual bolus with progress
+            if (treatment != null && percent > 0 && !treatment.isSMB) {
+                activity?.let { activity ->
+                    protectionCheck.queryProtection(activity, ProtectionCheck.Protection.BOLUS, UIRunnable {
+                        if (isAdded) {
+                            val insulin = treatment.insulin
+                            val id = treatment.id
+                            uiInteraction.runBolusProgressDialog(childFragmentManager, insulin, id)
+                        }
+                    })
+                }
+            }
+        }
     }
 }

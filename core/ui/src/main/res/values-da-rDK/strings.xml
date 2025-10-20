@@ -102,7 +102,6 @@
     <string name="name_short">Navn:</string>
     <string name="time">Tid</string>
     <string name="ns_wifi_ssids">WiFi SSID</string>
-    <string name="loading">Indlæser …</string>
     <string name="notes_label">Bemærkninger</string>
     <string name="remove_button">Fjern</string>
     <string name="add_new">Tilføj ny</string>

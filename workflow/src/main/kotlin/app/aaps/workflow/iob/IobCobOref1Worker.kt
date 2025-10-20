@@ -27,7 +27,6 @@ import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.workflow.LoggingWorker
 import app.aaps.core.utils.receivers.DataWorkerStorage
-import dagger.android.HasAndroidInjector
 import kotlinx.coroutines.Dispatchers
 import java.util.Calendar
 import java.util.GregorianCalendar
@@ -59,7 +58,6 @@ class IobCobOref1Worker(
     @Inject lateinit var processedDeviceStatusData: ProcessedDeviceStatusData
 
     class IobCobOref1WorkerData(
-        val injector: HasAndroidInjector,
         val iobCobCalculator: IobCobCalculator, // cannot be injected : HistoryBrowser uses different instance
         val reason: String,
         val end: Long,

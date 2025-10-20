@@ -50,7 +50,6 @@ import app.aaps.ui.dialogs.SiteRotationDialog.RecyclerViewAdapter.SiteManagement
 import app.aaps.ui.dialogs.utils.SiteRotationViewAdapter
 import com.google.android.material.tabs.TabLayout
 import com.google.common.base.Joiner
-import dagger.android.HasAndroidInjector
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import java.util.LinkedList
@@ -71,7 +70,6 @@ class SiteRotationDialog : DialogFragmentWithDate() {
     @Inject lateinit var translator: Translator
     @Inject lateinit var fabricPrivacy: FabricPrivacy
     @Inject lateinit var aapsSchedulers: AapsSchedulers
-    @Inject lateinit var injector: HasAndroidInjector
 
     private val disposable = CompositeDisposable()
     private var _binding: DialogSiteRotationBinding? = null
@@ -142,19 +140,21 @@ class SiteRotationDialog : DialogFragmentWithDate() {
     private fun setupProfileSelection() {
         binding.layoutSelectorGroup.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
-                R.id.man_layout_option -> loadDynamicContent(0)
+                R.id.man_layout_option   -> loadDynamicContent(0)
                 R.id.woman_layout_option -> loadDynamicContent(1)
                 R.id.child_layout_option -> loadDynamicContent(2)
             }
             siteBinding.updateSiteColors()
             filterViews()
         }
-        binding.layoutSelectorGroup.check(when (preferences.get(IntKey.SiteRotationUserProfile)) {
-                                              0 -> R.id.man_layout_option
-                                              1 -> R.id.woman_layout_option
-                                              2 -> R.id.child_layout_option
-                                              else -> R.id.man_layout_option
-                                          })
+        binding.layoutSelectorGroup.check(
+            when (preferences.get(IntKey.SiteRotationUserProfile)) {
+                0    -> R.id.man_layout_option
+                1    -> R.id.woman_layout_option
+                2    -> R.id.child_layout_option
+                else -> R.id.man_layout_option
+            }
+        )
     }
 
     private fun initializeViews() {
@@ -178,7 +178,10 @@ class SiteRotationDialog : DialogFragmentWithDate() {
             siteBinding.updateSiteColors()
         }
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) { processVisibility(tab.position) }
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                processVisibility(tab.position)
+            }
+
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
@@ -200,8 +203,8 @@ class SiteRotationDialog : DialogFragmentWithDate() {
         binding.headerIcon.setImageResource(
             when (siteType) {
                 TE.Type.CANNULA_CHANGE -> app.aaps.core.objects.R.drawable.ic_cp_pump_cannula
-                TE.Type.SENSOR_CHANGE -> app.aaps.core.objects.R.drawable.ic_cp_cgm_insert
-                else -> app.aaps.core.objects.R.drawable.ic_cp_pump_cannula.also {
+                TE.Type.SENSOR_CHANGE  -> app.aaps.core.objects.R.drawable.ic_cp_cgm_insert
+                else                   -> app.aaps.core.objects.R.drawable.ic_cp_pump_cannula.also {
                     siteType = TE.Type.CANNULA_CHANGE
                 }
             }
@@ -272,7 +275,7 @@ class SiteRotationDialog : DialogFragmentWithDate() {
                                     action = action,
                                     source = Sources.SiteRotationDialog,
                                     note = te.note,
-                                    listOfNotNull(ValueWithUnit.Timestamp(te.timestamp),ValueWithUnit.TELocation(te.location ?: selectedLocation), ValueWithUnit.TEArrow(te.arrow ?: selectedArrow))
+                                    listOfNotNull(ValueWithUnit.Timestamp(te.timestamp), ValueWithUnit.TELocation(te.location ?: selectedLocation), ValueWithUnit.TEArrow(te.arrow ?: selectedArrow))
                                 )
                                 disposable += persistenceLayer.insertOrUpdateTherapyEvent(
                                     therapyEvent = te
@@ -292,13 +295,14 @@ class SiteRotationDialog : DialogFragmentWithDate() {
         val now = System.currentTimeMillis()
         binding.recyclerview.isLoading = true
         disposable += persistenceLayer
-                    .getTherapyEventDataFromTime(now - millsToThePast, false)
-                    .observeOn(aapsSchedulers.main)
-                    .subscribe { list -> listTE = list.filter { te -> te.type == TE.Type.CANNULA_CHANGE || te.type == TE.Type.SENSOR_CHANGE }
-                        editView()
-                        siteBinding.updateSiteColors()
-                        filterViews()
-                    }
+            .getTherapyEventDataFromTime(now - millsToThePast, false)
+            .observeOn(aapsSchedulers.main)
+            .subscribe { list ->
+                listTE = list.filter { te -> te.type == TE.Type.CANNULA_CHANGE || te.type == TE.Type.SENSOR_CHANGE }
+                editView()
+                siteBinding.updateSiteColors()
+                filterViews()
+            }
     }
 
     fun editView() {
@@ -309,7 +313,7 @@ class SiteRotationDialog : DialogFragmentWithDate() {
             selectedArrow = it.arrow ?: TE.Arrow.NONE
             selectedLocation = it.location ?: TE.Location.NONE
             filterLocation = it.location
-            binding.notesLayout.notes.editableText.insert(0, it.note ?:"")
+            binding.notesLayout.notes.editableText.insert(0, it.note ?: "")
             siteBinding.listViews.firstOrNull { view -> view.tag as TE.Location == it.location }?.let { selectedView ->
                 selectedSiteView = selectedView
             }
@@ -347,15 +351,15 @@ class SiteRotationDialog : DialogFragmentWithDate() {
         preferences.put(IntKey.SiteRotationUserProfile, selectedLayout)
         binding.siteLayout.removeAllViews()
         val bindLayout = when (selectedLayout) {
-            0 -> DialogSiteRotationManBinding.inflate(layoutInflater)
-            1 -> DialogSiteRotationWomanBinding.inflate(layoutInflater)
-            2 -> DialogSiteRotationChildBinding.inflate(layoutInflater)
+            0    -> DialogSiteRotationManBinding.inflate(layoutInflater)
+            1    -> DialogSiteRotationWomanBinding.inflate(layoutInflater)
+            2    -> DialogSiteRotationChildBinding.inflate(layoutInflater)
             else -> DialogSiteRotationManBinding.inflate(layoutInflater)
         }
         _siteBinding = SiteRotationViewAdapter.getBinding(this, bindLayout)
         val params = binding.siteLayout.layoutParams as LinearLayout.LayoutParams
-        params.weight = when(selectedLayout) {
-            2 -> if (siteMode == UiInteraction.SiteMode.VIEW) 1.3f else 2.0f
+        params.weight = when (selectedLayout) {
+            2    -> if (siteMode == UiInteraction.SiteMode.VIEW) 1.3f else 2.0f
             else -> if (siteMode == UiInteraction.SiteMode.VIEW) 2.0f else 3.0f
         }
         binding.siteLayout.layoutParams = params
@@ -444,8 +448,6 @@ class SiteRotationDialog : DialogFragmentWithDate() {
         binding.cgmSiteManagement.isChecked = preferences.get(BooleanKey.SiteRotationManageCgm)
     }
 
-
-
     private fun showIconSelectionPopup(context: Context, anchorView: View, onArrowSelected: (TE.Arrow) -> Unit) {
         val popupView = LayoutInflater.from(context).inflate(R.layout.dialog_site_rotation_arrows, null)
         val popupWindow = PopupWindow(
@@ -474,17 +476,17 @@ class SiteRotationDialog : DialogFragmentWithDate() {
     }
 
     fun Int.viewIdToArrow(): TE.Arrow = when (this) {
-        R.id.ic_up -> TE.Arrow.UP
-        R.id.ic_up_right -> TE.Arrow.UP_RIGHT
-        R.id.ic_right -> TE.Arrow.RIGHT
+        R.id.ic_up         -> TE.Arrow.UP
+        R.id.ic_up_right   -> TE.Arrow.UP_RIGHT
+        R.id.ic_right      -> TE.Arrow.RIGHT
         R.id.ic_down_right -> TE.Arrow.DOWN_RIGHT
-        R.id.ic_down -> TE.Arrow.DOWN
-        R.id.ic_down_left -> TE.Arrow.DOWN_LEFT
-        R.id.ic_left -> TE.Arrow.LEFT
-        R.id.ic_up_left -> TE.Arrow.UP_LEFT
-        R.id.ic_center -> TE.Arrow.CENTER
-        R.id.ic_none -> TE.Arrow.NONE
-        else -> TE.Arrow.NONE
+        R.id.ic_down       -> TE.Arrow.DOWN
+        R.id.ic_down_left  -> TE.Arrow.DOWN_LEFT
+        R.id.ic_left       -> TE.Arrow.LEFT
+        R.id.ic_up_left    -> TE.Arrow.UP_LEFT
+        R.id.ic_center     -> TE.Arrow.CENTER
+        R.id.ic_none       -> TE.Arrow.NONE
+        else               -> TE.Arrow.NONE
     }
 
     inner class RecyclerViewAdapter(private var therapyList: List<TE>) : RecyclerView.Adapter<SiteManagementViewHolder>() {
@@ -524,6 +526,7 @@ class SiteRotationDialog : DialogFragmentWithDate() {
         override fun getItemCount() = therapyList.size
 
         inner class SiteManagementViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+
             val binding = DialogSiteRotationItemBinding.bind(view)
 
             init {

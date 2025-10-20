@@ -102,7 +102,6 @@
     <string name="name_short">Име:</string>
     <string name="time">Време</string>
     <string name="ns_wifi_ssids">WiFi име</string>
-    <string name="loading">Зареждане…</string>
     <string name="notes_label">Бележки</string>
     <string name="remove_button">Изтрий</string>
     <string name="add_new">Добави нов</string>

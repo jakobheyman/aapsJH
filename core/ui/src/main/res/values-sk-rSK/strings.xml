@@ -105,7 +105,6 @@
     <string name="name_short">Meno:</string>
     <string name="time">Čas</string>
     <string name="ns_wifi_ssids">WiFi SSID</string>
-    <string name="loading">Načítavanie...</string>
     <string name="notes_label">Poznámky</string>
     <string name="remove_button">Vymazať</string>
     <string name="add_new">Pridať nový</string>

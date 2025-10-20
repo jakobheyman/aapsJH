@@ -102,7 +102,6 @@
     <string name="name_short">Namn:</string>
     <string name="time">Tid</string>
     <string name="ns_wifi_ssids">WiFi nätverksnamn</string>
-    <string name="loading">Laddar…</string>
     <string name="notes_label">Anteckning</string>
     <string name="remove_button">Ta bort</string>
     <string name="add_new">Lägg till ny</string>

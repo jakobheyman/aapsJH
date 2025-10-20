@@ -67,7 +67,7 @@ class RileyLinkBLEConfigActivity : TranslatedDaggerAppCompatActivity() {
     private val stopScanAfterTimeoutRunnable = Runnable {
         if (scanning) {
             stopLeDeviceScan()
-            rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkNewAddressSet, this) // Reconnect current RL
+            rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkNewAddressSet) // Reconnect current RL
         }
     }
 
@@ -97,13 +97,13 @@ class RileyLinkBLEConfigActivity : TranslatedDaggerAppCompatActivity() {
         }
         binding.rileyLinkBleConfigScanStart.setOnClickListener {
             // disable currently selected RL, so that we can discover it
-            rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkDisconnect, this)
+            rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkDisconnect)
             startLeDeviceScan()
         }
         binding.rileyLinkBleConfigButtonScanStop.setOnClickListener {
             if (scanning) {
                 stopLeDeviceScan()
-                rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkNewAddressSet, this) // Reconnect current RL
+                rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkNewAddressSet) // Reconnect current RL
             }
         }
         binding.rileyLinkBleConfigButtonRemoveRileyLink.setOnClickListener {
@@ -111,8 +111,8 @@ class RileyLinkBLEConfigActivity : TranslatedDaggerAppCompatActivity() {
                 this@RileyLinkBLEConfigActivity,
                 rh.gs(R.string.riley_link_ble_config_remove_riley_link_confirmation_title),
                 rh.gs(R.string.riley_link_ble_config_remove_riley_link_confirmation),
-                Runnable {
-                    rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkDisconnect, this@RileyLinkBLEConfigActivity)
+                {
+                    rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkDisconnect)
                     preferences.remove(RileyLinkStringPreferenceKey.MacAddress)
                     preferences.remove(RileyLinkStringKey.Name)
                     updateCurrentlySelectedRileyLink()
@@ -144,7 +144,7 @@ class RileyLinkBLEConfigActivity : TranslatedDaggerAppCompatActivity() {
         super.onDestroy()
         if (scanning) {
             stopLeDeviceScan()
-            rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkNewAddressSet, this) // Reconnect current RL
+            rileyLinkUtil.sendBroadcastMessage(RileyLinkConst.Intents.RileyLinkNewAddressSet) // Reconnect current RL
         }
     }
 

@@ -104,7 +104,6 @@
     <string name="name_short">Naam:</string>
     <string name="time">Tijd</string>
     <string name="ns_wifi_ssids">WiFi SSID</string>
-    <string name="loading">Bezig met laden …</string>
     <string name="notes_label">Notities</string>
     <string name="remove_button">Verwijder</string>
     <string name="add_new">Nieuwe toevoegen</string>

@@ -102,7 +102,6 @@
     <string name="name_short">Όνομα:</string>
     <string name="time">Χρόνος</string>
     <string name="ns_wifi_ssids">WiFi SSID</string>
-    <string name="loading">Φόρτωση…</string>
     <string name="notes_label">Σημειώσεις</string>
     <string name="remove_button">Διαγραφή</string>
     <string name="add_new">Προσθήκη νέου</string>

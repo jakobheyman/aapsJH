@@ -103,7 +103,6 @@
     <string name="name_short">이름:</string>
     <string name="time">시간</string>
     <string name="ns_wifi_ssids">와이파이 SSID</string>
-    <string name="loading">로딩 중 …</string>
     <string name="notes_label">노트</string>
     <string name="remove_button">삭제</string>
     <string name="add_new">새로 추가하기</string>

@@ -27,7 +27,6 @@ import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.workflow.LoggingWorker
 import app.aaps.core.utils.receivers.DataWorkerStorage
-import dagger.android.HasAndroidInjector
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import javax.inject.Provider
@@ -57,7 +56,6 @@ class IobCobOrefWorker @Inject internal constructor(
     @Inject lateinit var processedDeviceStatusData: ProcessedDeviceStatusData
 
     class IobCobOrefWorkerData(
-        val injector: HasAndroidInjector,
         val iobCobCalculator: IobCobCalculator, // cannot be injected : HistoryBrowser uses different instance
         val reason: String,
         val end: Long,

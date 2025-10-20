@@ -158,6 +158,7 @@
     <string name="login">Connexion</string>
     <string name="logout">Déconnexion</string>
     <string name="prime_fill">Amorcer/Remplir</string>
+    <string name="site_rotation">Rotation du site</string>
     <string name="overview_insulin_label">Insuline</string>
     <string name="stoptemptarget">Arrêter la cible temp</string>
     <string name="closedloop">Boucle Fermée</string>
@@ -224,6 +225,8 @@
     <string name="careportal_exercise_message">Exercice : %1$s</string>
     <string name="careportal_pump_site_change">Changement de site</string>
     <string name="cgm_sensor_insert">Insertion Capteur MGC</string>
+    <string name="careportal_pump_site_management">Sites de la pompe</string>
+    <string name="careportal_cgm_site_management">Sites du capteur MGC</string>
     <string name="careportal_cgmsensorstart">Démarrage Capteur MGC</string>
     <string name="careportal_cgm_sensor_stop">Arrêt capteur MGC</string>
     <string name="careportal_dad_alert">Chien d\'alerte</string>
@@ -257,6 +260,39 @@
     <string name="loop">Boucle</string>
     <string name="ns">NS</string>
     <string name="record">Enregistrement</string>
+    <string name="location_front_right_upper_chest">Poitrine Droite</string>
+    <string name="location_front_left_upper_chest">Poitrine Gauche</string>
+    <string name="location_side_right_upper_arm">Bras Droit Extérieur Haut</string>
+    <string name="location_side_left_upper_arm">Bras Gauche Extérieur Haut</string>
+    <string name="location_back_right_upper_arm">Bras Droit Arrière Haut</string>
+    <string name="location_back_left_upper_arm">Bras Gauche Arrière Haut</string>
+    <string name="location_side_right_upper_abdomen">Abdomen Droit Extérieur Haut</string>
+    <string name="location_side_left_upper_abdomen">Abdomen Gauche Extérieur Haut</string>
+    <string name="location_side_right_lower_abdomen">Abdomen Droit Extérieur Bas</string>
+    <string name="location_side_left_lower_abdomen">Abdomen Gauche Extérieur Bas</string>
+    <string name="location_front_right_upper_abdomen">Abdomen Droit Avant Haut</string>
+    <string name="location_front_left_upper_abdomen">Abdomen Gauche Avant Haut</string>
+    <string name="location_front_right_lower_abdomen">Abdomen Droit Avant Bas</string>
+    <string name="location_front_left_lower_abdomen">Abdomen Gauche Avant Bas</string>
+    <string name="location_back_right_buttock">Fesse Droite</string>
+    <string name="location_back_left_buttock">Fesse Gauche</string>
+    <string name="location_side_right_upper_thigh">Cuisse Droite Extérieur Haut</string>
+    <string name="location_side_left_upper_thigh">Cuisse Gauche Extérieur Haut</string>
+    <string name="location_side_right_lower_thigh">Cuisse Droite Extérieur Bas</string>
+    <string name="location_side_left_lower_thigh">Cuisse Gauche Extérieur Bas</string>
+    <string name="location_front_right_upper_thigh">Cuisse Droite Avant Haut</string>
+    <string name="location_front_left_upper_thigh">Cuisse Gauche Avant Haut</string>
+    <string name="location_front_right_lower_thigh">Cuisse Droite Avant Bas</string>
+    <string name="location_front_left_lower_thigh">Cuisse Gauche Avant Bas</string>
+    <string name="arrow_up">Haut</string>
+    <string name="arrow_up_right">Haut Droite</string>
+    <string name="arrow_right">Droite</string>
+    <string name="arrow_down_right">Bas Droite</string>
+    <string name="arrow_down">Bas</string>
+    <string name="arrow_down_left">Bas Gauche</string>
+    <string name="arrow_left">Gauche</string>
+    <string name="arrow_up_left">Haut Gauche</string>
+    <string name="arrow_center">Centre</string>
     <!--    Command-->
     <string name="connectiontimedout">Connexion expirée</string>
     <!--    PumpEnactResult-->
@@ -316,7 +352,9 @@
     <string name="uel_cancel_extended_bolus">BOLUS ÉTENDU ANNULÉ</string>
     <string name="uel_cancel_tt">ANNULER CIBLE TEMP</string>
     <string name="uel_careportal">CAREPORTAL</string>
+    <string name="uel_sensor_location">EMPLACEMENT CAPTEUR</string>
     <string name="uel_site_change">CHANGEMENT DE SITE</string>
+    <string name="uel_site_location">EMPLACEMENT POMPE</string>
     <string name="uel_reservoir_change">CHANGEMENT DU RÉSERVOIR</string>
     <string name="uel_calibration">ÉTALONNAGE</string>
     <string name="uel_prime_bolus">BOLUS D\'AMORÇAGE</string>

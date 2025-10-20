@@ -45,7 +45,6 @@ import app.aaps.plugins.aps.autotune.data.LocalInsulin
 import app.aaps.plugins.aps.autotune.data.PreppedGlucose
 import app.aaps.plugins.aps.autotune.events.EventAutotuneUpdateGui
 import app.aaps.plugins.aps.autotune.keys.AutotuneStringKey
-import dagger.android.HasAndroidInjector
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.TimeZone
@@ -61,7 +60,6 @@ import javax.inject.Singleton
 
 @Singleton
 class AutotunePlugin @Inject constructor(
-    private val injector: HasAndroidInjector,
     aapsLogger: AAPSLogger,
     rh: ResourceHelper,
     preferences: Preferences,
@@ -75,7 +73,8 @@ class AutotunePlugin @Inject constructor(
     private val autotuneCore: AutotuneCore,
     private val config: Config,
     private val uel: UserEntryLogger,
-    private val profileStoreProvider: Provider<ProfileStore>
+    private val profileStoreProvider: Provider<ProfileStore>,
+    private val atProfileProvider: Provider<ATProfile>
 ) : PluginBaseWithPreferences(
     pluginDescription = PluginDescription()
         .mainType(PluginType.GENERAL)
@@ -84,7 +83,7 @@ class AutotunePlugin @Inject constructor(
         .pluginName(app.aaps.core.ui.R.string.autotune)
         .shortName(R.string.autotune_shortname)
         .preferencesId(PluginDescription.PREFERENCE_SCREEN)
-        .showInList { config.isEngineeringMode() && config.isDev() }
+        .showInList { config.isEngineeringMode() && config.isDev() || config.enableAutotune() }
         .description(R.string.autotune_description),
     ownPreferences = listOf(AutotuneStringKey::class.java),
     aapsLogger, rh, preferences
@@ -160,10 +159,10 @@ class AutotunePlugin @Inject constructor(
         if (endTime > lastRun) endTime -= 24 * 60 * 60 * 1000L      // Check if 4 AM is before now
         val startTime = endTime - daysBack * 24 * 60 * 60 * 1000L
         autotuneFS.exportSettings(settings(lastRun, daysBack, startTime, endTime))
-        tunedProfile = ATProfile(profile, localInsulin, injector).also {
+        tunedProfile = atProfileProvider.get().with(profile, localInsulin).also {
             it.profileName = rh.gs(R.string.autotune_tunedprofile_name)
         }
-        pumpProfile = ATProfile(profile, localInsulin, injector).also {
+        atProfileProvider.get().with(profile, localInsulin).also {
             it.profileName = selectedProfile
         }
         autotuneFS.exportPumpProfile(pumpProfile)
@@ -426,7 +425,7 @@ class AutotunePlugin @Inject constructor(
             selectedProfile = JsonHelper.safeGetString(json, "pumpProfileName", "")
             val profile = JsonHelper.safeGetJSONObject(json, "pumpProfile", null)?.let { pureProfileFromJson(it, dateUtil) }
                 ?: return
-            pumpProfile = ATProfile(ProfileSealed.Pure(value = profile, activePlugin = null), localInsulin, injector).also { it.profileName = selectedProfile }
+            pumpProfile = atProfileProvider.get().with(ProfileSealed.Pure(value = profile, activePlugin = null), localInsulin).also { it.profileName = selectedProfile }
             val tunedPeak = JsonHelper.safeGetInt(json, "tunedPeak")
             val tunedDia = JsonHelper.safeGetDouble(json, "tunedDia")
             localInsulin = LocalInsulin("PumpInsulin", tunedPeak, tunedDia)
@@ -435,7 +434,7 @@ class AutotunePlugin @Inject constructor(
                 ?: return
             val circadianTuned = JsonHelper.safeGetJSONObject(json, "tunedCircadianProfile", null)?.let { pureProfileFromJson(it, dateUtil) }
                 ?: return
-            tunedProfile = ATProfile(ProfileSealed.Pure(value = tuned, activePlugin = null), localInsulin, injector).also { atProfile ->
+            tunedProfile = atProfileProvider.get().with(ProfileSealed.Pure(value = tuned, activePlugin = null), localInsulin).also { atProfile ->
                 atProfile.profileName = tunedProfileName
                 atProfile.circadianProfile = ProfileSealed.Pure(value = circadianTuned, activePlugin = null)
                 for (i in 0..23) {
