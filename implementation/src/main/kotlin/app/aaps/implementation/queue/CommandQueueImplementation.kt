@@ -16,7 +16,6 @@ import app.aaps.core.data.model.BS
 import app.aaps.core.data.model.EPS
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
-import app.aaps.core.interfaces.androidPermissions.AndroidPermission
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
@@ -26,6 +25,7 @@ import app.aaps.core.interfaces.notifications.Notification
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.pump.BolusProgressData
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.pump.PumpEnactResult
 import app.aaps.core.interfaces.pump.PumpSync
@@ -47,7 +47,6 @@ import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
-import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.getCustomizedName
 import app.aaps.core.objects.profile.ProfileSealed
@@ -88,17 +87,15 @@ class CommandQueueImplementation @Inject constructor(
     private val injector: HasAndroidInjector,
     private val aapsLogger: AAPSLogger,
     private val rxBus: RxBus,
-    private val aapsSchedulers: AapsSchedulers,
+    aapsSchedulers: AapsSchedulers,
     private val rh: ResourceHelper,
     private val constraintChecker: ConstraintsChecker,
     private val profileFunction: ProfileFunction,
     private val activePlugin: ActivePlugin,
     private val context: Context,
-    private val preferences: Preferences,
     private val config: Config,
     private val dateUtil: DateUtil,
     private val fabricPrivacy: FabricPrivacy,
-    private val androidPermission: AndroidPermission,
     private val uiInteraction: UiInteraction,
     private val persistenceLayer: PersistenceLayer,
     private val decimalFormatter: DecimalFormatter,
@@ -155,6 +152,10 @@ class CommandQueueImplementation @Inject constructor(
                                })
                            }
                        }, fabricPrivacy::logException)
+        /*
+         * Clear old WorkManager jobs, because they survive restart
+         */
+        workManager.cancelUniqueWork(jobName.name)
     }
 
     private fun executingNowError(): PumpEnactResult =
@@ -173,14 +174,33 @@ class CommandQueueImplementation @Inject constructor(
         }
     }
 
-    @Suppress("SameParameterValue")
+    /**
+     * Watchdog. I observed issue where work stuck in RUNNING state but nothing actually happens
+     * (last work completed successfully).
+     * Cancel scheduled work in this case
+     */
+    private var readScheduledDetected: Long? = null
+
     @Synchronized
-    fun isLastScheduled(type: CommandType): Boolean {
+    fun isReadStatusScheduled(): Boolean {
+        /*
+         * Cancel all works if ReadStatus is scheduled for more that 15 min
+         */
+        readScheduledDetected?.let {
+            if (dateUtil.isOlderThan(it, minutes = 15)) {
+                workManager.cancelUniqueWork(jobName.name)
+                fabricPrivacy.logCustom("QueueWorkerStuck")
+                Thread.sleep(5000)
+            }
+        }
+
         synchronized(queue) {
-            if (queue.isNotEmpty() && queue[queue.size - 1].commandType == type) {
+            if (queue.isNotEmpty() && queue[queue.size - 1].commandType == CommandType.READSTATUS) {
+                readScheduledDetected = dateUtil.now()
                 return true
             }
         }
+        readScheduledDetected = null
         return false
     }
 
@@ -243,17 +263,6 @@ class CommandQueueImplementation @Inject constructor(
             aapsLogger.debug(LTag.PUMPQUEUE, "Waiting for previous work finish")
             SystemClock.sleep(500)
         }
-    }
-
-    override fun independentConnect(reason: String, callback: Callback?) {
-        aapsLogger.debug(LTag.PUMPQUEUE, "Starting new queue")
-        val tempCommandQueue = CommandQueueImplementation(
-            injector, aapsLogger, rxBus, aapsSchedulers, rh,
-            constraintChecker, profileFunction, activePlugin, context, preferences,
-            config, dateUtil, fabricPrivacy, androidPermission, uiInteraction, persistenceLayer, decimalFormatter, pumpEnactResultProvider, CommandQueueName("CommandQueueIndependentInstance"), workManager
-        )
-        tempCommandQueue.readStatus(reason, callback)
-        tempCommandQueue.disposable.clear()
     }
 
     @Synchronized
@@ -330,6 +339,7 @@ class CommandQueueImplementation @Inject constructor(
         detailedBolusInfo.carbs =
             constraintChecker.applyCarbsConstraints(ConstraintObject(detailedBolusInfo.carbs.toInt(), aapsLogger)).value().toDouble()
         // add new command to queue
+        BolusProgressData.set(detailedBolusInfo.insulin, isSMB = detailedBolusInfo.bolusType === BS.Type.SMB, id = detailedBolusInfo.id)
         if (detailedBolusInfo.bolusType == BS.Type.SMB) {
             add(CommandSMBBolus(injector, detailedBolusInfo, callback))
         } else {
@@ -476,7 +486,7 @@ class CommandQueueImplementation @Inject constructor(
 
     // returns true if command is queued
     override fun readStatus(reason: String, callback: Callback?): Boolean {
-        if (isLastScheduled(CommandType.READSTATUS)) {
+        if (isReadStatusScheduled()) {
             aapsLogger.debug(LTag.PUMPQUEUE, "READSTATUS $reason ignored as duplicated")
             callback?.result(executingNowError())?.run()
             return false
@@ -673,15 +683,9 @@ class CommandQueueImplementation @Inject constructor(
 
     private fun showBolusProgressDialog(detailedBolusInfo: DetailedBolusInfo) {
         if (detailedBolusInfo.context != null) {
-            uiInteraction.runBolusProgressDialog(
-                (detailedBolusInfo.context as AppCompatActivity).supportFragmentManager,
-                detailedBolusInfo.insulin,
-                detailedBolusInfo.id
-            )
+            uiInteraction.runBolusProgressDialog((detailedBolusInfo.context as AppCompatActivity).supportFragmentManager)
         } else {
             val i = Intent()
-            i.putExtra("insulin", detailedBolusInfo.insulin)
-            i.putExtra("id", detailedBolusInfo.id)
             i.setClass(context, uiInteraction.bolusProgressHelperActivity)
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(i)
