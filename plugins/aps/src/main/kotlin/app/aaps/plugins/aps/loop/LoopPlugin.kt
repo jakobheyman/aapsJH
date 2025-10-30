@@ -48,6 +48,7 @@ import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.pump.PumpEnactResult
+import app.aaps.core.interfaces.pump.PumpStatusProvider
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.VirtualPump
 import app.aaps.core.interfaces.queue.Callback
@@ -118,7 +119,8 @@ class LoopPlugin @Inject constructor(
     private val runningConfiguration: RunningConfiguration,
     private val uiInteraction: UiInteraction,
     private val pumpEnactResultProvider: Provider<PumpEnactResult>,
-    private val processedDeviceStatusData: ProcessedDeviceStatusData
+    private val processedDeviceStatusData: ProcessedDeviceStatusData,
+    private val pumpStatusProvider: PumpStatusProvider
 ) : PluginBase(
     PluginDescription()
         .mainType(PluginType.LOOP)
@@ -240,14 +242,14 @@ class LoopPlugin @Inject constructor(
         // Change running mode
         when (newRM) {
             // Modes with zero temping
-            RM.Mode.SUPER_BOLUS, RM.Mode.DISCONNECTED_PUMP -> {
+            RM.Mode.SUPER_BOLUS, RM.Mode.DISCONNECTED_PUMP      -> {
                 goToZeroTemp(durationInMinutes = durationInMinutes, profile = profile, mode = newRM, action = action, source = source, listValues = listValues)
                 return true
             }
 
-            RM.Mode.SUSPENDED_BY_PUMP                      -> {} // handled in runningModePreCheck()
+            RM.Mode.SUSPENDED_BY_PUMP                           -> {} // handled in runningModePreCheck()
             RM.Mode.DISABLED_LOOP, RM.Mode.CLOSED_LOOP, RM.Mode.OPEN_LOOP,
-            RM.Mode.CLOSED_LOOP_LGS                        -> {
+            RM.Mode.CLOSED_LOOP_LGS                             -> {
                 val inserted = persistenceLayer.insertOrUpdateRunningMode(
                     runningMode = RM(
                         timestamp = now,
@@ -285,7 +287,7 @@ class LoopPlugin @Inject constructor(
                 return true
             }
 
-            RM.Mode.RESUME                                 -> {
+            RM.Mode.RESUME                                      -> {
                 // Cancel temporary mode if really temporary
                 val updated = persistenceLayer.cancelCurrentRunningMode(
                     timestamp = now,
@@ -974,9 +976,7 @@ class LoopPlugin @Inject constructor(
 
     fun buildAndStoreDeviceStatus(reason: String) {
         aapsLogger.debug(LTag.NSCLIENT, "Building DeviceStatus for $reason")
-        val version = config.VERSION_NAME + "-" + config.BUILD_VERSION
         val profile = profileFunction.getProfile() ?: return
-        val profileName = profileFunction.getProfileName()
 
         var apsResult: JSONObject? = null
         var iob: JSONObject? = null
@@ -1020,7 +1020,7 @@ class LoopPlugin @Inject constructor(
                 iob = iob?.toString(),
                 enacted = enacted?.toString(),
                 device = "openaps://" + Build.MANUFACTURER + " " + Build.MODEL,
-                pump = activePlugin.activePump.getJSONStatus(profile, profileName, version).toString(),
+                pump = pumpStatusProvider.generatePumpJsonStatus().toString(),
                 uploaderBattery = receiverStatusStore.batteryLevel,
                 isCharging = receiverStatusStore.isCharging,
                 configuration = runningConfiguration.configuration().toString()

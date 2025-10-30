@@ -42,6 +42,7 @@ import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
+import app.aaps.core.interfaces.pump.PumpStatusProvider
 import app.aaps.core.interfaces.pump.defs.determineCorrectBolusStepSize
 import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.queue.CommandQueue
@@ -123,7 +124,8 @@ class DataHandlerMobile @Inject constructor(
     private val persistenceLayer: PersistenceLayer,
     private val importExportPrefs: ImportExportPrefs,
     private val decimalFormatter: DecimalFormatter,
-    private val bolusWizardProvider: Provider<BolusWizard>
+    private val bolusWizardProvider: Provider<BolusWizard>,
+    private val pumpStatusProvider: PumpStatusProvider
 ) {
 
     @Inject lateinit var automation: Automation
@@ -173,7 +175,7 @@ class DataHandlerMobile @Inject constructor(
                                EventMobileToWear(
                                    EventData.ConfirmAction(
                                        rh.gs(R.string.pump_status).uppercase(),
-                                       activePlugin.activePump.shortStatus(false),
+                                       pumpStatusProvider.shortStatus(false),
                                        returnCommand = null
                                    )
                                )
