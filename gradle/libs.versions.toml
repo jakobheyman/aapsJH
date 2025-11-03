@@ -7,8 +7,8 @@ wearable = "2.9.0"
 room = "2.8.3"
 dagger = "2.57.2"
 mockito = "5.20.0"
-junit = "6.0.0"
-okhttp = "5.2.1"
+junit = "6.0.1"
+okhttp = "5.3.0"
 retrofit = "3.0.0"
 kotlinx-serialization = "1.9.0"
 kotlinx-coroutines = "1.10.2"
@@ -42,7 +42,7 @@ com-google-dagger-android-processor = { group = "com.google.dagger", name = "dag
 com-google-dagger-android-support = { group = "com.google.dagger", name = "dagger-android-support", version.ref = "dagger" }
 
 com-google-firebase-gradle = { group = "com.google.firebase", name = "firebase-crashlytics-gradle", version = "3.0.6" }
-com-google-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version = "34.4.0" }
+com-google-firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version = "34.5.0" }
 com-google-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 com-google-firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 com-google-firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
