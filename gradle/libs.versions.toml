@@ -1,6 +1,6 @@
 # libs.versions.toml
 [versions]
-gradlePlugin = "8.13.0"
+gradlePlugin = "8.13.1"
 googleServices = "4.4.4"
 kotlin = "2.2.21"
 wearable = "2.9.0"
@@ -18,16 +18,16 @@ annotation = "1.9.1"
 
 # Compose
 activityCompose = "1.11.0"
-composeBom = "2025.10.01"
-navigationCompose = "2.9.5"
+composeBom = "2025.11.00"
+navigationCompose = "2.9.6"
 lifecycleRuntimeKtx = "2.9.4"
 materialPullRefresh = "1.2.0"
 
 [plugins]
 android-library = { id = "com.android.library" }
-klint = { id = "org.jlleitschuh.gradle.ktlint", version = "13.1.0" }
+klint = { id = "org.jlleitschuh.gradle.ktlint", version = "14.0.1" }
 moduleDependencyGraph = { id = "com.savvasdalkitsis.module-dependency-graph", version = "0.12" }
-ksp = { id = "com.google.devtools.ksp", version = "2.3.0" }
+ksp = { id = "com.google.devtools.ksp", version = "2.3.2" }
 android-test = { id = "com.android.test", version.ref = "gradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
@@ -102,7 +102,7 @@ androidx-gridlayout = { group = "androidx.gridlayout", name = "gridlayout", vers
 androidx-legacy-support = { group = "androidx.legacy", name = "legacy-support-v13", version = "1.0.0" }
 androidx-lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version = "2.9.4" }
 androidx-media3-common = { group = "androidx.media3", name = "media3-common", version = "1.8.0" }
-androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment-ktx", version = "2.9.5" }
+androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment-ktx", version = "2.9.6" }
 androidx-preference = { group = "androidx.preference", name = "preference-ktx", version = "1.2.1" }
 androidx-room = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
@@ -158,7 +158,7 @@ io-socket-client = { group = "io.socket", name = "socket.io-client", version = "
 io-kotlintest-runner-junit5 = { group = "io.kotlintest", name = "kotlintest-runner-junit5", version = "3.4.2" }
 com-polidea-rxandroidble3 = { group = "com.polidea.rxandroidble3", name = "rxandroidble", version = "1.19.0" }
 com-jakewharton-rx3-replaying-share = { group = "com.jakewharton.rx3", name = "replaying-share", version = "3.0.0" }
-commons-codec = { group = "commons-codec", name = "commons-codec", version = "1.19.0" }
+commons-codec = { group = "commons-codec", name = "commons-codec", version = "1.20.0" }
 com-github-guepardoapps-kulid = { group = "com.github.guepardoapps", name = "kulid", version = "2.0.0.0" }
 com-thoughtworks-xstream = { group = "com.thoughtworks.xstream", name = "xstream", version = "1.4.21" }
 com-garmin-connectiq = { group = "com.garmin.connectiq", name = "ciq-companion-app-sdk", version = "2.3.0" }
