@@ -328,7 +328,7 @@ class MedtrumPlugin @Inject constructor(
         aapsLogger.debug(LTag.PUMP, "deliverTreatment: Delivering bolus: " + detailedBolusInfo.insulin + "U")
         val connectionOK = medtrumService?.setBolus(detailedBolusInfo) == true
         val result = pumpEnactResultProvider.get()
-        result.success = connectionOK && abs(detailedBolusInfo.insulin - BolusProgressData.delivered) < pumpDescription.bolusStep
+        result.success = (connectionOK && abs(detailedBolusInfo.insulin - BolusProgressData.delivered) < pumpDescription.bolusStep) || medtrumPump.bolusStopped
         result.bolusDelivered = BolusProgressData.delivered
         if (!result.success) {
             result.comment(medtrumPump.bolusErrorReason ?: rh.gs(R.string.bolus_error_reason_pump_error))
