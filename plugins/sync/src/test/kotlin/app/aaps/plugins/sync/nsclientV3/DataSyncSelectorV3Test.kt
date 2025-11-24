@@ -126,6 +126,8 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         whenever(preferences.get(NsclientLongKey.TemporaryTargetLastSyncedId)).thenReturn(1)
         sut.confirmLastTempTargetsIdIfGreater(2)
         verify(preferences, Times(1)).put(NsclientLongKey.TemporaryTargetLastSyncedId, 2)
+// NSCv3 doesn't support food update
+/*
         // Food
         whenever(preferences.get(NsclientLongKey.FoodLastSyncedId)).thenReturn(2)
         sut.confirmLastFoodIdIfGreater(2)
@@ -133,6 +135,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         whenever(preferences.get(NsclientLongKey.FoodLastSyncedId)).thenReturn(1)
         sut.confirmLastFoodIdIfGreater(2)
         verify(preferences, Times(1)).put(NsclientLongKey.FoodLastSyncedId, 2)
+ */
         // GlucoseValue
         whenever(preferences.get(NsclientLongKey.GlucoseValueLastSyncedId)).thenReturn(2)
         sut.confirmLastGlucoseValueIdIfGreater(2)
@@ -236,7 +239,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
     @Test
     fun queueSizeTest() {
         // All counters initialized to -1, so total should be -13 (13 fields)
-        assertThat(sut.queueSize()).isEqualTo(-13)
+        assertThat(sut.queueSize()).isEqualTo(-12)
     }
 
     @Test
@@ -275,7 +278,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         whenever(persistenceLayer.getLastCarbsId()).thenReturn(200L)
         whenever(persistenceLayer.getLastBolusCalculatorResultId()).thenReturn(50L)
         whenever(persistenceLayer.getLastTemporaryTargetId()).thenReturn(75L)
-        whenever(persistenceLayer.getLastFoodId()).thenReturn(25L)
+        //whenever(persistenceLayer.getLastFoodId()).thenReturn(25L)
         whenever(persistenceLayer.getLastGlucoseValueId()).thenReturn(500L)
         whenever(persistenceLayer.getLastTherapyEventId()).thenReturn(30L)
         whenever(persistenceLayer.getLastDeviceStatusId()).thenReturn(10L)
@@ -290,7 +293,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         whenever(preferences.get(NsclientLongKey.CarbsLastSyncedId)).thenReturn(0L)
         whenever(preferences.get(NsclientLongKey.BolusCalculatorLastSyncedId)).thenReturn(0L)
         whenever(preferences.get(NsclientLongKey.TemporaryTargetLastSyncedId)).thenReturn(0L)
-        whenever(preferences.get(NsclientLongKey.FoodLastSyncedId)).thenReturn(0L)
+        //whenever(preferences.get(NsclientLongKey.FoodLastSyncedId)).thenReturn(0L)
         whenever(preferences.get(NsclientLongKey.GlucoseValueLastSyncedId)).thenReturn(0L)
         whenever(preferences.get(NsclientLongKey.TherapyEventLastSyncedId)).thenReturn(0L)
         whenever(preferences.get(NsclientLongKey.DeviceStatusLastSyncedId)).thenReturn(0L)
@@ -305,7 +308,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         whenever(persistenceLayer.getNextSyncElementCarbs(0)).thenReturn(Maybe.empty())
         whenever(persistenceLayer.getNextSyncElementBolusCalculatorResult(0)).thenReturn(Maybe.empty())
         whenever(persistenceLayer.getNextSyncElementTemporaryTarget(0)).thenReturn(Maybe.empty())
-        whenever(persistenceLayer.getNextSyncElementFood(0)).thenReturn(Maybe.empty())
+        //whenever(persistenceLayer.getNextSyncElementFood(0)).thenReturn(Maybe.empty())
         whenever(persistenceLayer.getNextSyncElementGlucoseValue(0)).thenReturn(Maybe.empty())
         whenever(persistenceLayer.getNextSyncElementTherapyEvent(0)).thenReturn(Maybe.empty())
         whenever(persistenceLayer.getNextSyncElementDeviceStatus(0)).thenReturn(Maybe.empty())
@@ -318,7 +321,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         sut.doUpload()
 
         // Queue counters should be calculated
-        assertThat(sut.queueSize()).isEqualTo(1130L) // Sum of all differences
+        assertThat(sut.queueSize()).isEqualTo(1105L) // Sum of all differences
     }
 
     @Test
@@ -498,6 +501,8 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
     }
 
     // Tests for processChangedFoods
+/*
+// NSCv3 doesn't support food update
     @Test
     fun processChangedFoodsWhenPausedTest() = runBlocking {
         whenever(preferences.get(NsclientBooleanKey.NsPaused)).thenReturn(true)
@@ -535,7 +540,7 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         verify(persistenceLayer, Times(0)).getNextSyncElementGlucoseValue(any())
         Unit
     }
-
+*/
     @Test
     fun processChangedGlucoseValuesAfterDbResetTest() = runBlocking {
         whenever(persistenceLayer.getLastGlucoseValueId()).thenReturn(0)
@@ -902,7 +907,6 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         // Verify nsAdd was called but loop stopped (no confirmLastId call)
         verify(nsClient, Times(1)).nsAdd(eq("treatments"), any<DataSyncSelector.PairBolus>(), any(), anyOrNull())
         verify(preferences, Times(0)).put(NsclientLongKey.BolusLastSyncedId, 6L)
-        Unit
     }
 
     @Test
@@ -1026,7 +1030,6 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         // Verify nsUpdate was called but loop stopped (no confirmLastId call)
         verify(nsClient, Times(1)).nsUpdate(eq("treatments"), any<DataSyncSelector.PairCarbs>(), any(), anyOrNull())
         verify(preferences, Times(0)).put(NsclientLongKey.CarbsLastSyncedId, 6L)
-        Unit
     }
 
     @Test
@@ -1054,6 +1057,5 @@ class DataSyncSelectorV3Test : TestBaseWithProfile() {
         verify(preferences, Times(1)).put(NsclientLongKey.CarbsLastSyncedId, 6L)
         verify(preferences, Times(1)).put(NsclientLongKey.CarbsLastSyncedId, 7L)
         verify(preferences, Times(1)).put(NsclientLongKey.CarbsLastSyncedId, 8L)
-        Unit
     }
 }

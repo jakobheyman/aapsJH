@@ -37,6 +37,7 @@ class UserEntryPresentationHelperImpl @Inject constructor(
         Action.ColorGroup.Careportal       -> app.aaps.core.ui.R.color.high
         Action.ColorGroup.Pump             -> app.aaps.core.ui.R.color.loopDisconnected
         Action.ColorGroup.Aaps             -> app.aaps.core.ui.R.color.defaultText
+        Action.ColorGroup.RunningMode      -> app.aaps.core.ui.R.color.white
         // else                               -> app.aaps.core.ui.R.color.defaultText
     }
 

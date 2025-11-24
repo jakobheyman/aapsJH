@@ -914,7 +914,7 @@ class PersistenceLayerImpl @Inject constructor(
                         if (doLog) ueValues.add(
                             UE(
                                 timestamp = dateUtil.now(),
-                                action = Action.PROFILE_SWITCH,
+                                action = Action.RUNNING_MODE,
                                 source = Sources.NSClient,
                                 note = "",
                                 values = listOf(ValueWithUnit.Timestamp(it.timestamp))
@@ -928,13 +928,27 @@ class PersistenceLayerImpl @Inject constructor(
                         if (doLog) ueValues.add(
                             UE(
                                 timestamp = dateUtil.now(),
-                                action = Action.PROFILE_SWITCH_REMOVED,
+                                action = Action.RUNNING_MODE_REMOVED,
                                 source = Sources.NSClient,
                                 note = "",
                                 values = listOf(ValueWithUnit.Timestamp(it.timestamp))
                             )
                         )
                     aapsLogger.debug(LTag.DATABASE, "Invalidated RunningMode $it")
+                    transactionResult.invalidated.add(it.fromDb())
+                }
+                result.updatedDuration.forEach {
+                    if (config.AAPSCLIENT.not())
+                        if (doLog) ueValues.add(
+                            UE(
+                                timestamp = dateUtil.now(),
+                                action = Action.RUNNING_MODE_UPDATED,
+                                source = Sources.NSClient,
+                                note = "",
+                                values = listOf(ValueWithUnit.Timestamp(it.timestamp))
+                            )
+                        )
+                    aapsLogger.debug(LTag.DATABASE, "Updated duration RunningMode $it")
                     transactionResult.invalidated.add(it.fromDb())
                 }
                 result.updatedNsId.forEach {

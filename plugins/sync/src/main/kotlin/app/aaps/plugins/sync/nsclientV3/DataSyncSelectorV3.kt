@@ -42,7 +42,8 @@ class DataSyncSelectorV3 @Inject constructor(
         var carbsRemaining: Long = -1L,
         var bcrRemaining: Long = -1L,
         var ttsRemaining: Long = -1L,
-        var foodsRemaining: Long = -1L,
+// NSCv3 doesn't support food update
+//        var foodsRemaining: Long = -1L,
         var gvsRemaining: Long = -1L,
         var tesRemaining: Long = -1L,
         var dssRemaining: Long = -1L,
@@ -58,7 +59,8 @@ class DataSyncSelectorV3 @Inject constructor(
                 carbsRemaining +
                 bcrRemaining +
                 ttsRemaining +
-                foodsRemaining +
+// NSCv3 doesn't support food update
+//                foodsRemaining +
                 gvsRemaining +
                 tesRemaining +
                 dssRemaining +
@@ -84,7 +86,8 @@ class DataSyncSelectorV3 @Inject constructor(
             queueCounter.carbsRemaining = (persistenceLayer.getLastCarbsId() ?: 0L) - preferences.get(NsclientLongKey.CarbsLastSyncedId)
             queueCounter.bcrRemaining = (persistenceLayer.getLastBolusCalculatorResultId() ?: 0L) - preferences.get(NsclientLongKey.BolusCalculatorLastSyncedId)
             queueCounter.ttsRemaining = (persistenceLayer.getLastTemporaryTargetId() ?: 0L) - preferences.get(NsclientLongKey.TemporaryTargetLastSyncedId)
-            queueCounter.foodsRemaining = (persistenceLayer.getLastFoodId() ?: 0L) - preferences.get(NsclientLongKey.FoodLastSyncedId)
+// NSCv3 doesn't support food update
+//            queueCounter.foodsRemaining = (persistenceLayer.getLastFoodId() ?: 0L) - preferences.get(NsclientLongKey.FoodLastSyncedId)
             queueCounter.gvsRemaining = (persistenceLayer.getLastGlucoseValueId() ?: 0L) - preferences.get(NsclientLongKey.GlucoseValueLastSyncedId)
             queueCounter.tesRemaining = (persistenceLayer.getLastTherapyEventId() ?: 0L) - preferences.get(NsclientLongKey.TherapyEventLastSyncedId)
             queueCounter.dssRemaining = (persistenceLayer.getLastDeviceStatusId() ?: 0L) - preferences.get(NsclientLongKey.DeviceStatusLastSyncedId)
@@ -103,7 +106,8 @@ class DataSyncSelectorV3 @Inject constructor(
             processChangedProfileSwitches()
             processChangedEffectiveProfileSwitches()
             processChangedTempTargets()
-            processChangedFoods()
+// NSCv3 doesn't support food update
+//            processChangedFoods()
             processChangedTherapyEvents()
             processChangedDeviceStatuses()
             processChangedRunningModes()
@@ -313,7 +317,7 @@ class DataSyncSelectorV3 @Inject constructor(
             }
         }
     }
-
+/*
     @OpenForTesting
     fun confirmLastFoodIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.FoodLastSyncedId)) {
@@ -356,7 +360,7 @@ class DataSyncSelectorV3 @Inject constructor(
             }
         }
     }
-
+*/
     @OpenForTesting
     fun confirmLastGlucoseValueIdIfGreater(lastSynced: Long) {
         if (lastSynced > preferences.get(NsclientLongKey.GlucoseValueLastSyncedId)) {
