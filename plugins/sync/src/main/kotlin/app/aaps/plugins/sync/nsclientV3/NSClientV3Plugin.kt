@@ -159,7 +159,7 @@ class NSClientV3Plugin @Inject constructor(
                 lastOperationError != null                                                            -> rh.gs(app.aaps.core.ui.R.string.error)
                 nsAndroidClient?.lastStatus == null                                                   -> rh.gs(R.string.not_connected)
                 workIsRunning()                                                                       -> rh.gs(R.string.working)
-                nsAndroidClient?.lastStatus?.apiPermissions?.isFull() == true                         -> rh.gs(app.aaps.core.interfaces.R.string.connected)
+                nsAndroidClient?.lastStatus?.apiPermissions?.isFull() == true                         -> rh.gs(app.aaps.core.interfaces.R.string.authorized)
                 nsAndroidClient?.lastStatus?.apiPermissions?.isRead() == true                         -> rh.gs(R.string.read_only)
                 else                                                                                  -> rh.gs(app.aaps.core.ui.R.string.unknown)
             }
@@ -360,8 +360,10 @@ class NSClientV3Plugin @Inject constructor(
                 logger = { msg -> aapsLogger.debug(LTag.HTTP, msg) }
             )
         SystemClock.sleep(2000)
-        if (nsClientV3Service == null) startService()
-        else nsClientV3Service?.initializeWebSockets("setClient")
+        if (preferences.get(BooleanKey.NsClient3UseWs)) {
+            if (nsClientV3Service == null) startService()
+            else nsClientV3Service?.initializeWebSockets("setClient")
+        }
         rxBus.send(EventSWSyncStatus(status))
     }
 

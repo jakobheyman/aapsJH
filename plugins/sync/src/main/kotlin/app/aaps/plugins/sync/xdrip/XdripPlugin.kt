@@ -37,7 +37,6 @@ import app.aaps.core.interfaces.rx.events.EventAppInitialized
 import app.aaps.core.interfaces.rx.events.EventAutosensCalculationFinished
 import app.aaps.core.interfaces.rx.events.EventNewBG
 import app.aaps.core.interfaces.rx.events.EventNewHistoryData
-import app.aaps.core.interfaces.rx.events.EventXdripNewLog
 import app.aaps.core.interfaces.sync.DataSyncSelector
 import app.aaps.core.interfaces.sync.Sync
 import app.aaps.core.interfaces.sync.XDripBroadcast
@@ -57,6 +56,7 @@ import app.aaps.core.validators.preferences.AdaptiveIntentPreference
 import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
 import app.aaps.plugins.sync.R
 import app.aaps.plugins.sync.nsclient.extensions.toJson
+import app.aaps.plugins.sync.xdrip.events.EventXdripNewLog
 import app.aaps.plugins.sync.xdrip.events.EventXdripUpdateGUI
 import app.aaps.plugins.sync.xdrip.extensions.toXdripJson
 import app.aaps.plugins.sync.xdrip.keys.XdripLongKey
