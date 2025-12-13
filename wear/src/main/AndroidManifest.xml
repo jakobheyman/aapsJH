@@ -560,7 +560,15 @@
                 android:resource="@drawable/loop_states_tile" />
         </service>
 
-        <receiver android:name=".complications.ComplicationTapBroadcastReceiver" />
+        <!-- Transparent activity to handle complication taps reliably on Android 12+ -->
+        <activity
+            android:name=".complications.ComplicationTapActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <activity
             android:name=".interaction.menus.MainMenuActivity"

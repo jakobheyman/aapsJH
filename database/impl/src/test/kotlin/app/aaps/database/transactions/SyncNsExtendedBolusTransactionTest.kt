@@ -98,8 +98,8 @@ class SyncNsExtendedBolusTransactionTest {
     }
 
     @Test
-    fun `updates duration and amount in NS client mode`() {
-        val eb = createExtendedBolus(id = 0, nsId = "ns-123", duration = 120_000L, amount = 10.0)
+    fun `updates duration to shorter and amount in NS client mode`() {
+        val eb = createExtendedBolus(id = 0, nsId = "ns-123", duration = 30_000L, amount = 10.0)
         val existing = createExtendedBolus(id = 1, nsId = "ns-123", duration = 60_000L, amount = 5.0)
 
         whenever(extendedBolusDao.findByNSId("ns-123")).thenReturn(existing)
@@ -109,8 +109,24 @@ class SyncNsExtendedBolusTransactionTest {
         val result = transaction.run()
 
         assertThat(result.updatedDuration).hasSize(1)
-        assertThat(existing.duration).isEqualTo(120_000L)
+        assertThat(existing.duration).isEqualTo(30_000L)
         assertThat(existing.amount).isEqualTo(10.0)
+    }
+
+    @Test
+    fun `does not update duration to longer in NS client mode`() {
+        val eb = createExtendedBolus(id = 0, nsId = "ns-123", duration = 120_000L, amount = 10.0)
+        val existing = createExtendedBolus(id = 1, nsId = "ns-123", duration = 60_000L, amount = 5.0)
+
+        whenever(extendedBolusDao.findByNSId("ns-123")).thenReturn(existing)
+
+        val transaction = SyncNsExtendedBolusTransaction(listOf(eb), nsClientMode = true)
+        transaction.database = database
+        val result = transaction.run()
+
+        assertThat(result.updatedDuration).isEmpty()
+        assertThat(existing.duration).isEqualTo(60_000L)
+        assertThat(existing.amount).isEqualTo(5.0)
     }
 
     private fun createExtendedBolus(

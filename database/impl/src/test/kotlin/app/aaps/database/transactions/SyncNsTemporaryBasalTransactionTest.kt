@@ -96,8 +96,8 @@ class SyncNsTemporaryBasalTransactionTest {
     }
 
     @Test
-    fun `updates duration in NS client mode`() {
-        val tb = createTemporaryBasal(id = 0, nsId = "ns-123", duration = 120_000L)
+    fun `updates duration to shorter in NS client mode`() {
+        val tb = createTemporaryBasal(id = 0, nsId = "ns-123", duration = 30_000L)
         val existing = createTemporaryBasal(id = 1, nsId = "ns-123", duration = 60_000L)
 
         whenever(temporaryBasalDao.findByNSId("ns-123")).thenReturn(existing)
@@ -107,7 +107,22 @@ class SyncNsTemporaryBasalTransactionTest {
         val result = transaction.run()
 
         assertThat(result.updatedDuration).hasSize(1)
-        assertThat(existing.duration).isEqualTo(120_000L)
+        assertThat(existing.duration).isEqualTo(30_000L)
+    }
+
+    @Test
+    fun `does not update duration to longer in NS client mode`() {
+        val tb = createTemporaryBasal(id = 0, nsId = "ns-123", duration = 120_000L)
+        val existing = createTemporaryBasal(id = 1, nsId = "ns-123", duration = 60_000L)
+
+        whenever(temporaryBasalDao.findByNSId("ns-123")).thenReturn(existing)
+
+        val transaction = SyncNsTemporaryBasalTransaction(listOf(tb), nsClientMode = true)
+        transaction.database = database
+        val result = transaction.run()
+
+        assertThat(result.updatedDuration).isEmpty()
+        assertThat(existing.duration).isEqualTo(60_000L)
     }
 
     @Test

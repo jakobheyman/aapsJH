@@ -105,7 +105,27 @@ class SyncNsCarbsTransactionTest {
     }
 
     @Test
-    fun `updates duration in nsClientMode when duration differs`() {
+    fun `updates duration to shorter in nsClientMode when duration differs`() {
+        val nsId = "ns-123"
+        val existing = createCarbs(id = 1, nsId = nsId, amount = 50.0, duration = 60_000L)
+        val incoming = createCarbs(id = 0, nsId = nsId, amount = 75.0, duration = 30_000L)
+
+        whenever(carbsDao.getByNSId(nsId)).thenReturn(existing)
+
+        val transaction = SyncNsCarbsTransaction(listOf(incoming), nsClientMode = true)
+        transaction.database = database
+        val result = transaction.run()
+
+        assertThat(existing.duration).isEqualTo(30_000L)
+        assertThat(existing.amount).isEqualTo(75.0)
+        assertThat(result.updated).hasSize(1)
+        assertThat(result.updated[0]).isEqualTo(existing)
+
+        verify(carbsDao).updateExistingEntry(existing)
+    }
+
+    @Test
+    fun `does not update duration to longer in nsClientMode`() {
         val nsId = "ns-123"
         val existing = createCarbs(id = 1, nsId = nsId, amount = 50.0, duration = 60_000L)
         val incoming = createCarbs(id = 0, nsId = nsId, amount = 75.0, duration = 120_000L)
@@ -116,12 +136,11 @@ class SyncNsCarbsTransactionTest {
         transaction.database = database
         val result = transaction.run()
 
-        assertThat(existing.duration).isEqualTo(120_000L)
-        assertThat(existing.amount).isEqualTo(75.0)
-        assertThat(result.updated).hasSize(1)
-        assertThat(result.updated[0]).isEqualTo(existing)
+        assertThat(existing.duration).isEqualTo(60_000L)
+        assertThat(existing.amount).isEqualTo(50.0)
+        assertThat(result.updated).isEmpty()
 
-        verify(carbsDao).updateExistingEntry(existing)
+        verify(carbsDao, never()).updateExistingEntry(any())
     }
 
     @Test
@@ -161,10 +180,10 @@ class SyncNsCarbsTransactionTest {
     }
 
     @Test
-    fun `handles both invalidation and duration update`() {
+    fun `handles both invalidation and duration update to shorter`() {
         val nsId = "ns-123"
         val existing = createCarbs(id = 1, nsId = nsId, amount = 50.0, duration = 60_000L, isValid = true)
-        val incoming = createCarbs(id = 0, nsId = nsId, amount = 75.0, duration = 120_000L, isValid = false)
+        val incoming = createCarbs(id = 0, nsId = nsId, amount = 75.0, duration = 30_000L, isValid = false)
 
         whenever(carbsDao.getByNSId(nsId)).thenReturn(existing)
 
@@ -173,7 +192,7 @@ class SyncNsCarbsTransactionTest {
         val result = transaction.run()
 
         assertThat(existing.isValid).isFalse()
-        assertThat(existing.duration).isEqualTo(120_000L)
+        assertThat(existing.duration).isEqualTo(30_000L)
         assertThat(existing.amount).isEqualTo(75.0)
         assertThat(result.invalidated).hasSize(1)
         assertThat(result.updated).hasSize(1)

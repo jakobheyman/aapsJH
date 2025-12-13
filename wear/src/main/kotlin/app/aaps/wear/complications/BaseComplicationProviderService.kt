@@ -22,8 +22,8 @@ import app.aaps.core.interfaces.rx.events.EventWearToMobile
 import app.aaps.core.interfaces.rx.weardata.EventData.ActionResendData
 import app.aaps.wear.R
 import app.aaps.wear.comm.DataLayerListenerServiceWear.Companion.INTENT_NEW_DATA
-import app.aaps.wear.complications.ComplicationTapBroadcastReceiver.Companion.getTapActionIntent
-import app.aaps.wear.complications.ComplicationTapBroadcastReceiver.Companion.getTapWarningSinceIntent
+import app.aaps.wear.complications.ComplicationTapActivity.Companion.getTapActionIntent
+import app.aaps.wear.complications.ComplicationTapActivity.Companion.getTapWarningSinceIntent
 import app.aaps.wear.data.RawDisplayData
 import app.aaps.wear.interaction.utils.Constants
 import app.aaps.wear.interaction.utils.DisplayFormat

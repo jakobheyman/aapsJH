@@ -70,6 +70,7 @@ import app.aaps.core.interfaces.rx.events.EventNewOpenLoopNotification
 import app.aaps.core.interfaces.rx.events.EventPreferenceChange
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.rx.events.EventRefreshOverview
+import app.aaps.core.interfaces.rx.events.EventRunningModeChange
 import app.aaps.core.interfaces.rx.events.EventScale
 import app.aaps.core.interfaces.rx.events.EventTempBasalChange
 import app.aaps.core.interfaces.rx.events.EventTempTargetChange
@@ -355,6 +356,10 @@ class OverviewFragment : DaggerFragment(), View.OnClickListener, OnLongClickList
             .toObservable(EventTempBasalChange::class.java)
             .observeOn(aapsSchedulers.io)
             .subscribe({ updateTemporaryBasal() }, fabricPrivacy::logException)
+        disposable += rxBus
+            .toObservable(EventRunningModeChange::class.java)
+            .observeOn(aapsSchedulers.io)
+            .subscribe({ processAps() }, fabricPrivacy::logException)
 
         refreshLoop = Runnable {
             refreshAll()
