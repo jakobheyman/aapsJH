@@ -114,8 +114,7 @@ class PlusMinusEditText @JvmOverloads constructor(
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             (binding.root.context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
         } else {
-            @Suppress("DEPRECATION")
-            binding.root.context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            binding.root.context.getSystemService(Vibrator::class.java)
         }
 
         vibrator.vibrate(VibrationEffect.createOneShot(10, VibrationEffect.DEFAULT_AMPLITUDE))

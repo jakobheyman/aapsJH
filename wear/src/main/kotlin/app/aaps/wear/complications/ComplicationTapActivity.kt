@@ -1,16 +1,14 @@
-@file:Suppress("DEPRECATION")
-
 package app.aaps.wear.complications
 
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.support.wearable.complications.ProviderUpdateRequester
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.core.os.BundleCompat
+import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.sharedPreferences.SP
@@ -22,7 +20,6 @@ import app.aaps.wear.interaction.menus.MainMenuActivity
 import app.aaps.wear.interaction.menus.StatusMenuActivity
 import app.aaps.wear.interaction.utils.Constants
 import app.aaps.wear.interaction.utils.DisplayFormat
-import app.aaps.wear.interaction.utils.WearUtil
 import dagger.android.support.DaggerAppCompatActivity
 import javax.inject.Inject
 
@@ -37,7 +34,6 @@ import javax.inject.Inject
  */
 class ComplicationTapActivity : DaggerAppCompatActivity() {
 
-    @Inject lateinit var wearUtil: WearUtil
     @Inject lateinit var displayFormat: DisplayFormat
     @Inject lateinit var sp: SP
     @Inject lateinit var aapsLogger: AAPSLogger
@@ -59,7 +55,7 @@ class ComplicationTapActivity : DaggerAppCompatActivity() {
             action: ComplicationAction
         ): PendingIntent {
             val intent = Intent(context, ComplicationTapActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 putExtra(EXTRA_PROVIDER_COMPONENT, provider)
                 putExtra(EXTRA_COMPLICATION_ID, complicationId)
                 putExtra(EXTRA_COMPLICATION_ACTION, action.toString())
@@ -86,7 +82,7 @@ class ComplicationTapActivity : DaggerAppCompatActivity() {
             since: Long
         ): PendingIntent {
             val intent = Intent(context, ComplicationTapActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 putExtra(EXTRA_PROVIDER_COMPONENT, provider)
                 putExtra(EXTRA_COMPLICATION_ID, complicationId)
                 putExtra(EXTRA_COMPLICATION_ACTION, action.toString())
@@ -120,12 +116,7 @@ class ComplicationTapActivity : DaggerAppCompatActivity() {
     private fun handleComplicationTap() {
         val extras = intent.extras ?: return
 
-        val provider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            extras.getParcelable(EXTRA_PROVIDER_COMPONENT, ComponentName::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            extras.getParcelable(EXTRA_PROVIDER_COMPONENT)
-        }
+        val provider = BundleCompat.getParcelable(extras, EXTRA_PROVIDER_COMPONENT, ComponentName::class.java)
 
         val complicationId = extras.getInt(EXTRA_COMPLICATION_ID)
         val complicationActionStr = extras.getString(EXTRA_COMPLICATION_ACTION, ComplicationAction.MENU.toString())
@@ -144,7 +135,7 @@ class ComplicationTapActivity : DaggerAppCompatActivity() {
 
         // Request an update for the complication that has just been tapped
         if (provider != null) {
-            val requester = ProviderUpdateRequester(this, provider)
+            val requester = ComplicationDataSourceUpdateRequester.create(this, provider)
             requester.requestUpdate(complicationId)
         }
 
@@ -158,7 +149,7 @@ class ComplicationTapActivity : DaggerAppCompatActivity() {
             ComplicationAction.STATUS -> intentOpen = Intent(this, StatusMenuActivity::class.java)
 
             ComplicationAction.WARNING_OLD, ComplicationAction.WARNING_SYNC -> {
-                val oneAndHalfMinuteAgo = wearUtil.timestamp() - (Constants.MINUTE_IN_MS + Constants.SECOND_IN_MS * 30)
+                val oneAndHalfMinuteAgo = System.currentTimeMillis() - (Constants.MINUTE_IN_MS + Constants.SECOND_IN_MS * 30)
                 val since = extras.getLong(EXTRA_COMPLICATION_SINCE, oneAndHalfMinuteAgo)
                 @StringRes val labelId = if (action == ComplicationAction.WARNING_SYNC) R.string.msg_warning_sync else R.string.msg_warning_old
                 val msg = String.format(getString(labelId), displayFormat.shortTimeSince(since))
