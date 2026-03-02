@@ -233,8 +233,8 @@ class TirImplTest {
 
         readings.forEach { value ->
             when {
-                value < 39.0 -> tir.error()
-                value >= 39.0 && value < lowThreshold -> tir.below()
+                value < 12.0 -> tir.error()
+                value >= 12.0 && value < lowThreshold -> tir.below()
                 value in lowThreshold..highThreshold -> tir.inRange()
                 value > highThreshold -> tir.above()
             }
@@ -253,8 +253,8 @@ class TirImplTest {
 
         readings.forEach { value ->
             when {
-                value < 39.0 -> tir.error()
-                value >= 39.0 && value < lowThreshold -> tir.below()
+                value < 12.0 -> tir.error()
+                value >= 12.0 && value < lowThreshold -> tir.below()
                 value in lowThreshold..highThreshold -> tir.inRange()
                 value > highThreshold -> tir.above()
             }
@@ -269,8 +269,8 @@ class TirImplTest {
 
         readings.forEach { value ->
             when {
-                value < 39.0 -> tir.error()
-                value >= 39.0 && value < lowThreshold -> tir.below()
+                value < 12.0 -> tir.error()
+                value >= 12.0 && value < lowThreshold -> tir.below()
                 value in lowThreshold..highThreshold -> tir.inRange()
                 value > highThreshold -> tir.above()
             }
@@ -285,8 +285,8 @@ class TirImplTest {
 
         readings.forEach { value ->
             when {
-                value < 39.0 -> tir.error()
-                value >= 39.0 && value < lowThreshold -> tir.below()
+                value < 12.0 -> tir.error()
+                value >= 12.0 && value < lowThreshold -> tir.below()
                 value in lowThreshold..highThreshold -> tir.inRange()
                 value > highThreshold -> tir.above()
             }
@@ -301,8 +301,8 @@ class TirImplTest {
 
         readings.forEach { value ->
             when {
-                value < 39.0 -> tir.error()
-                value >= 39.0 && value < lowThreshold -> tir.below()
+                value < 12.0 -> tir.error()
+                value >= 12.0 && value < lowThreshold -> tir.below()
                 value in lowThreshold..highThreshold -> tir.inRange()
                 value > highThreshold -> tir.above()
             }
@@ -317,8 +317,8 @@ class TirImplTest {
 
         readings.forEach { value ->
             when {
-                value < 39.0 -> tir.error()
-                value >= 39.0 && value < lowThreshold -> tir.below()
+                value < 12.0 -> tir.error()
+                value >= 12.0 && value < lowThreshold -> tir.below()
                 value in lowThreshold..highThreshold -> tir.inRange()
                 value > highThreshold -> tir.above()
             }

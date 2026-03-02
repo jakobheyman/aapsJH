@@ -34,10 +34,10 @@ internal interface GlucoseValueDao : TraceableDao<GlucoseValue> {
     @Query("SELECT * FROM $TABLE_GLUCOSE_VALUES WHERE unlikely(timestamp = :timestamp) AND likely(sourceSensor = :sourceSensor) AND likely(referenceId IS NULL)")
     fun findByTimestampAndSensor(timestamp: Long, sourceSensor: GlucoseValue.SourceSensor): GlucoseValue?
 
-    @Query("SELECT * FROM $TABLE_GLUCOSE_VALUES WHERE unlikely(timestamp >= :timestamp) AND likely(isValid = 1) AND likely(referenceId IS NULL) AND likely(value >= 39) ORDER BY timestamp ASC")
+    @Query("SELECT * FROM $TABLE_GLUCOSE_VALUES WHERE unlikely(timestamp >= :timestamp) AND likely(isValid = 1) AND likely(referenceId IS NULL) AND likely(value >= 12) ORDER BY timestamp ASC")
     fun compatGetBgReadingsDataFromTime(timestamp: Long): Single<List<GlucoseValue>>
 
-    @Query("SELECT * FROM $TABLE_GLUCOSE_VALUES WHERE unlikely(timestamp BETWEEN :start AND :end) AND likely(isValid = 1) AND likely(referenceId IS NULL) AND likely(value >= 39) ORDER BY timestamp ASC")
+    @Query("SELECT * FROM $TABLE_GLUCOSE_VALUES WHERE unlikely(timestamp BETWEEN :start AND :end) AND likely(isValid = 1) AND likely(referenceId IS NULL) AND likely(value >= 12) ORDER BY timestamp ASC")
     fun compatGetBgReadingsDataFromTime(start: Long, end: Long): Single<List<GlucoseValue>>
 
     // for WS we need 1 record only
