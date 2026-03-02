@@ -58,7 +58,6 @@ class AvgSmoothingPlugin @Inject constructor(
 
     private fun isValid(n: Double): Boolean {
         // For Dexcom: Below 39 is LOW, above 401 Dexcom just says HI
-        // aapsJH: change 39 to 12
-        return n > 12 && n < 401
+        return n > 39 && n < 401
     }
 }

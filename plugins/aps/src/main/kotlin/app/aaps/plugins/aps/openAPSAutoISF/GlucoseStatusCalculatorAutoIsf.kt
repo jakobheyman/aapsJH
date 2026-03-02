@@ -69,7 +69,7 @@ class GlucoseStatusCalculatorAutoIsf @Inject constructor(
         var minutesDur = 0L
         var n = 1
         for (i in 1 until sizeRecords) {
-            if (data[i].value > 12 && !data[i].filledGap) {
+            if (data[i].value > 39 && !data[i].filledGap) {
                 n += 1
                 val then = data[i]
                 val thenDate: Long = then.timestamp
@@ -122,7 +122,7 @@ class GlucoseStatusCalculatorAutoIsf @Inject constructor(
             var n = 0
             for (i in 0 until sizeRecords) {
                 val noGap = !data[i].filledGap
-                if (data[i].recalculated > 12 && noGap) {
+                if (data[i].recalculated > 39 && noGap) {
                     n += 1
                     val thenDate: Long
                     var bg: Double

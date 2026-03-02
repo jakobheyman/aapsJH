@@ -102,7 +102,7 @@ class DeltaCalculator @Inject constructor(
             return array.sum() / array.size
         }
 
-        private const val minBgValue = 12.0
+        private const val minBgValue = 39.0
         private const val minShortDeltaMinutes = 2.5
         private const val maxShortDeltaMinutes = 17.5
         private const val minLastDeltaMinutes = 2.5

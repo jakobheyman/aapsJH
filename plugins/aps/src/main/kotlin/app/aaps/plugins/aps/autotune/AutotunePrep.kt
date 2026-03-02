@@ -146,11 +146,10 @@ class AutotunePrep @Inject constructor(
         val treatments: MutableList<CA> = autotuneIob.meals
         val boluses: MutableList<BS> = autotuneIob.boluses
         // Bloc between #21 and # 54 replaced by bloc below (just remove BG value below 39, Collections.sort probably not necessary because BG values already sorted...)
-        // aapsJH: 39 changed to 12
         val glucose = autotuneIob.glucose
         val glucoseData: MutableList<GV> = ArrayList()
         for (i in glucose.indices) {
-            if (glucose[i].value > 12) {
+            if (glucose[i].value > 39) {
                 glucoseData.add(glucose[i])
             }
         }

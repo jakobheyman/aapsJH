@@ -42,8 +42,8 @@ class TirCalculatorImpl @Inject constructor(
                 tir = TirImpl(midnight, lowMgdl, highMgdl)
                 result.append(midnight, tir)
             }
-            if (bg.value < 12) tir.error()
-            if (bg.value >= 12 && bg.value < lowMgdl) tir.below()
+            if (bg.value < 39) tir.error()
+            if (bg.value >= 39 && bg.value < lowMgdl) tir.below()
             if (bg.value in lowMgdl..highMgdl) tir.inRange()
             if (bg.value > highMgdl) tir.above()
         }

@@ -1426,7 +1426,7 @@ class DataHandlerMobile @Inject constructor(
 
         apsResult
             ?.predictionsAsGv
-            ?.filter { it.value > 12 }
+            ?.filter { it.value > 39 }
             ?.forEach { bg ->
                 predictions.add(
                     EventData.SingleBg(
