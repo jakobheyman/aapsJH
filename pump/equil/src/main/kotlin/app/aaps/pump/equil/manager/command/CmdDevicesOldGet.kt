@@ -3,6 +3,7 @@ package app.aaps.pump.equil.manager.command
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.utils.notify
 import app.aaps.pump.equil.EquilConst
 import app.aaps.pump.equil.database.EquilHistoryRecord
 import app.aaps.pump.equil.manager.EquilCmdModel
@@ -116,7 +117,7 @@ class CmdDevicesOldGet(
         return null
     }
 
-    override fun decode(): EquilResponse? {
+    override fun decode(): EquilResponse {
         val reqModel = decodeModel()
         val data = Utils.hexStringToBytes(reqModel.ciphertext!!)
         val fv = data[12].toString() + "." + data[13]
@@ -128,14 +129,14 @@ class CmdDevicesOldGet(
         reqModel.ciphertext = Utils.bytesToHex(getNextData())
         synchronized(this) {
             cmdSuccess = true
-            (this as Object).notify()
+            notify()
         }
         return responseCmd(reqModel, "0000" + reqModel.code)
     }
 
     override fun decodeModel(): EquilCmdModel {
         val equilCmdModel = EquilCmdModel()
-        val list: MutableList<Byte?> = ArrayList<Byte?>()
+        val list: MutableList<Byte?> = ArrayList()
         var index = 0
         for (b in response!!.send) {
             if (index == 0) {
@@ -170,15 +171,14 @@ class CmdDevicesOldGet(
         )
         synchronized(this) {
             cmdSuccess = true
-            (this as Object).notify()
+            notify()
         }
     }
 
     fun isSupport(serialNumber: String): Boolean {
         val firstChar = serialNumber.firstOrNull()?.uppercaseChar()
-        val needsVersionCheck = setOf('0', '1', '3', 'A', 'D')
         return when (firstChar) {
-            in needsVersionCheck -> firmwareVersion >= EquilConst.EQUIL_SUPPORT_LEVEL
+            in EquilManager.VERSION_CHECK_SERIAL_PREFIXES -> firmwareVersion >= EquilConst.EQUIL_SUPPORT_LEVEL
             else -> true
         }
     }

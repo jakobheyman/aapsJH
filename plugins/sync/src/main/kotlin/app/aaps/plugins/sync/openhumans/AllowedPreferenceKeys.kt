@@ -109,11 +109,13 @@ private val allowedKeys = """
     bolussnooze_dia_divisor
     openaps
     openapsma_max_basal
+    openapssmb_min_basal
     openapsma_max_iob
     always_use_shortavg
     bolussnooze_dia_divisor
     openapssmb
     openapsma_max_basal
+    openapssmb_min_basal
     openapsmb_max_iob
     openapsama_useautosens
     use_smb
