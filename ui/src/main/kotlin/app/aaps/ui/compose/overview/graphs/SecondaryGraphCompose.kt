@@ -74,6 +74,16 @@ fun SecondaryGraphCompose(
 ) {
     if (seriesTypes.isEmpty()) return
 
+    // Ensure DEVIATIONS/DEV_SLOPE is always primary — DEVIATIONS requires the column layer,
+    // DEV_SLOPE needs primary to render both dsMax and dsMin lines
+    val orderedTypes = remember(seriesTypes) {
+        val mustBePrimary = setOf(SeriesType.DEVIATIONS, SeriesType.DEV_SLOPE)
+        if (seriesTypes.size >= 2 && seriesTypes[0] !in mustBePrimary && seriesTypes[1] in mustBePrimary)
+            listOf(seriesTypes[1], seriesTypes[0])
+        else
+            seriesTypes
+    }
+
     val hasRealTimeRange = derivedTimeRange != null
     val (minTimestamp, maxTimestamp) = derivedTimeRange ?: run {
         val now = System.currentTimeMillis()
@@ -94,9 +104,9 @@ fun SecondaryGraphCompose(
     // Collect data flows — only for selected series types
     // =========================================================================
 
-    // Primary series = left axis (seriesTypes[0]), secondary series = right axis (seriesTypes[1])
-    val primaryType = seriesTypes[0]
-    val secondaryType = seriesTypes.getOrNull(1)
+    // Primary series = left axis (orderedTypes[0]), secondary series = right axis (orderedTypes[1])
+    val primaryType = orderedTypes[0]
+    val secondaryType = orderedTypes.getOrNull(1)
     val isDualAxis = secondaryType != null
 
     val hasIob = primaryType == SeriesType.IOB
