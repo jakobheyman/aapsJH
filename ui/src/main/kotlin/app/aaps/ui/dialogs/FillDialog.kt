@@ -182,16 +182,6 @@ class FillDialog(val fm: FragmentManager) : DialogFragmentWithDate() {
                                 )
                             )
                         }
-                        if (preferences.get(BooleanKey.SiteRotationManagePump)) {
-                            SiteRotationDialog().also { srd ->
-                                srd.arguments = Bundle().also { args ->
-                                    args.putLong("time", eventTime)
-                                    args.putInt("siteMode", UiInteraction.SiteMode.EDIT.ordinal)
-                                    args.putInt("siteType", TE.Type.CANNULA_CHANGE.ordinal)
-                                }
-                                srd.show(fm, "SiteRotationViewDialog")
-                            }
-                        }
                     }
                     if (insulinChange)
                     // add a second for case of both checked
@@ -228,7 +218,6 @@ class FillDialog(val fm: FragmentManager) : DialogFragmentWithDate() {
     private fun requestPrimeBolus(insulin: Double, notes: String) {
         val detailedBolusInfo = DetailedBolusInfo()
         detailedBolusInfo.insulin = insulin
-        detailedBolusInfo.context = context
         detailedBolusInfo.bolusType = BS.Type.PRIMING
         detailedBolusInfo.notes = notes
         commandQueue.bolus(detailedBolusInfo, object : Callback() {

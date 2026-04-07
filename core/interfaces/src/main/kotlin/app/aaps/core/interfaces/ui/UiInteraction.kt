@@ -18,9 +18,6 @@ interface UiInteraction {
     /** The main activity of the application. */
     val mainActivity: Class<*>
 
-    /** The activity for displaying TDD stats. */
-    val tddStatsActivity: Class<*>
-
     /** The activity for browsing history. */
     val historyBrowseActivity: Class<*>
 
@@ -35,9 +32,6 @@ interface UiInteraction {
 
     /** The fragment for "My Preferences". */
     val myPreferenceFragment: Class<*>
-
-    /** The activity for the Quick Wizard list. */
-    val quickWizardListActivity: Class<*>
 
     companion object {
 
@@ -83,14 +77,6 @@ interface UiInteraction {
      * @param from A string indicating the source of the update request.
      */
     fun updateWidget(context: Context, from: String)
-
-    /**
-     * Shows the bolus wizard dialog.
-     * @param fragmentManager The fragment manager to use.
-     * @param carbs Optional pre-filled carbs value.
-     * @param name Optional pre-filled name/note.
-     */
-    fun runWizardDialog(fragmentManager: FragmentManager, carbs: Int? = null, name: String? = null)
 
     /**
      * Shows a dialog related to the loop status.
@@ -166,12 +152,6 @@ interface UiInteraction {
         /** Record a new site change. */
         EDIT(2)
     }
-
-    /**
-     * Shows the site rotation dialog.
-     * @param fragmentManager The fragment manager to use.
-     */
-    fun runSiteRotationDialog(fragmentManager: FragmentManager)
 
     /**
      * Defines modes for the profile viewer dialog.
