@@ -4,10 +4,10 @@ import android.content.Context
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.interfaces.aps.APS
 import app.aaps.core.interfaces.aps.Sensitivity
+import app.aaps.core.interfaces.calibration.Calibration
 import app.aaps.core.interfaces.constraints.Objectives
 import app.aaps.core.interfaces.constraints.Safety
 import app.aaps.core.interfaces.iob.IobCobCalculator
-import app.aaps.core.interfaces.overview.Overview
 
 import app.aaps.core.interfaces.pump.Pump
 import app.aaps.core.interfaces.pump.PumpWithConcentration
@@ -49,12 +49,6 @@ interface ActivePlugin {
     val activeSensitivity: Sensitivity
 
     /**
-     *  Currently selected Overview plugin
-     *  Always OverviewPlugin
-     */
-    val activeOverview: Overview
-
-    /**
      *  Currently selected Safety plugin
      *  Always SafetyPlugin
      */
@@ -75,6 +69,12 @@ interface ActivePlugin {
      *  Smoothing plugin
      */
     val activeSmoothing: Smoothing
+
+    /**
+     *  Calibration plugin (per-sensor override on top of factory-calibrated values).
+     *  Defaults to no-op when no override plugin is enabled.
+     */
+    val activeCalibration: Calibration
 
     /**
      *  Currently selected NsClient plugin

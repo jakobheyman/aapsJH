@@ -11,9 +11,6 @@ interface NotificationManager {
     /** Remove expired and validity-failed notifications on demand. */
     fun cleanUp()
 
-    /** Create the Android notification channel for system notifications. */
-    fun createNotificationChannel()
-
     fun post(
         id: NotificationId,
         text: String,
@@ -53,6 +50,16 @@ interface NotificationManager {
 
     /** Dismiss a specific instance by handle. */
     fun dismiss(handle: NotificationHandle)
+
+    /**
+     * Silence and dismiss every currently audible alarm. Used by the global "mute all" entry
+     * points (Wear snooze/mute gesture, full-screen acknowledge, app onTerminate). Stops both the
+     * internal-notification (`AlarmSoundPlayer.OWNER_INTERNAL`) and full-screen
+     * (`AlarmSoundPlayer.OWNER_FULLSCREEN`) audio, cancels their system notifications, and removes
+     * the audible alarms from the registry so the in-app cards clear. Non-audible notifications are
+     * left untouched.
+     */
+    fun muteAllAlarms()
 
     companion object {
 

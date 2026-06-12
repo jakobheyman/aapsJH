@@ -16,7 +16,9 @@ import app.aaps.pump.danars.comm.DanaRSPacketGeneralInitialScreenInformation
 import app.aaps.pump.danars.comm.DanaRSPacketOptionSetUserOption
 import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
@@ -68,7 +70,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
         danaRSService.fabricPrivacy = fabricPrivacy
         danaRSService.pumpSync = pumpSync
         danaRSService.dateUtil = dateUtil
-        danaRSService.bolusProgressData = BolusProgressData()
+        danaRSService.bolusProgressData = BolusProgressData(ch, rh, CoroutineScope(Dispatchers.Unconfined))
         danaRSService.pumpEnactResultProvider = pumpEnactResultProvider
         danaRSService.danaRSPacketGeneralInitialScreenInformation = danaRSPacketGeneralInitialScreenInformationProvider
         danaRSService.danaRSPacketOptionSetUserOption = danaRSPacketOptionSetUserOptionProvider
@@ -172,7 +174,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testTempBasal_notConnected() {
+    fun testTempBasal_notConnected() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.tempBasal(120, 1)
@@ -181,7 +183,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testTempBasalStop_notConnected() {
+    fun testTempBasalStop_notConnected() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.tempBasalStop()
@@ -190,14 +192,14 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testTempBasalShortDuration_invalidDuration() {
+    fun testTempBasalShortDuration_invalidDuration() = runTest {
         val result = danaRSService.tempBasalShortDuration(120, 20)
 
         assertThat(result).isFalse()
     }
 
     @Test
-    fun testTempBasalShortDuration_validDuration15() {
+    fun testTempBasalShortDuration_validDuration15() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.tempBasalShortDuration(120, 15)
@@ -207,7 +209,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testTempBasalShortDuration_validDuration30() {
+    fun testTempBasalShortDuration_validDuration30() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.tempBasalShortDuration(120, 30)
@@ -217,7 +219,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testExtendedBolus_notConnected() {
+    fun testExtendedBolus_notConnected() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.extendedBolus(2.0, 2)
@@ -226,7 +228,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testExtendedBolusStop_notConnected() {
+    fun testExtendedBolusStop_notConnected() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.extendedBolusStop()
@@ -235,9 +237,9 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testUpdateBasalsInPump_notConnected() {
+    fun testUpdateBasalsInPump_notConnected() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
-        runBlocking { `when`(profileFunction.getProfile()).thenReturn(effectiveProfile) }
+        `when`(profileFunction.getProfile()).thenReturn(effectiveProfile)
 
         val result = danaRSService.updateBasalsInPump(validProfile)
 
@@ -277,7 +279,7 @@ class DanaRSServiceTest : TestBaseWithProfile() {
     }
 
     @Test
-    fun testHighTempBasal() {
+    fun testHighTempBasal() = runTest {
         `when`(bleComm.isConnected).thenReturn(false)
 
         val result = danaRSService.highTempBasal(150)

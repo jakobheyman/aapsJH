@@ -20,7 +20,7 @@ repositories {
 
 fun generateGitBuild(): String {
     try {
-        val processBuilder = ProcessBuilder("git", "describe", "--always")
+        val processBuilder = ProcessBuilder("git", "describe", "--always", "--abbrev=7")
         val output = File.createTempFile("git-build", "")
         processBuilder.redirectOutput(output)
         val process = processBuilder.start()
@@ -95,11 +95,11 @@ android {
         buildConfigField("String", "HEAD", "\"${generateGitBuild()}\"")
         buildConfigField("String", "COMMITTED", "\"${allCommitted()}\"")
 
-        // For Dagger injected instrumentation tests in app module
-        testInstrumentationRunner = "app.aaps.runners.InjectedTestRunner"
+        // For Hilt injected instrumentation tests in app module
+        testInstrumentationRunner = "app.aaps.runners.HiltTestRunner"
     }
 
-    flavorDimensions.add("standard")
+    flavorDimensions += "standard"
     productFlavors {
         create("full") {
             isDefault = true
@@ -171,18 +171,15 @@ dependencies {
     implementation(project(":shared:impl"))
     implementation(project(":core:data"))
     implementation(project(":core:objects"))
-    implementation(project(":core:graph"))
-    implementation(project(":core:graphview"))
     implementation(project(":core:interfaces"))
     implementation(project(":core:keys"))
-    implementation(project(":core:libraries"))
     implementation(project(":core:nssdk"))
     implementation(project(":core:utils"))
     implementation(project(":core:ui"))
-    implementation(project(":core:validators"))
     implementation(project(":ui"))
     implementation(project(":plugins:aps"))
     implementation(project(":plugins:automation"))
+    implementation(project(":plugins:calibration"))
     implementation(project(":plugins:configuration"))
     implementation(project(":plugins:constraints"))
     implementation(project(":plugins:main"))
@@ -227,8 +224,14 @@ dependencies {
     testImplementation(project(":shared:tests"))
     androidTestImplementation(project(":shared:tests"))
     androidTestImplementation(libs.androidx.test.rules)
+    // Initializes WorkManager for instrumented tests (BaseTestApp), since the production
+    // Configuration.Provider/manifest initializer don't apply under the Hilt test application.
+    androidTestImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.org.skyscreamer.jsonassert)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    // Rhino is needed by the openAPS adapter test fixtures under app/src/androidTest
+    // (these files reference org.mozilla.javascript.* classes directly).
+    androidTestImplementation(libs.org.mozilla.rhino)
 
     debugImplementation(libs.com.squareup.leakcanary.android)
 
@@ -240,9 +243,17 @@ dependencies {
     ksp(libs.com.google.dagger.compiler)
     implementation(libs.com.google.dagger.hilt.android)
     ksp(libs.com.google.dagger.hilt.compiler)
+    // Hilt WorkManager integration: HiltWorkerFactory + @HiltWorker assisted-injection glue.
+    // androidx.hilt:hilt-compiler is a SEPARATE annotation processor from the dagger hilt-compiler above.
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+    // Hilt instrumentation testing: lets androidTest reuse the production @InstallIn graph
+    // (single source of truth) with @TestInstallIn overrides instead of a hand-maintained component.
+    androidTestImplementation(libs.com.google.dagger.hilt.android.testing)
+    kspAndroidTest(libs.com.google.dagger.hilt.compiler)
 
     // MainApp
-    api(libs.com.uber.rxdogtag2.rxdogtag)
+    implementation(libs.com.uber.rxdogtag2.rxdogtag)
     // Remote config
     api(libs.com.google.firebase.config)
     // Navigation Compose

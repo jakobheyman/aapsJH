@@ -26,6 +26,7 @@ import app.aaps.core.interfaces.receivers.ReceiverStatusStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.Event
 import app.aaps.core.interfaces.rx.events.EventAutosensCalculationFinished
 import app.aaps.core.interfaces.rx.events.EventLoopUpdateGui
@@ -45,8 +46,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -86,7 +85,7 @@ class TizenPlugin @Inject constructor(
     private val disposable = CompositeDisposable()
     private var scope: CoroutineScope? = null
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         val newScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         scope = newScope
@@ -99,15 +98,14 @@ class TizenPlugin @Inject constructor(
             .observeOn(aapsSchedulers.io)
             .subscribe({ sendData(it) }, fabricPrivacy::logException)
         bolusProgressData.state
-            .onEach { state ->
+            .collectResilient(newScope, aapsLogger, LTag.CORE) { state ->
                 if (state != null && !state.isSMB) {
                     sendBolusProgressData(state)
                 }
             }
-            .launchIn(newScope)
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         disposable.clear()
         scope?.cancel()
         scope = null
@@ -209,7 +207,7 @@ class TizenPlugin @Inject constructor(
         bundle.putLong("basalTimeStamp", now)
         bundle.putDouble("baseBasal", profile.getBasal())
         bundle.putString("profile", runBlocking { profileFunction.getProfileName() })
-        processedTbrEbData.getTempBasalIncludingConvertedExtended(now)?.let {
+        runBlocking { processedTbrEbData.getTempBasalIncludingConvertedExtended(now) }?.let {
             bundle.putLong("tempBasalStart", it.timestamp)
             bundle.putLong("tempBasalDurationInMinutes", it.durationInMinutes)
             if (it.isAbsolute) bundle.putDouble("tempBasalAbsolute", it.rate) // U/h for absolute TBR

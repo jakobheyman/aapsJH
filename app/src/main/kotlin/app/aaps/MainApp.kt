@@ -7,9 +7,13 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.Configuration
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.ICfg
@@ -17,6 +21,7 @@ import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.model.TT
 import app.aaps.core.data.model.TTPreset
+import app.aaps.core.data.time.T
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
@@ -39,24 +44,29 @@ import app.aaps.core.interfaces.notifications.NotificationLevel
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
-import app.aaps.core.interfaces.profile.LocalProfileManager
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.protection.ExportPasswordDataStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventAppInitialized
+import app.aaps.core.interfaces.rx.events.EventShowSnackbar
 import app.aaps.core.interfaces.sharedPreferences.SP
+import app.aaps.core.interfaces.tempTargets.toJson
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.interfaces.utils.SafeParse
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.interfaces.versionChecker.VersionCheckerUtils
+import app.aaps.core.interfaces.widget.WidgetUpdater
+import app.aaps.core.keys.BooleanComposedKey
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.LongComposedKey
+import app.aaps.core.keys.LongNonKey
 import app.aaps.core.keys.ProfileComposedBooleanKey
 import app.aaps.core.keys.ProfileComposedStringKey
 import app.aaps.core.keys.StringKey
@@ -71,7 +81,8 @@ import app.aaps.database.AppRepository
 import app.aaps.implementation.lifecycle.ProcessLifecycleListener
 import app.aaps.implementation.plugin.PluginStore
 import app.aaps.implementation.receivers.NetworkChangeReceiver
-import app.aaps.plugins.configuration.keys.ConfigurationBooleanComposedKey
+import app.aaps.plugins.aps.loop.runningMode.RunningModeExpiryScheduler
+import app.aaps.plugins.aps.loop.runningMode.RunningModeReconciler
 import app.aaps.plugins.constraints.objectives.keys.ObjectivesLongComposedKey
 import app.aaps.plugins.constraints.signatureVerifier.SignatureVerifierPlugin
 import app.aaps.receivers.BTReceiver
@@ -79,8 +90,6 @@ import app.aaps.receivers.ChargingStateReceiver
 import app.aaps.receivers.KeepAliveWorker
 import app.aaps.receivers.TimeDateOrTZChangeReceiver
 import app.aaps.ui.activityMonitor.ActivityMonitor
-import app.aaps.core.interfaces.tempTargets.toJson
-import app.aaps.ui.widget.Widget
 import app.aaps.utils.configureLeakCanary
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseApp
@@ -109,10 +118,20 @@ import kotlin.reflect.KMutableProperty
 import kotlin.reflect.full.declaredMemberProperties
 
 @HiltAndroidApp
-class MainApp : Application(), HasAndroidInjector {
+class MainApp : Application(), HasAndroidInjector, Configuration.Provider {
 
     @Inject lateinit var androidInjector: DispatchingAndroidInjector<Any>
     override fun androidInjector(): AndroidInjector<Any> = androidInjector
+
+    // WorkManager on-demand initialization. HiltWorkerFactory constructs @HiltWorker workers via
+    // assisted injection; workers not yet migrated return null from it and fall back to WorkManager's
+    // default reflective factory (which self-injects through HasAndroidInjector). The default
+    // androidx.startup WorkManagerInitializer is removed in AndroidManifest.xml so this config wins.
+    @Inject lateinit var hiltWorkerFactory: HiltWorkerFactory
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(hiltWorkerFactory)
+            .build()
 
     @Inject lateinit var pluginStore: PluginStore
     @Inject lateinit var aapsLogger: AAPSLogger
@@ -138,13 +157,16 @@ class MainApp : Application(), HasAndroidInjector {
     @Inject lateinit var repository: AppRepository
     @Inject lateinit var hardLimits: HardLimits
     @Inject lateinit var activePlugin: ActivePlugin
-    @Inject lateinit var localProfileManager: LocalProfileManager
+    @Inject lateinit var profileRepository: ProfileRepository
     @Inject lateinit var localInsulinManager: InsulinManager
     @Inject lateinit var constraintChecker: ConstraintsChecker
     @Inject lateinit var signatureVerifierPlugin: SignatureVerifierPlugin
     @Inject lateinit var fileListProvider: FileListProvider
     @Inject lateinit var cryptoUtil: CryptoUtil
     @Inject lateinit var exportPasswordDataStore: ExportPasswordDataStore
+    @Inject lateinit var widgetUpdater: WidgetUpdater
+    @Inject lateinit var runningModeReconciler: RunningModeReconciler
+    @Inject lateinit var runningModeExpiryScheduler: RunningModeExpiryScheduler
     @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
     private lateinit var insulinLabel: String
@@ -155,18 +177,40 @@ class MainApp : Application(), HasAndroidInjector {
     private lateinit var refreshWidget: Runnable
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    companion object {
-
-        /** Throttle splash progress updates to avoid excessive StateFlow emissions */
-        private const val PROGRESS_UPDATE_INTERVAL = 10
-    }
-
     override fun onCreate() {
         super.onCreate()
 
         // Here should be everything injected
         aapsLogger.debug("onCreate")
         ProcessLifecycleOwner.get().lifecycle.addObserver(processLifecycleListener.get())
+
+        // Background fallback for EventShowSnackbar: when no activity is STARTED
+        // (app in background / process alive but UI offscreen), promote the
+        // snackbar to a system Notification so the message is not lost.
+        // Visible activities host their own GlobalSnackbarHost that also
+        // subscribes; those win while UI is present.
+        appScope.launch {
+            rxBus.toFlow(EventShowSnackbar::class.java).collect { event ->
+                val uiVisible = ProcessLifecycleOwner.get().lifecycle.currentState
+                    .isAtLeast(Lifecycle.State.STARTED)
+                if (!uiVisible) {
+                    notificationManager.post(
+                        id = NotificationId.SNACKBAR_FALLBACK,
+                        text = event.message,
+                        // URGENT is reserved for pump/loop alarms that play alarm-stream
+                        // sounds and wake users. Generic snackbar errors — "failed to save
+                        // preference", etc. — route through NORMAL instead.
+                        level = when (event.type) {
+                            EventShowSnackbar.Type.Error   -> NotificationLevel.NORMAL
+                            EventShowSnackbar.Type.Warning -> NotificationLevel.NORMAL
+                            EventShowSnackbar.Type.Success -> NotificationLevel.INFO
+                            EventShowSnackbar.Type.Info    -> NotificationLevel.INFO
+                        },
+                        validMinutes = 30
+                    )
+                }
+            }
+        }
         // Configure LeakCanary with Firebase reporting
         // Memory leaks will be uploaded to Firebase Crashlytics via FabricPrivacy.logException
         configureLeakCanary(
@@ -181,10 +225,20 @@ class MainApp : Application(), HasAndroidInjector {
                 config.updateInitProgress(getString(R.string.migrating_preferences))
                 doMigrations()
 
+                // Defragment the DB while it is quiescent: plugins, loop, sync and UI all start
+                // later, so the (memory heavy) VACUUM has the DB to itself. Runs at most monthly.
+                vacuumDatabaseIfDue()
+
                 // Register and initialize plugins
                 config.updateInitProgress(getString(R.string.initializing_plugins))
                 pluginStore.plugins = plugins
                 configBuilder.initialize()
+
+                // Running-mode reconciler + expiry scheduler. Start after plugins are registered:
+                // the reconciler's startup-drift check reads the active pump, which requires
+                // pluginStore.plugins to be populated. Both internally gated by config.APS.
+                runningModeReconciler.start()
+                runningModeExpiryScheduler.start()
 
                 // Data migrations (DB I/O)
                 dataMigrations()
@@ -195,6 +249,73 @@ class MainApp : Application(), HasAndroidInjector {
                 aapsLogger.error(LTag.CORE, "Fatal initialization error", e)
                 config.initFailed(e.message ?: "Unknown error")
             }
+        }
+    }
+
+    // Perform a full VACUUM at most once a month. VACUUM defragments the DB file and reclaims
+    // space, restoring query performance that degrades after long use. It is heavy and memory
+    // intensive, so it runs only here at startup while nothing else touches the DB (this avoids
+    // the SQLITE_NOMEM crash seen when VACUUM overlapped live DB activity).
+    private suspend fun vacuumDatabaseIfDue() {
+        val lastRun = preferences.get(LongNonKey.LastVacuumRun)
+        if (lastRun >= dateUtil.now() - T.days(30).msecs()) return
+
+        // Crash-loop guard. VACUUM can die below the JVM (native SQLite abort / OOM) in a way no
+        // try/catch can intercept — the process just vanishes, leaving no log. If that happened last
+        // time, the committed flag below is still set (the finally never ran). Detect it, skip
+        // VACUUM so the app can boot, and back off a month instead of re-crashing on every launch.
+        if (preferences.get(BooleanNonKey.VacuumInProgress)) {
+            aapsLogger.error(LTag.CORE, "Previous startup VACUUM did not finish (likely native crash) — skipping for 30 days")
+            // Report to Firebase so we get a fleet-wide count of users hit by a crashing startup VACUUM.
+            fabricPrivacy.logCustom("db_vacuum_crash_recovered", Bundle())
+            preferences.put(BooleanNonKey.VacuumInProgress, false)
+            preferences.put(LongNonKey.LastVacuumRun, dateUtil.now())
+            return
+        }
+
+        config.updateInitProgress(getString(R.string.optimizing_database))
+        try {
+            // Log size + per-table counts (total / older-than-retention backlog / tracked changes)
+            // before VACUUM, so a crash report tells us whether the DB is the problem. 6*31 mirrors
+            // KeepAliveWorker.databaseCleanup's retention so "deletable" reflects the real backlog.
+            val info = persistenceLayer.databaseMaintenanceInfo(retentionDays = 6L * 31)
+            aapsLogger.info(LTag.CORE, "Startup DB maintenance, pre-VACUUM diagnostics:\n${info.report}")
+            // Crashlytics breadcrumb: attaches the diagnostics to any exception logged below.
+            fabricPrivacy.logMessage("Pre-VACUUM: ${info.report}")
+            val dbMb = info.dbSizeBytes / 1_048_576
+            // VACUUM rebuilds the whole DB into a temporary copy, so it needs roughly the DB size
+            // again in free space. Skip (and retry next launch) if there isn't enough, to avoid a
+            // SQLITE_FULL failure mid-rebuild.
+            if (info.availableBytes in 0 until info.dbSizeBytes * 2) {
+                val freeMb = info.availableBytes / 1_048_576
+                aapsLogger.warn(LTag.CORE, "Skipping startup VACUUM: free $freeMb MB < 2x DB $dbMb MB")
+                fabricPrivacy.logCustom("db_vacuum_skip_space", Bundle().apply {
+                    putLong("db_mb", dbMb)
+                    putLong("free_mb", freeMb)
+                })
+                return
+            }
+            // Commit the marker synchronously BEFORE running: a plain put() uses apply() and may not
+            // reach disk before an early native abort (e.g. during the wal_checkpoint VACUUM starts with).
+            sp.edit(commit = true) { putBoolean(BooleanNonKey.VacuumInProgress.key, true) }
+            persistenceLayer.vacuumDatabase()
+            // Only advance the timestamp on success, so a transient failure (e.g. DB busy because a
+            // persisted worker is running) is retried on a future launch instead of suppressed for a month.
+            preferences.put(LongNonKey.LastVacuumRun, dateUtil.now())
+            aapsLogger.debug(LTag.CORE, "Startup VACUUM done")
+            // Fleet overview of DB size / cleanup backlog / change-row volume across users.
+            fabricPrivacy.logCustom("db_vacuum_ok", Bundle().apply {
+                putLong("db_mb", dbMb)
+                putLong("deletable", info.deletableRows)
+                putLong("changes", info.changeRows)
+            })
+        } catch (e: Throwable) {
+            // Throwable, not just Exception: a JVM OutOfMemoryError here must not abort app init.
+            aapsLogger.error(LTag.CORE, "Startup VACUUM failed", e)
+            // Catchable failures (SQLiteException, OOM) → Crashlytics non-fatal for the overview.
+            fabricPrivacy.logException(e)
+        } finally {
+            preferences.put(BooleanNonKey.VacuumInProgress, false)
         }
     }
 
@@ -225,7 +346,9 @@ class MainApp : Application(), HasAndroidInjector {
         handler.postDelayed(
             {
                 // log version
-                appScope.launch { persistenceLayer.insertVersionChangeIfChanged(config.VERSION_NAME, BuildConfig.VERSION_CODE, gitRemote, commitHash) }
+                appScope.launch {
+                    persistenceLayer.insertVersionChangeIfChanged(config.VERSION_NAME, BuildConfig.VERSION_CODE, gitRemote, commitHash)
+                }
                 // log app start
                 if (preferences.get(BooleanKey.NsClientLogAppStart))
                     appScope.launch {
@@ -250,7 +373,7 @@ class MainApp : Application(), HasAndroidInjector {
         //  schedule widget update
         refreshWidget = Runnable {
             handler.postDelayed(refreshWidget, 60000)
-            Widget.updateWidget(this@MainApp, "ScheduleEveryMin")
+            widgetUpdater.update("ScheduleEveryMin")
         }
         handler.postDelayed(refreshWidget, 5000)
         setUserStats()
@@ -261,7 +384,7 @@ class MainApp : Application(), HasAndroidInjector {
         aapsLogger.debug("doInit end")
     }
 
-    private fun setUserStats() {
+    private suspend fun setUserStats() {
         if (!fabricPrivacy.fabricEnabled()) return
         val closedLoopEnabled = if (constraintChecker.isClosedLoopAllowed().value()) "CLOSED_LOOP_ENABLED" else "CLOSED_LOOP_DISABLED"
         val remote = config.REMOTE.lowercase(Locale.getDefault())
@@ -274,11 +397,11 @@ class MainApp : Application(), HasAndroidInjector {
         fabricPrivacy.setUserProperty("Mode", config.APPLICATION_ID + "-" + closedLoopEnabled)
         fabricPrivacy.setUserProperty("Language", preferences.getIfExists(StringKey.GeneralLanguage) ?: Locale.getDefault().language)
         fabricPrivacy.setUserProperty("Version", config.VERSION_NAME)
-        fabricPrivacy.setUserProperty("HEAD", BuildConfig.HEAD)
+        fabricPrivacy.setUserProperty("HEAD", BuildConfig.BUILDVERSION)
         fabricPrivacy.setUserProperty("Remote", remote)
         val hashes: List<String> = signatureVerifierPlugin.shortHashes()
         if (hashes.isNotEmpty()) fabricPrivacy.setUserProperty("Hash", hashes[0])
-        activePlugin.activePump.let { fabricPrivacy.setUserProperty("Pump", it::class.java.simpleName) }
+        activePlugin.activePumpInternal.let { fabricPrivacy.setUserProperty("Pump", it::class.java.simpleName) }
         if (!config.AAPSCLIENT && !config.PUMPCONTROL)
             activePlugin.activeAPS?.let { fabricPrivacy.setUserProperty("Aps", it::class.java.simpleName) }
         activePlugin.activeBgSource.let { fabricPrivacy.setUserProperty("BgSource", it::class.java.simpleName) }
@@ -456,12 +579,11 @@ class MainApp : Application(), HasAndroidInjector {
         for ((key, value) in keys) {
             if (key.startsWith("ConfigBuilder_") && key.endsWith("_Enabled")) {
                 val plugin = key.split("_")[1] + "_" + key.split("_")[2]
-                preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderEnabled, plugin, value = value as Boolean)
+                preferences.put(BooleanComposedKey.ConfigBuilderEnabled, plugin, value = value as Boolean)
                 sp.remove(key)
             }
             if (key.startsWith("ConfigBuilder_") && key.endsWith("_Visible")) {
-                val plugin = key.split("_")[1] + "_" + key.split("_")[2]
-                preferences.put(ConfigurationBooleanComposedKey.ConfigBuilderVisible, plugin, value = value as Boolean)
+                // Legacy fragment-visibility pref — no longer tracked; drop during migration.
                 sp.remove(key)
             }
         }
@@ -628,15 +750,13 @@ class MainApp : Application(), HasAndroidInjector {
         // Check if old preferences exist (existing installation vs new installation)
         val hasOldPreferences = sp.contains("eatingsoon_target")
 
-        val units = profileFunction.getUnits()
-
         // Create 3 default presets - values always stored in mg/dL
         val presets = listOf(
             TTPreset(
                 id = "eatingsoon",
                 reason = TT.Reason.EATING_SOON,
                 targetValue = if (hasOldPreferences) {
-                    profileUtil.convertToMgdl(sp.getDouble("eatingsoon_target", 90.0), units)
+                    profileUtil.convertToMgdlDetect(sp.getDouble("eatingsoon_target", 90.0))
                 } else {
                     Constants.DEFAULT_TT_EATING_SOON_TARGET
                 },
@@ -651,7 +771,7 @@ class MainApp : Application(), HasAndroidInjector {
                 id = "activity",
                 reason = TT.Reason.ACTIVITY,
                 targetValue = if (hasOldPreferences) {
-                    profileUtil.convertToMgdl(sp.getDouble("activity_target", 140.0), units)
+                    profileUtil.convertToMgdlDetect(sp.getDouble("activity_target", 140.0))
                 } else {
                     Constants.DEFAULT_TT_ACTIVITY_TARGET
                 },
@@ -666,7 +786,7 @@ class MainApp : Application(), HasAndroidInjector {
                 id = "hypo",
                 reason = TT.Reason.HYPOGLYCEMIA,
                 targetValue = if (hasOldPreferences) {
-                    profileUtil.convertToMgdl(sp.getDouble("hypo_target", 160.0), units)
+                    profileUtil.convertToMgdlDetect(sp.getDouble("hypo_target", 160.0))
                 } else {
                     Constants.DEFAULT_TT_HYPO_TARGET
                 },
@@ -687,84 +807,37 @@ class MainApp : Application(), HasAndroidInjector {
 
     private suspend fun dataMigrations() {
         // Migrate to database 33 (ICfg)
-        // Grab default value first
-        var runningICfg = if (profileNameToDia.size == 0) // no migration, get running iCfg from running Profile
-                profileFunction.getProfile()?.iCfg ?: localInsulinManager.iCfg
-            else {  // migration, create running iCfg from previous runningProfile dia and slected InsulinPlugin for peak
-                val dia = (profileFunction.getProfile() as ProfileSealed.EPS?)?.profileName?.let { profileName ->
-                    profileNameToDia[profileName]
-                }
-                val insulinEndTime = ((dia ?: hardLimits.maxDia()) * 3600 * 1000).toLong()
-                ICfg("", insulinEndTime, insulinPeakTime, 1.0).also {
-                    it.insulinNickname = insulinLabel
-                    it.insulinLabel = "$insulinLabel ${localInsulinManager.buildSuffix(it.peak, it.dia, it.concentration)}"
-                }
+        val runningICfg = if (profileNameToDia.isEmpty())
+            profileFunction.getProfile()?.iCfg ?: localInsulinManager.iCfg
+        else {
+            val dia = (profileFunction.getProfile() as ProfileSealed.EPS?)?.profileName?.let { profileName ->
+                profileNameToDia[profileName]
             }
-
-        if (!localInsulinManager.insulinAlreadyExists(runningICfg)) { // Add running insulin in InsulinManager if missing
-            localInsulinManager.addNewInsulin(runningICfg, keepName = true)
+            val insulinEndTime = ((dia ?: hardLimits.maxDia()) * 3600 * 1000).toLong()
+            ICfg("", insulinEndTime, insulinPeakTime, 1.0).also {
+                it.insulinNickname = insulinLabel
+                it.insulinLabel = "$insulinLabel ${localInsulinManager.buildSuffix(it.peak, it.dia, it.concentration)}"
+            }
         }
 
-        var totalMigrated = 0
+        if (!localInsulinManager.insulinAlreadyExists(runningICfg))
+            localInsulinManager.addNewInsulin(runningICfg, keepName = true)
+
+        val label = runningICfg.insulinLabel
+        val end = runningICfg.insulinEndTime
+        val peak = runningICfg.insulinPeakTime
+        val conc = runningICfg.concentration
 
         config.updateInitProgress(rh.get().gs(R.string.migrating_profile_switches))
-        val profileSwitches = persistenceLayer.getProfileSwitches()
-        val unmigrated = profileSwitches.filter { it.iCfg.insulinEndTime == -1L }
-        if (unmigrated.isNotEmpty()) {
-            val total = unmigrated.size
-            val step = rh.get().gs(R.string.migrating_profile_switches)
-            config.updateInitProgress(step, 0, total)
-            unmigrated.forEachIndexed { index, ps ->
-                ps.iCfg.insulinLabel = runningICfg.insulinLabel
-                ps.iCfg.insulinEndTime = runningICfg.insulinEndTime
-                ps.iCfg.insulinPeakTime = runningICfg.insulinPeakTime
-                ps.iCfg.concentration = runningICfg.concentration
-                persistenceLayer.updateProfileSwitchNoLogging(ps)
-                if ((index + 1) % PROGRESS_UPDATE_INTERVAL == 0 || index + 1 == total)
-                    config.updateInitProgress(step, index + 1, total)
-            }
-            totalMigrated += unmigrated.size
-        }
+        val migratedPs = repository.bulkMigrateProfileSwitchInsulinConfig(label, end, peak, conc)
 
         config.updateInitProgress(rh.get().gs(R.string.migrating_effective_profile_switches))
-        val effectiveProfileSwitches = persistenceLayer.getEffectiveProfileSwitches()
-        val unmigratedEps = effectiveProfileSwitches.filter { it.iCfg.insulinEndTime == -1L }
-        if (unmigratedEps.isNotEmpty()) {
-            val total = unmigratedEps.size
-            val step = rh.get().gs(R.string.migrating_effective_profile_switches)
-            config.updateInitProgress(step, 0, total)
-            unmigratedEps.forEachIndexed { index, eps ->
-                eps.iCfg.insulinLabel = runningICfg.insulinLabel
-                eps.iCfg.insulinEndTime = runningICfg.insulinEndTime
-                eps.iCfg.insulinPeakTime = runningICfg.insulinPeakTime
-                eps.iCfg.concentration = runningICfg.concentration
-                persistenceLayer.updateEffectiveProfileSwitchNoLogging(eps)
-                if ((index + 1) % PROGRESS_UPDATE_INTERVAL == 0 || index + 1 == total)
-                    config.updateInitProgress(step, index + 1, total)
-            }
-            totalMigrated += unmigratedEps.size
-        }
+        val migratedEps = repository.bulkMigrateEffectiveProfileSwitchInsulinConfig(label, end, peak, conc)
 
         config.updateInitProgress(rh.get().gs(R.string.migrating_boluses))
-        val boluses = persistenceLayer.getBoluses()
-        val unmigratedBoluses = boluses.filter { it.iCfg.insulinEndTime == -1L }
-        if (unmigratedBoluses.isNotEmpty()) {
-            val total = unmigratedBoluses.size
-            val step = rh.get().gs(R.string.migrating_boluses)
-            config.updateInitProgress(step, 0, total)
-            unmigratedBoluses.forEachIndexed { index, bolus ->
-                bolus.iCfg.insulinLabel = runningICfg.insulinLabel
-                bolus.iCfg.insulinEndTime = runningICfg.insulinEndTime
-                bolus.iCfg.insulinPeakTime = runningICfg.insulinPeakTime
-                bolus.iCfg.concentration = runningICfg.concentration
-                persistenceLayer.updateBolusNoLogging(bolus)
-                if ((index + 1) % PROGRESS_UPDATE_INTERVAL == 0 || index + 1 == total)
-                    config.updateInitProgress(step, index + 1, total)
-            }
-            totalMigrated += unmigratedBoluses.size
-        }
+        val migratedBoluses = repository.bulkMigrateBolusInsulinConfig(label, end, peak, conc)
 
-        // Log a single user entry for the entire migration
+        val totalMigrated = migratedPs + migratedEps + migratedBoluses
         if (totalMigrated > 0) {
             aapsLogger.debug(LTag.CORE, "Migration to DB 33 complete: $totalMigrated records updated")
             persistenceLayer.insertPumpTherapyEventIfNewByTimestamp(

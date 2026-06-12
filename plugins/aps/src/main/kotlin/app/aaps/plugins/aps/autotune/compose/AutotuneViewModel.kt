@@ -1,26 +1,23 @@
 package app.aaps.plugins.aps.autotune.compose
 
-import android.os.Handler
-import android.os.HandlerThread
 import android.view.View
 import androidx.compose.runtime.Immutable
-import app.aaps.core.graph.profile.ProfileViewerData
 import app.aaps.core.data.configuration.Constants
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ue.ValueWithUnit
+import app.aaps.core.graph.profile.ProfileViewerData
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.logging.UserEntryLogger
-import app.aaps.core.interfaces.profile.LocalProfileManager
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
-import app.aaps.core.interfaces.rx.events.EventLocalProfileChanged
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.MidnightTime
 import app.aaps.core.interfaces.utils.Round
@@ -28,20 +25,23 @@ import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.profile.ProfileSealed
+import app.aaps.core.ui.compose.icons.IcCompareProfiles
+import app.aaps.core.ui.compose.icons.IcProfile
 import app.aaps.core.ui.elements.WeekDay
 import app.aaps.plugins.aps.R
 import app.aaps.plugins.aps.autotune.AutotuneFS
 import app.aaps.plugins.aps.autotune.AutotunePlugin
 import app.aaps.plugins.aps.autotune.data.ATProfile
-import app.aaps.plugins.aps.autotune.data.LocalInsulin
 import app.aaps.plugins.aps.autotune.events.EventAutotuneUpdateGui
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.text.DecimalFormat
 import java.util.Locale
@@ -154,7 +154,7 @@ class AutotuneViewModel(
     private val autotuneFS: AutotuneFS,
     private val profileFunction: ProfileFunction,
     private val profileUtil: ProfileUtil,
-    private val localProfileManager: LocalProfileManager,
+    private val profileRepository: ProfileRepository,
     private val preferences: Preferences,
     private val dateUtil: DateUtil,
     private val rh: ResourceHelper,
@@ -171,7 +171,6 @@ class AutotuneViewModel(
     val uiState: StateFlow<AutotuneUiState> = _uiState.asStateFlow()
 
     private val days get() = autotunePlugin.days
-    private val handler = Handler(HandlerThread("AutotuneCompose").also { it.start() }.looper)
 
     private var profileName = ""
     private var profile: ATProfile? = null
@@ -230,8 +229,12 @@ class AutotuneViewModel(
     fun onRunAutotune() {
         val daysBack = autotunePlugin.lastNbDays.toIntOrNull() ?: return
         log("Run Autotune $profileName, $daysBack days")
-        handler.post { autotunePlugin.aapsAutotune(daysBack, false, profileName) }
-        scope.launch { refreshState() }
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                autotunePlugin.aapsAutotune(daysBack, false, profileName)
+            }
+            refreshState()
+        }
     }
 
     fun onLoadLastRun() {
@@ -250,11 +253,13 @@ class AutotuneViewModel(
     fun onCopyLocalConfirm(localName: String) {
         val circadian = preferences.get(BooleanKey.AutotuneCircadianIcIsf)
         autotunePlugin.tunedProfile?.let { tunedProfile ->
-            localProfileManager.addProfile(localProfileManager.copyFrom(tunedProfile.getProfile(circadian), localName))
-            uel.log(action = Action.NEW_PROFILE, source = Sources.Autotune, value = ValueWithUnit.SimpleString(localName))
+            scope.launch {
+                profileRepository.add(profileRepository.copyFrom(tunedProfile.getProfile(circadian), localName))
+                uel.log(action = Action.NEW_PROFILE, source = Sources.Autotune, value = ValueWithUnit.SimpleString(localName))
+                refreshState()
+            }
         }
         _uiState.value = _uiState.value.copy(dialogState = DialogState.None)
-        scope.launch { refreshState() }
     }
 
     fun onUpdateProfileClick() {
@@ -264,12 +269,14 @@ class AutotuneViewModel(
     fun onUpdateProfileConfirm() {
         val localName = autotunePlugin.pumpProfile.profileName
         autotunePlugin.tunedProfile?.profileName = localName
-        autotunePlugin.updateProfile(autotunePlugin.tunedProfile)
         autotunePlugin.updateButtonVisibility = View.GONE
         autotunePlugin.saveLastRun()
         uel.log(action = Action.STORE_PROFILE, source = Sources.Autotune, value = ValueWithUnit.SimpleString(localName))
         _uiState.value = _uiState.value.copy(dialogState = DialogState.None)
-        scope.launch { refreshState() }
+        scope.launch {
+            autotunePlugin.updateProfile(autotunePlugin.tunedProfile)
+            refreshState()
+        }
     }
 
     fun onRevertProfileClick() {
@@ -279,24 +286,28 @@ class AutotuneViewModel(
     fun onRevertProfileConfirm() {
         val localName = autotunePlugin.pumpProfile.profileName
         autotunePlugin.tunedProfile?.profileName = ""
-        autotunePlugin.updateProfile(autotunePlugin.pumpProfile)
         autotunePlugin.updateButtonVisibility = View.VISIBLE
         autotunePlugin.saveLastRun()
         uel.log(action = Action.STORE_PROFILE, source = Sources.Autotune, value = ValueWithUnit.SimpleString(localName))
         _uiState.value = _uiState.value.copy(dialogState = DialogState.None)
-        scope.launch { refreshState() }
+        scope.launch {
+            autotunePlugin.updateProfile(autotunePlugin.pumpProfile)
+            refreshState()
+        }
     }
 
     fun onProfileSwitchClick() {
         val tunedProfile = autotunePlugin.tunedProfile ?: return
-        autotunePlugin.updateProfile(tunedProfile)
-        if (loop.runningMode == RM.Mode.DISCONNECTED_PUMP) {
-            _uiState.value = _uiState.value.copy(
-                dialogState = DialogState.PumpDisconnected(rh.gs(app.aaps.core.ui.R.string.not_available_full))
-            )
-            return
+        scope.launch {
+            autotunePlugin.updateProfile(tunedProfile)
+            if (loop.runningMode() == RM.Mode.DISCONNECTED_PUMP) {
+                _uiState.value = _uiState.value.copy(
+                    dialogState = DialogState.PumpDisconnected(rh.gs(app.aaps.core.ui.R.string.not_available_full))
+                )
+                return@launch
+            }
+            _uiState.value = _uiState.value.copy(dialogState = DialogState.ProfileSwitch(tunedProfile.profileName))
         }
-        _uiState.value = _uiState.value.copy(dialogState = DialogState.ProfileSwitch(tunedProfile.profileName))
     }
 
     fun onProfileSwitchConfirm() {
@@ -321,7 +332,6 @@ class AutotuneViewModel(
                         iCfg = iCfg
                     )
                 }
-                rxBus.send(EventLocalProfileChanged())
             }
         }
         _uiState.value = _uiState.value.copy(dialogState = DialogState.None)
@@ -330,13 +340,13 @@ class AutotuneViewModel(
 
     fun onCheckInputProfile() {
         scope.launch {
-            val profileStore = localProfileManager.profile ?: profileStoreProvider.get().with(JSONObject())
+            val profileStore = profileRepository.profile.value ?: profileStoreProvider.get().with(JSONObject())
             val pumpProfile = profileFunction.getProfile()?.let { currentProfile ->
                 profileStore.getSpecificProfile(profileName)?.let { specificProfile ->
-                    atProfileProvider.get().with(ProfileSealed.Pure(specificProfile, null), LocalInsulin("")).also {
+                    atProfileProvider.get().with(ProfileSealed.Pure(specificProfile, null), currentProfile.iCfg).also {
                         it.profileName = profileName
                     }
-                } ?: atProfileProvider.get().with(currentProfile, LocalInsulin("")).also {
+                } ?: atProfileProvider.get().with(currentProfile, currentProfile.iCfg).also {
                     it.profileName = profileFunction.getProfileName()
                 }
             } ?: return@launch
@@ -345,7 +355,7 @@ class AutotuneViewModel(
                     ProfileViewerData(
                         profile = pumpProfile.profile,
                         profileName = pumpProfile.profileName,
-                        headerIcon = app.aaps.core.ui.R.drawable.ic_home_profile
+                        headerIcon = IcProfile
                     )
                 )
             )
@@ -363,7 +373,7 @@ class AutotuneViewModel(
                     profile2 = tunedProfile,
                     profileName = pumpProfile.profileName,
                     profileName2 = rh.gs(R.string.autotune_tunedprofile_name),
-                    headerIcon = app.aaps.core.objects.R.drawable.ic_compare_profiles,
+                    headerIcon = IcCompareProfiles,
                     isCompare = true
                 )
             )
@@ -374,19 +384,15 @@ class AutotuneViewModel(
         _uiState.value = _uiState.value.copy(dialogState = DialogState.None)
     }
 
-    fun onDispose() {
-        handler.removeCallbacksAndMessages(null)
-        handler.looper.quitSafely()
-    }
-
     // --- Internal ---
 
     private suspend fun resolveProfile() {
-        val profileStore = localProfileManager.profile ?: profileStoreProvider.get().with(JSONObject())
+        val profileStore = profileRepository.profile.value ?: profileStoreProvider.get().with(JSONObject())
+        val iCfg = profileFunction.getProfile()?.iCfg ?: insulin.iCfg
         profileFunction.getProfile()?.let { currentProfile ->
             profile = atProfileProvider.get().with(
                 profileStore.getSpecificProfile(profileName)?.let { ProfileSealed.Pure(value = it, activePlugin = null) } ?: currentProfile,
-                LocalInsulin("")
+                iCfg
             )
         }
     }
@@ -410,10 +416,11 @@ class AutotuneViewModel(
 
     private suspend fun addWarnings(): String {
         val currentProfile = profileFunction.getProfile() ?: return rh.gs(app.aaps.core.ui.R.string.profileswitch_ismissing)
-        val profileStore = localProfileManager.profile ?: profileStoreProvider.get().with(JSONObject())
+        val profileStore = profileRepository.profile.value ?: profileStoreProvider.get().with(JSONObject())
+        val iCfg = currentProfile.iCfg
         val atProfile = atProfileProvider.get().with(
             profileStore.getSpecificProfile(profileName)?.let { ProfileSealed.Pure(value = it, activePlugin = null) } ?: currentProfile,
-            LocalInsulin("")
+            iCfg
         )
         profile = atProfile
         if (!atProfile.isValid) return rh.gs(R.string.autotune_profile_invalid)
@@ -436,8 +443,8 @@ class AutotuneViewModel(
         val params = mutableListOf<ResultRow>()
         val tuneInsulin = preferences.get(BooleanKey.AutotuneTuneInsulinCurve)
         if (tuneInsulin) {
-            params += formatRow(rh.gs(R.string.insulin_peak), pumpProfile.localInsulin.peak.toDouble(), tunedProfile.localInsulin.peak.toDouble(), "%.0f")
-            params += formatRow(rh.gs(app.aaps.core.ui.R.string.dia), Round.roundTo(pumpProfile.localInsulin.dia, 0.1), Round.roundTo(tunedProfile.localInsulin.dia, 0.1), "%.1f")
+            params += formatRow(rh.gs(R.string.insulin_peak), pumpProfile.iCfg.peak.toDouble(), tunedProfile.iCfg.peak.toDouble(), "%.0f")
+            params += formatRow(rh.gs(app.aaps.core.ui.R.string.dia), Round.roundTo(pumpProfile.iCfg.dia, 0.1), Round.roundTo(tunedProfile.iCfg.dia, 0.1), "%.1f")
         }
         params += formatRow(rh.gs(app.aaps.core.ui.R.string.isf_short), Round.roundTo(pumpProfile.isf / toMgDl, 0.001), Round.roundTo(tunedProfile.isf / toMgDl, 0.001), isfFormat)
         params += formatRow(rh.gs(app.aaps.core.ui.R.string.ic_short), Round.roundTo(pumpProfile.ic, 0.001), Round.roundTo(tunedProfile.ic, 0.001), "%.2f")
@@ -469,7 +476,7 @@ class AutotuneViewModel(
     }
 
     private suspend fun refreshState() {
-        val profileStore = localProfileManager.profile ?: profileStoreProvider.get().with(JSONObject())
+        val profileStore = profileRepository.profile.value ?: profileStoreProvider.get().with(JSONObject())
         val profileList = profileStore.getProfileList().toMutableList()
         profileList.add(0, rh.gs(app.aaps.core.ui.R.string.active))
         val profileNames = profileList.map { it.toString() }

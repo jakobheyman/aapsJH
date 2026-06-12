@@ -1,9 +1,12 @@
 package app.aaps.plugins.sync.nsclientV3.workers
 
+import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkContinuation
 import androidx.work.WorkManager
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.logging.L
@@ -15,7 +18,6 @@ import app.aaps.core.interfaces.source.NSClientSource
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.nssdk.interfaces.NSAndroidClient
 import app.aaps.core.nssdk.remotemodel.LastModified
-import app.aaps.core.utils.receivers.DataWorkerStorage
 import app.aaps.plugins.sync.nsclient.ReceiverDelegate
 import app.aaps.plugins.sync.nsclientV3.DataSyncSelectorV3
 import app.aaps.plugins.sync.nsclientV3.NSClientV3Plugin
@@ -50,23 +52,18 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
 
     private lateinit var nsClientV3Plugin: NSClientV3Plugin
     private lateinit var receiverDelegate: ReceiverDelegate
-    private lateinit var dataWorkerStorage: DataWorkerStorage
     private lateinit var sut: LoadLastModificationWorker
 
-    init {
-        addInjector {
-            if (it is LoadLastModificationWorker) {
-                it.aapsLogger = aapsLogger
-                it.fabricPrivacy = fabricPrivacy
-                it.nsClientV3Plugin = nsClientV3Plugin
-                it.nsClientRepository = nsClientRepository
-            }
-        }
-    }
+    private fun buildSut(): LoadLastModificationWorker =
+        TestListenableWorkerBuilder<LoadLastModificationWorker>(context)
+            .setWorkerFactory(object : WorkerFactory() {
+                override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters) =
+                    LoadLastModificationWorker(appContext, workerParameters, aapsLogger, fabricPrivacy, nsClientV3Plugin, nsClientRepository)
+            })
+            .build()
 
     @BeforeEach
     fun setUp() {
-        dataWorkerStorage = DataWorkerStorage(context)
         whenever(persistenceLayer.observeChanges(anyOrNull<Class<*>>())).thenReturn(emptyFlow())
         whenever(persistenceLayer.observeAnyChange()).thenReturn(emptyFlow())
         whenever(receiverStatusStore.networkStatusFlow).thenReturn(MutableStateFlow(null))
@@ -75,14 +72,14 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         nsClientV3Plugin = NSClientV3Plugin(
             aapsLogger, rh, preferences, rxBus, context,
             receiverDelegate, config, dateUtil, dataSyncSelectorV3, persistenceLayer,
-            nsClientSource, storeDataForDb, decimalFormatter, l, nsClientRepository, uel, activePlugin
+            nsClientSource, storeDataForDb, decimalFormatter, l, nsClientRepository, uel, profileRepository
         )
         nsClientV3Plugin.newestDataOnServer = null
     }
 
     @Test
     fun `notInitializedAndroidClient returns failure`() = runTest(timeout = 30.seconds) {
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
 
         val result = sut.doWorkAndLog()
 
@@ -95,7 +92,7 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         whenever(workManager.beginUniqueWork(anyString(), anyOrNull(), anyOrNull<OneTimeWorkRequest>())).thenReturn(workContinuation)
         whenever(workContinuation.then(org.mockito.kotlin.any<OneTimeWorkRequest>())).thenReturn(workContinuation)
         nsClientV3Plugin.nsAndroidClient = nsAndroidClient
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
 
         val lastModified = LastModified(
             LastModified.Collections(
@@ -124,7 +121,7 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         whenever(workManager.beginUniqueWork(anyString(), anyOrNull(), anyOrNull<OneTimeWorkRequest>())).thenReturn(workContinuation)
         whenever(workContinuation.then(org.mockito.kotlin.any<OneTimeWorkRequest>())).thenReturn(workContinuation)
         nsClientV3Plugin.nsAndroidClient = nsAndroidClient
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
         val errorMessage = "Network error"
         whenever(nsAndroidClient.getLastModified())
             .thenThrow(RuntimeException(errorMessage))
@@ -142,7 +139,7 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         whenever(workContinuation.then(org.mockito.kotlin.any<OneTimeWorkRequest>())).thenReturn(workContinuation)
         nsClientV3Plugin.nsAndroidClient = nsAndroidClient
         nsClientV3Plugin.lastOperationError = "Previous error"
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
 
         val lastModified = LastModified(LastModified.Collections())
         whenever(nsAndroidClient.getLastModified()).thenReturn(lastModified)
@@ -159,7 +156,7 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         whenever(workContinuation.then(org.mockito.kotlin.any<OneTimeWorkRequest>())).thenReturn(workContinuation)
         nsClientV3Plugin.nsAndroidClient = nsAndroidClient
         nsClientV3Plugin.newestDataOnServer = null
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
 
         val lastModified = LastModified(LastModified.Collections(entries = now))
         whenever(nsAndroidClient.getLastModified()).thenReturn(lastModified)
@@ -177,7 +174,7 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         whenever(workContinuation.then(org.mockito.kotlin.any<OneTimeWorkRequest>())).thenReturn(workContinuation)
         nsClientV3Plugin.nsAndroidClient = nsAndroidClient
         nsClientV3Plugin.newestDataOnServer = LastModified(LastModified.Collections(entries = now - 10000))
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
 
         val newLastModified = LastModified(LastModified.Collections(entries = now))
         whenever(nsAndroidClient.getLastModified()).thenReturn(newLastModified)
@@ -193,7 +190,7 @@ internal class LoadLastModificationWorkerTest : TestBaseWithProfile() {
         whenever(workManager.beginUniqueWork(anyString(), anyOrNull(), anyOrNull<OneTimeWorkRequest>())).thenReturn(workContinuation)
         whenever(workContinuation.then(org.mockito.kotlin.any<OneTimeWorkRequest>())).thenReturn(workContinuation)
         nsClientV3Plugin.nsAndroidClient = nsAndroidClient
-        sut = TestListenableWorkerBuilder<LoadLastModificationWorker>(context).build()
+        sut = buildSut()
 
         val lastModified = LastModified(LastModified.Collections())
         whenever(nsAndroidClient.getLastModified()).thenReturn(lastModified)

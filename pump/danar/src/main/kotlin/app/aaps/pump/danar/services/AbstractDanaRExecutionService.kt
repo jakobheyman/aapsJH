@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.SystemClock
+import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.notifications.NotificationId
@@ -23,10 +24,10 @@ import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventAppExit
 import app.aaps.core.interfaces.rx.events.EventBTChange
 import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
+import app.aaps.core.interfaces.rx.events.EventShowSnackbar
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.Preferences
-import app.aaps.core.ui.toast.ToastUtils.errorToast
 import app.aaps.pump.dana.DanaPump
 import app.aaps.pump.dana.R
 import app.aaps.pump.dana.comm.RecordTypes
@@ -50,6 +51,7 @@ import dagger.android.DaggerService
 import dagger.android.HasAndroidInjector
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
+import kotlinx.coroutines.CoroutineScope
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Provider
@@ -77,6 +79,7 @@ abstract class AbstractDanaRExecutionService : DaggerService() {
     @Inject lateinit var pumpEnactResultProvider: Provider<PumpEnactResult>
     @Inject lateinit var rfcommTransport: RfcommTransport
     @Inject lateinit var bolusProgressData: BolusProgressData
+    @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
     private val disposable = CompositeDisposable()
     protected var mRfcommSocket: RfcommSocket? = null
@@ -88,8 +91,8 @@ abstract class AbstractDanaRExecutionService : DaggerService() {
     abstract fun messageHashTable(): MessageHashTableBase
 
     protected var lastApproachingDailyLimit: Long = 0
-    abstract fun updateBasalsInPump(profile: Profile): Boolean
-    abstract fun getPumpStatus()
+    abstract suspend fun updateBasalsInPump(profile: Profile): Boolean
+    abstract suspend fun getPumpStatus()
     abstract fun loadEvents(): PumpEnactResult?
     abstract fun bolus(detailedBolusInfo: DetailedBolusInfo): Boolean
     abstract fun highTempBasal(percent: Int, durationInMinutes: Int): Boolean // Rv2 only
@@ -188,12 +191,12 @@ abstract class AbstractDanaRExecutionService : DaggerService() {
         val deviceName = preferences.get(DanaStringNonKey.RName)
         mRfcommSocket = rfcommTransport.getSocketForDevice(deviceName)
         if (mRfcommSocket == null) {
-            errorToast(context.applicationContext, R.string.devicenotfound)
+            rxBus.send(EventShowSnackbar(rh.gs(R.string.devicenotfound), EventShowSnackbar.Type.Error))
         }
     }
 
     fun bolusStop() {
-        aapsLogger.debug(LTag.PUMP, "bolusStop >>>>> @ ${bolusProgressData.state.value?.delivered ?: 0.0}")
+        aapsLogger.debug(LTag.PUMP, "bolusStop >>>>> @ ${bolusProgressData.state.value?.delivered?.cU ?: 0.0}")
         val stop = MsgBolusStop(injector)
         danaPump.bolusStopForced = true
         if (isConnected) {

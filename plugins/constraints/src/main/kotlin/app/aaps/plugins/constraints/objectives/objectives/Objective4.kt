@@ -6,7 +6,6 @@ import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.keys.DoubleKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.plugins.constraints.R
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,9 +21,9 @@ class Objective4 @Inject constructor(
     init {
         tasks.add(
             object : Task(this, R.string.objectives_maxbasal) {
-                override fun isCompleted(): Boolean {
+                override suspend fun isCompleted(): Boolean {
                     return true
-                    /*val profile = runBlocking { profileFunction.getProfile() } ?: return false
+                    /*val profile = profileFunction.getProfile() ?: return false
                     val maxBasalSet = preferences.getIfExists(DoubleKey.ApsMaxBasal) ?: 0.0
                     val maxDailyBasal = profile.getMaxDailyBasal()
                     return maxBasalSet > 2.8 * maxDailyBasal || preferences.simpleMode*/

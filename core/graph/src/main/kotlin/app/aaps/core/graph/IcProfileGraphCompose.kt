@@ -2,6 +2,7 @@ package app.aaps.core.graph
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -18,19 +19,20 @@ import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
 import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.LegendItem
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
-import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.rememberHorizontalLegend
-import com.patrykandpatrick.vico.compose.common.vicoTheme
+
+private val LegendLabelKey = ExtraStore.Key<List<String>>()
 
 /**
  * Composable that displays IC (Insulin to Carb ratio) profile data as a line chart using Vico charting library.
@@ -66,8 +68,6 @@ import com.patrykandpatrick.vico.compose.common.vicoTheme
  * @throws IllegalArgumentException if profile2 is provided but profile2Name is null
  */
 
-private val LegendLabelKey = ExtraStore.Key<List<String>>()
-
 @Composable
 fun IcProfileGraphCompose(
     modifier: Modifier = Modifier,
@@ -94,7 +94,7 @@ fun IcProfileGraphCompose(
                 profile2.getIcTimeFromMidnight((hour.coerceAtMost(23)) * 60 * 60)
             }
             modelProducer.runTransaction {
-                lineSeries {
+                lineModel {
                     series(y = icValues2)
                     series(y = icValues1)
                 }
@@ -102,15 +102,14 @@ fun IcProfileGraphCompose(
             }
         } else {
             modelProducer.runTransaction {
-                lineSeries {
+                lineModel {
                     series(y = icValues1)
                 }
             }
         }
     }
 
-    val lineColors = listOf(profile2Color, profile1Color)
-    val legendItemLabelComponent = rememberTextComponent(style = TextStyle(color = vicoTheme.textColor))
+    val labelComponent = rememberTextComponent(style = TextStyle(color = MaterialTheme.colorScheme.onSurface))
     val legendIcon1 = rememberShapeComponent(fill = Fill(profile1Color))
     val legendIcon2 = rememberShapeComponent(fill = Fill(profile2Color))
     CartesianChartHost(
@@ -120,7 +119,7 @@ fun IcProfileGraphCompose(
                     LineCartesianLayer.LineProvider.series(
                         LineCartesianLayer.Line(
                             fill = remember { LineCartesianLayer.LineFill.single(Fill(profile2Color)) },
-                            pointConnector = Square
+                            interpolator = Square
                         ),
                         LineCartesianLayer.Line(
                             fill = remember { LineCartesianLayer.LineFill.single(Fill(profile1Color)) },
@@ -136,7 +135,7 @@ fun IcProfileGraphCompose(
                                     )
                                 )
                             },
-                            pointConnector = Square
+                            interpolator = Square
                         )
                     )
                 } else {
@@ -155,13 +154,13 @@ fun IcProfileGraphCompose(
                                     )
                                 )
                             },
-                            pointConnector = Square
+                            interpolator = Square
                         )
                     )
                 }
             ),
-            startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(),
+            startAxis = VerticalAxis.rememberStart(label = labelComponent),
+            bottomAxis = HorizontalAxis.rememberBottom(label = labelComponent),
             legend = if (profile2 != null) {
                 rememberHorizontalLegend(
                     items = { extraStore ->
@@ -169,7 +168,7 @@ fun IcProfileGraphCompose(
                             add(
                                 LegendItem(
                                     if (index == 0) legendIcon1 else legendIcon2,
-                                    legendItemLabelComponent,
+                                    labelComponent,
                                     label,
                                 )
                             )

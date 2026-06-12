@@ -13,17 +13,19 @@ import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.db.ProcessedTbrEbData
 import app.aaps.core.interfaces.logging.UserEntryLogger
+import app.aaps.core.interfaces.nsclient.NSSettingsStatus
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.pump.actions.CustomActionType
-import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventCustomActionsChanged
 import app.aaps.core.interfaces.rx.events.EventInitializationChanged
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.keys.IntKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.toStringMedium
 import app.aaps.core.objects.extensions.toStringShort
 import app.aaps.core.ui.R
@@ -31,6 +33,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -51,11 +54,13 @@ class ManageViewModel @Inject constructor(
     private val commandQueue: CommandQueue,
     private val uel: UserEntryLogger,
     private val rxBus: RxBus,
-    private val dateUtil: DateUtil
+    private val dateUtil: DateUtil,
+    private val nsSettingStatus: NSSettingsStatus,
+    private val preferences: Preferences
 ) : ViewModel() {
 
-    val uiState: StateFlow<ManageUiState>
-        field = MutableStateFlow(ManageUiState(pumpPlugin = activePlugin.activePumpInternal as PluginBase))
+    private val _uiState = MutableStateFlow(ManageUiState(pumpPlugin = activePlugin.activePumpInternal as PluginBase))
+    val uiState: StateFlow<ManageUiState> = _uiState.asStateFlow()
 
     init {
         setupEventListeners()
@@ -80,8 +85,9 @@ class ManageViewModel @Inject constructor(
             val pumpDescription = pump.pumpDescription
             val isInitialized = pump.isInitialized()
             val isSuspended = pump.isSuspended()
-            val isDisconnected = loop.runningMode == RM.Mode.DISCONNECTED_PUMP
-            loop.runningMode.isLoopRunning()
+            val runningMode = loop.runningMode()
+            val isDisconnected = runningMode == RM.Mode.DISCONNECTED_PUMP
+            runningMode.isLoopRunning()
 
             // Extended bolus visibility
             val showExtendedBolus: Boolean
@@ -122,7 +128,9 @@ class ManageViewModel @Inject constructor(
                 showCancelTempBasal = false
                 cancelTempBasalText = ""
             } else {
-                val activeTemp = processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis())
+                val activeTemp = withContext(Dispatchers.IO) {
+                    processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis())
+                }
                 if (activeTemp != null) {
                     showTempBasal = false
                     showCancelTempBasal = true
@@ -138,7 +146,7 @@ class ManageViewModel @Inject constructor(
             // Custom actions
             val customActions = pump.getCustomActions()?.filter { it.isEnabled } ?: emptyList()
 
-            uiState.update { state ->
+            _uiState.update { state ->
                 state.copy(
                     showTempTarget = true,
                     showTempBasal = showTempBasal,
@@ -160,13 +168,15 @@ class ManageViewModel @Inject constructor(
 
     // Action handlers
     fun cancelTempBasal(onResult: (Boolean, String) -> Unit) {
-        if (processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis()) != null) {
-            uel.log(Action.CANCEL_TEMP_BASAL, Sources.Actions)
-            commandQueue.cancelTempBasal(enforceNew = true, callback = object : Callback() {
-                override fun run() {
-                    onResult(result.success, result.comment)
-                }
-            })
+        viewModelScope.launch {
+            val activeTemp = withContext(Dispatchers.IO) {
+                processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis())
+            }
+            if (activeTemp != null) {
+                uel.log(Action.CANCEL_TEMP_BASAL, Sources.Actions)
+                val result = commandQueue.cancelTempBasal(enforceNew = true)
+                onResult(result.success, result.comment)
+            }
         }
     }
 
@@ -177,11 +187,8 @@ class ManageViewModel @Inject constructor(
             }
             if (activeExtended != null) {
                 uel.log(Action.CANCEL_EXTENDED_BOLUS, Sources.Actions)
-                commandQueue.cancelExtended(object : Callback() {
-                    override fun run() {
-                        onResult(result.success, result.comment)
-                    }
-                })
+                val result = commandQueue.cancelExtended()
+                onResult(result.success, result.comment)
             }
         }
     }
@@ -191,6 +198,22 @@ class ManageViewModel @Inject constructor(
     }
 
     fun copyStatusLightsFromNightscout() {
-        activePlugin.activeOverview.applyStatusLightsFromNs(null)
+        val cageWarn = nsSettingStatus.getExtendedWarnValue("cage", "warn")?.toInt()
+        val cageCritical = nsSettingStatus.getExtendedWarnValue("cage", "urgent")?.toInt()
+        val iageWarn = nsSettingStatus.getExtendedWarnValue("iage", "warn")?.toInt()
+        val iageCritical = nsSettingStatus.getExtendedWarnValue("iage", "urgent")?.toInt()
+        val sageWarn = nsSettingStatus.getExtendedWarnValue("sage", "warn")?.toInt()
+        val sageCritical = nsSettingStatus.getExtendedWarnValue("sage", "urgent")?.toInt()
+        val bageWarn = nsSettingStatus.getExtendedWarnValue("bage", "warn")?.toInt()
+        val bageCritical = nsSettingStatus.getExtendedWarnValue("bage", "urgent")?.toInt()
+        cageWarn?.let { preferences.put(IntKey.OverviewCageWarning, it) }
+        cageCritical?.let { preferences.put(IntKey.OverviewCageCritical, it) }
+        iageWarn?.let { preferences.put(IntKey.OverviewIageWarning, it) }
+        iageCritical?.let { preferences.put(IntKey.OverviewIageCritical, it) }
+        sageWarn?.let { preferences.put(IntKey.OverviewSageWarning, it) }
+        sageCritical?.let { preferences.put(IntKey.OverviewSageCritical, it) }
+        bageWarn?.let { preferences.put(IntKey.OverviewBageWarning, it) }
+        bageCritical?.let { preferences.put(IntKey.OverviewBageCritical, it) }
+        uel.log(Action.NS_SETTINGS_COPIED, Sources.NSClient)
     }
 }

@@ -34,7 +34,6 @@ class NotificationReaderPlugin @Inject constructor(
             )
         }
         .icon(IcPluginByoda)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .pluginName(R.string.notification_reader)
         .preferencesVisibleInSimpleMode(false)
         .description(R.string.description_source_notification_reader),
@@ -45,7 +44,7 @@ class NotificationReaderPlugin @Inject constructor(
     @Volatile var packageConfig: PackageConfig = loadPackageConfig()
         private set
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         Thread {
             updateDefinitionsFromRemote()
@@ -74,7 +73,7 @@ class NotificationReaderPlugin @Inject constructor(
             PackageConfig.fromJson(json)
         } catch (e: Exception) {
             aapsLogger.error(LTag.BGSOURCE, "Failed to load package config", e)
-            PackageConfig(0, emptySet(), emptyMap())
+            PackageConfig(0, emptySet(), emptyMap(), emptyMap())
         }
     }
 

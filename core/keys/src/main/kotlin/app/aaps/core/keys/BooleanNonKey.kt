@@ -12,7 +12,6 @@ enum class BooleanNonKey(
     GeneralSetupWizardProcessed("startupwizard_processed", false),
     SetupWizardIUnderstand("I_understand", false),
     ObjectivesLoopUsed("ObjectivesLoopUsed", false),
-    ObjectivesActionsUsed("ObjectivesActionsUsed", false),
     ObjectivesScaleUsed("ObjectivesScaleUsed", false),
     ObjectivesPumpStatusIsAvailableInNS("ObjectivespumpStatusIsAvailableInNS", false),
     ObjectivesBgIsAvailableInNs("ObjectivesbgIsAvailableInNS", false),
@@ -34,4 +33,11 @@ enum class BooleanNonKey(
     ExportSettingsCloudEnabled("export_settings_cloud_enabled", false),
     ExportCsvLocalEnabled("export_csv_local_enabled", true),
     ExportCsvCloudEnabled("export_csv_cloud_enabled", false),
+
+    AllowHardwarePump("allow_hardware_pump", false),
+
+    // Set (committed) right before a startup VACUUM and cleared after it finishes. If it is still
+    // set on the next launch, the previous VACUUM died below the JVM (native abort / OOM) — used to
+    // break the boot-crash loop. Transient device state, not a user setting → not exportable.
+    VacuumInProgress("vacuum_in_progress", false, exportable = false),
 }

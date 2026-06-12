@@ -47,6 +47,7 @@ fun UserEntry.Sources.fromDb(): Sources =
         UserEntry.Sources.SyaiTag             -> Sources.SyaiTag
         UserEntry.Sources.SiBionic            -> Sources.SiBionic
         UserEntry.Sources.Sino                -> Sources.Sino
+        UserEntry.Sources.Instara             -> Sources.Instara
         UserEntry.Sources.NotificationReader  -> Sources.NotificationReader
         UserEntry.Sources.LocalProfile        -> Sources.LocalProfile
         UserEntry.Sources.Loop                -> Sources.Loop
@@ -84,6 +85,7 @@ fun UserEntry.Sources.fromDb(): Sources =
         UserEntry.Sources.Aaps                -> Sources.Aaps
         UserEntry.Sources.BgFragment          -> Sources.BgFragment
         UserEntry.Sources.Garmin              -> Sources.Garmin
+        UserEntry.Sources.Scene               -> Sources.Scene
         UserEntry.Sources.Database            -> Sources.Database
         UserEntry.Sources.Unknown             -> Sources.Unknown
     }
@@ -131,6 +133,7 @@ fun Sources.toDb(): UserEntry.Sources =
         Sources.SyaiTag             -> UserEntry.Sources.SyaiTag
         Sources.SiBionic            -> UserEntry.Sources.SiBionic
         Sources.Sino                -> UserEntry.Sources.Sino
+        Sources.Instara             -> UserEntry.Sources.Instara
         Sources.NotificationReader  -> UserEntry.Sources.NotificationReader
         Sources.LocalProfile        -> UserEntry.Sources.LocalProfile
         Sources.Loop                -> UserEntry.Sources.Loop
@@ -168,6 +171,7 @@ fun Sources.toDb(): UserEntry.Sources =
         Sources.Aaps                -> UserEntry.Sources.Aaps
         Sources.BgFragment          -> UserEntry.Sources.BgFragment
         Sources.Garmin              -> UserEntry.Sources.Garmin
+        Sources.Scene               -> UserEntry.Sources.Scene
         Sources.Database            -> UserEntry.Sources.Database
         Sources.Insulin             -> UserEntry.Sources.Insulin
         Sources.Unknown             -> UserEntry.Sources.Unknown

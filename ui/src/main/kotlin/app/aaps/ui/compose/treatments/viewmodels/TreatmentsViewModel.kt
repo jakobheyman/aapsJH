@@ -8,10 +8,11 @@ import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.maintenance.ImportExportPrefs
 import app.aaps.core.interfaces.plugin.ActivePlugin
-import app.aaps.core.interfaces.profile.LocalProfileManager
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.interfaces.userEntry.UserEntryPresentationHelper
 import app.aaps.core.interfaces.utils.DateUtil
@@ -32,7 +33,7 @@ class TreatmentsViewModel @Inject constructor(
     val profileFunction: ProfileFunction,
     val activePlugin: ActivePlugin,
     val insulin: Insulin,
-    val localProfileManager: LocalProfileManager,
+    val profileRepository: ProfileRepository,
     val rh: ResourceHelper,
     val translator: Translator,
     val dateUtil: DateUtil,
@@ -41,7 +42,8 @@ class TreatmentsViewModel @Inject constructor(
     val userEntryPresentationHelper: UserEntryPresentationHelper,
     val importExportPrefs: ImportExportPrefs,
     val uel: UserEntryLogger,
-    val aapsLogger: AAPSLogger
+    val aapsLogger: AAPSLogger,
+    val rxBus: RxBus
 ) : ViewModel() {
 
     /**
@@ -60,7 +62,8 @@ class TreatmentsViewModel @Inject constructor(
             rh = rh,
             dateUtil = dateUtil,
             decimalFormatter = decimalFormatter,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
@@ -69,7 +72,8 @@ class TreatmentsViewModel @Inject constructor(
             persistenceLayer = persistenceLayer,
             rh = rh,
             dateUtil = dateUtil,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
@@ -81,7 +85,8 @@ class TreatmentsViewModel @Inject constructor(
             rh = rh,
             dateUtil = dateUtil,
             decimalFormatter = decimalFormatter,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
@@ -91,16 +96,19 @@ class TreatmentsViewModel @Inject constructor(
             profileUtil = profileUtil,
             rh = rh,
             dateUtil = dateUtil,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
     val profileSwitchViewModel: ProfileSwitchViewModel by lazy {
         ProfileSwitchViewModel(
             persistenceLayer = persistenceLayer,
+            profileRepository = profileRepository,
             rh = rh,
             dateUtil = dateUtil,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
@@ -110,7 +118,8 @@ class TreatmentsViewModel @Inject constructor(
             rh = rh,
             translator = translator,
             dateUtil = dateUtil,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
@@ -119,7 +128,8 @@ class TreatmentsViewModel @Inject constructor(
             persistenceLayer = persistenceLayer,
             rh = rh,
             dateUtil = dateUtil,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 
@@ -128,7 +138,8 @@ class TreatmentsViewModel @Inject constructor(
             persistenceLayer = persistenceLayer,
             rh = rh,
             dateUtil = dateUtil,
-            aapsLogger = aapsLogger
+            aapsLogger = aapsLogger,
+            rxBus = rxBus
         )
     }
 }

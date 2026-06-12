@@ -48,7 +48,6 @@ class SignatureVerifierPlugin @Inject constructor(
 ) : PluginBaseWithPreferences(
     pluginDescription = PluginDescription()
         .mainType(PluginType.CONSTRAINTS)
-        .neverVisible(true)
         .alwaysEnabled(true)
         .showInList { false }
         .pluginName(R.string.signature_verifier),
@@ -64,7 +63,7 @@ class SignatureVerifierPlugin @Inject constructor(
     private val lock: Any = arrayOfNulls<Any>(0)
     private var revokedCertsFile: File? = null
     private var revokedCerts: List<ByteArray>? = null
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
         revokedCertsFile = File(context.filesDir, "revoked_certs.txt")
@@ -81,7 +80,7 @@ class SignatureVerifierPlugin @Inject constructor(
         }
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         handler?.removeCallbacksAndMessages(null)
         handler?.looper?.quit()
         handler = null

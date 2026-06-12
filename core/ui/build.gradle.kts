@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     id("android-module-dependencies")
+    id("test-module-dependencies")
+    id("compose-test-module-dependencies")
+    id("jacoco-module-dependencies")
 }
 
 android {
@@ -18,10 +21,7 @@ android {
 }
 
 dependencies {
-    api(libs.androidx.core)
     api(libs.androidx.appcompat)
-    api(libs.androidx.preference)
-    api(libs.androidx.gridlayout)
 
     api(libs.com.google.android.material)
     api(platform(libs.androidx.compose.bom))

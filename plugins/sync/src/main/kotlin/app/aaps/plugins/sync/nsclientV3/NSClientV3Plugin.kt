@@ -9,14 +9,13 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
-import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceManager
-import androidx.preference.PreferenceScreen
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import app.aaps.core.data.model.HR
 import app.aaps.core.data.model.HasIDs
+import app.aaps.core.data.model.SC
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.time.T
 import app.aaps.core.interfaces.configuration.Config
@@ -29,14 +28,14 @@ import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.nsclient.NSAlarm
 import app.aaps.core.interfaces.nsclient.NSClientRepository
 import app.aaps.core.interfaces.nsclient.StoreDataForDb
-import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBaseWithPreferences
 import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.profile.Profile
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.EventAppExit
-import app.aaps.core.interfaces.rx.events.EventProfileStoreChanged
 import app.aaps.core.interfaces.rx.events.EventSWSyncStatus
 import app.aaps.core.interfaces.source.NSClientSource
 import app.aaps.core.interfaces.sync.DataSyncSelector
@@ -55,11 +54,6 @@ import app.aaps.core.nssdk.interfaces.NSAndroidClient
 import app.aaps.core.nssdk.remotemodel.LastModified
 import app.aaps.core.ui.compose.icons.IcPluginNsClient
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
-import app.aaps.core.validators.DefaultEditTextValidator
-import app.aaps.core.validators.EditTextValidator
-import app.aaps.core.validators.preferences.AdaptiveIntPreference
-import app.aaps.core.validators.preferences.AdaptiveStringPreference
-import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
 import app.aaps.plugins.sync.R
 import app.aaps.plugins.sync.nsShared.compose.NSClientComposeContent
 import app.aaps.plugins.sync.nsclient.ReceiverDelegate
@@ -93,8 +87,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -120,15 +113,13 @@ class NSClientV3Plugin @Inject constructor(
     private val l: L,
     private val nsClientRepository: NSClientRepository,
     private val uel: UserEntryLogger,
-    private val activePlugin: ActivePlugin,
+    private val profileRepository: ProfileRepository
 ) : NsClient, Sync, PluginBaseWithPreferences(
     PluginDescription()
         .mainType(PluginType.SYNC)
-        .pluginIcon(app.aaps.core.ui.R.drawable.ic_nightscout_syncs)
         .icon(IcPluginNsClient)
         .pluginName(R.string.ns_client_v3_title)
         .shortName(R.string.ns_client_v3_short_name)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .description(R.string.description_ns_client_v3)
         .composeContent { plugin ->
             NSClientComposeContent(
@@ -209,10 +200,14 @@ class NSClientV3Plugin @Inject constructor(
             aapsLogger.debug(LTag.NSCLIENT, "Service is connected")
             val localBinder = service as NSClientV3Service.LocalBinder
             nsClientV3Service = localBinder.serviceInstance
+            // Covers the case where Android reuses an already-alive service on rebind:
+            // onCreate doesn't fire, but onServiceConnected does. The idempotency guard
+            // in initializeWebSockets makes this safe when both fire on a fresh bind.
+            nsClientV3Service?.initializeWebSockets("serviceConnected")
         }
     }
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
 
@@ -223,13 +218,13 @@ class NSClientV3Plugin @Inject constructor(
         receiverDelegate.grabReceiversState()
         scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         rxBus.toFlow(EventAppExit::class.java)
-            .onEach {
+            .collectResilient(scope, aapsLogger, LTag.NSCLIENT) {
                 stopService()
                 WorkManager.getInstance(context).cancelUniqueWork(JOB_NAME)
-            }.launchIn(scope)
+            }
         receiverDelegate.connectivityStatusFlow
             .drop(1) // skip initial value
-            .onEach { ev ->
+            .collectResilient(scope, aapsLogger, LTag.NSCLIENT) { ev ->
                 nsClientRepository.addLog("● CONNECTIVITY", ev.blockingReason)
                 if (ev.connected && isAllowed) {
                     val service = nsClientV3Service
@@ -246,25 +241,28 @@ class NSClientV3Plugin @Inject constructor(
                     }
                 }
                 nsClientRepository.updateStatus(status)
-            }.launchIn(scope)
+            }
         val restartOnChange: suspend (Any) -> Unit = {
             stopService()
             nsAndroidClient = null
             setClient()
             nsClientRepository.updateUrl(preferences.get(StringKey.NsClientUrl))
         }
-        preferences.observe(StringKey.NsClientAccessToken).drop(1).onEach(restartOnChange).launchIn(scope)
-        preferences.observe(StringKey.NsClientUrl).drop(1).onEach(restartOnChange).launchIn(scope)
-        preferences.observe(BooleanKey.NsClient3UseWs).drop(1).onEach(restartOnChange).launchIn(scope)
-        preferences.observe(NsclientBooleanKey.NsPaused).drop(1).onEach(restartOnChange).launchIn(scope)
-        preferences.observe(BooleanKey.NsClientNotificationsFromAlarms).drop(1).onEach(restartOnChange).launchIn(scope)
-        preferences.observe(BooleanKey.NsClientNotificationsFromAnnouncements).drop(1).onEach(restartOnChange).launchIn(scope)
+        nsClientRepository.updateUrl(preferences.get(StringKey.NsClientUrl))
+        preferences.observe(StringKey.NsClientAccessToken).drop(1).collectResilient(scope, aapsLogger, LTag.NSCLIENT, block = restartOnChange)
+        preferences.observe(StringKey.NsClientUrl).drop(1).collectResilient(scope, aapsLogger, LTag.NSCLIENT, block = restartOnChange)
+        preferences.observe(BooleanKey.NsClient3UseWs).drop(1).collectResilient(scope, aapsLogger, LTag.NSCLIENT, block = restartOnChange)
+        preferences.observe(NsclientBooleanKey.NsPaused).drop(1).collectResilient(scope, aapsLogger, LTag.NSCLIENT, block = restartOnChange)
+        preferences.observe(BooleanKey.NsClientNotificationsFromAlarms).drop(1).collectResilient(scope, aapsLogger, LTag.NSCLIENT, block = restartOnChange)
+        preferences.observe(BooleanKey.NsClientNotificationsFromAnnouncements).drop(1).collectResilient(scope, aapsLogger, LTag.NSCLIENT, block = restartOnChange)
         preferences.observe(LongNonKey.LocalProfileLastChange).drop(1)
-            .onEach { executeUpload("PROFILE_CHANGE", forceNew = true) }.launchIn(scope)
+            .collectResilient(scope, aapsLogger, LTag.NSCLIENT) { executeUpload("PROFILE_CHANGE", forceNew = true) }
         persistenceLayer.observeAnyChange()
-            .onEach { types -> executeUpload("DB_CHANGED(${types.joinToString { it.simpleName ?: "?" }})", forceNew = false) }.launchIn(scope)
-        rxBus.toFlow(EventProfileStoreChanged::class.java)
-            .onEach { executeUpload("EventProfileStoreChanged", forceNew = false) }.launchIn(scope)
+            // HR/SC writes come from the watch; this plugin doesn't upload them — skip to avoid reconnect-flush storm.
+            .filter { types -> types.any { it != HR::class && it != SC::class } }
+            .collectResilient(scope, aapsLogger, LTag.NSCLIENT) { types -> executeUpload("DB_CHANGED(${types.joinToString { it.simpleName ?: "?" }})", forceNew = false) }
+        profileRepository.profile.drop(1)
+            .collectResilient(scope, aapsLogger, LTag.NSCLIENT) { executeUpload("profileRepository.profile changed", forceNew = false) }
 
         runLoop = Runnable {
             var refreshInterval = T.mins(5).msecs()
@@ -303,12 +301,13 @@ class NSClientV3Plugin @Inject constructor(
         }
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         handler?.removeCallbacksAndMessages(null)
         handler?.looper?.quit()
         handler = null
         scope.cancel()
         stopService()
+        WorkManager.getInstance(context).cancelUniqueWork(JOB_NAME)
         super.onStop()
     }
 
@@ -324,7 +323,6 @@ class NSClientV3Plugin @Inject constructor(
                 logging = l.findByName(LTag.NSCLIENT.tag).enabled && (config.isEngineeringMode() || config.isDev()),
                 logger = { msg -> aapsLogger.debug(LTag.HTTP, msg) }
             )
-        SystemClock.sleep(2000)
         if (preferences.get(BooleanKey.NsClient3UseWs)) {
             if (nsClientV3Service == null) startService()
             else nsClientV3Service?.initializeWebSockets("setClient")
@@ -340,6 +338,9 @@ class NSClientV3Plugin @Inject constructor(
 
     private fun stopService() {
         try {
+            // Tear down sockets synchronously before unbinding so a quick rebind
+            // (e.g. via restartOnChange) doesn't race the async service onDestroy.
+            nsClientV3Service?.shutdownWebsockets()
             if (nsClientV3Service != null) context.unbindService(serviceConnection)
         } catch (_: Exception) {
         }
@@ -357,6 +358,10 @@ class NSClientV3Plugin @Inject constructor(
     }
 
     override fun pause(newState: Boolean) {
+        // Cancel any in-flight WorkManager job so a stuck worker can't keep
+        // workIsRunning() == true after unpause and silently block all uploads
+        // (every DB_CHANGED would otherwise just log "Already running").
+        if (newState) WorkManager.getInstance(context).cancelUniqueWork(JOB_NAME)
         preferences.put(NsclientBooleanKey.NsPaused, newState)
     }
 
@@ -770,91 +775,6 @@ class NSClientV3Plugin @Inject constructor(
             if (workInfo.state == WorkInfo.State.BLOCKED || workInfo.state == WorkInfo.State.ENQUEUED || workInfo.state == WorkInfo.State.RUNNING)
                 return true
         return false
-    }
-
-    // TODO: Remove after full migration to Compose preferences (getPreferenceScreenContent)
-    override fun addPreferenceScreen(preferenceManager: PreferenceManager, parent: PreferenceScreen, context: Context, requiredKey: String?) {
-        if (requiredKey != null && requiredKey != "ns_client_synchronization" && requiredKey != "ns_client_alarm_options" && requiredKey != "ns_client_connection_options" && requiredKey != "ns_client_advanced") return
-        val category = PreferenceCategory(context)
-        parent.addPreference(category)
-        category.apply {
-            key = "ns_client_settings"
-            title = rh.gs(R.string.ns_client_v3_title)
-            initialExpandedChildrenCount = 0
-            addPreference(
-                AdaptiveStringPreference(
-                    ctx = context, stringKey = StringKey.NsClientUrl, dialogMessage = app.aaps.core.keys.R.string.ns_client_url_summary, title = app.aaps.core.keys.R.string.ns_client_url_title,
-                    validatorParams = DefaultEditTextValidator.Parameters(testType = EditTextValidator.TEST_HTTPS_URL)
-                )
-            )
-            addPreference(
-                AdaptiveStringPreference(
-                    ctx = context, stringKey = StringKey.NsClientAccessToken, dialogMessage = app.aaps.core.keys.R.string.nsclient_token_summary, title = app.aaps.core.keys.R.string.nsclient_token_title,
-                    validatorParams = DefaultEditTextValidator.Parameters(testType = EditTextValidator.TEST_MIN_LENGTH, minLength = 17)
-                )
-            )
-            addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClient3UseWs, summary = R.string.ns_use_ws_summary, title = R.string.ns_use_ws_title))
-            addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                key = "ns_client_synchronization"
-                title = rh.gs(R.string.ns_sync_options)
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUploadData, summary = R.string.ns_upload_summary, title = R.string.ns_upload))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.BgSourceUploadToNs, title = app.aaps.core.ui.R.string.do_ns_upload_title))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptCgmData, summary = R.string.ns_receive_cgm_summary, title = R.string.ns_receive_cgm))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptProfileStore, summary = R.string.ns_receive_profile_store_summary, title = R.string.ns_receive_profile_store))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptTempTarget, summary = R.string.ns_receive_temp_target_summary, title = R.string.ns_receive_temp_target))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptProfileSwitch, summary = R.string.ns_receive_profile_switch_summary, title = R.string.ns_receive_profile_switch))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptInsulin, summary = R.string.ns_receive_insulin_summary, title = R.string.ns_receive_insulin))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptCarbs, summary = R.string.ns_receive_carbs_summary, title = R.string.ns_receive_carbs))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptTherapyEvent, summary = R.string.ns_receive_therapy_events_summary, title = R.string.ns_receive_therapy_events))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptRunningMode, summary = R.string.ns_receive_running_mode_summary, title = R.string.ns_receive_running_mode))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientAcceptTbrEb, summary = R.string.ns_receive_tbr_eb_summary, title = R.string.ns_receive_tbr_eb))
-            })
-            addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                key = "ns_client_alarm_options"
-                title = rh.gs(R.string.ns_alarm_options)
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientNotificationsFromAlarms, title = R.string.ns_alarms))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientNotificationsFromAnnouncements, title = R.string.ns_announcements))
-                addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.NsClientAlarmStaleData, title = R.string.ns_alarm_stale_data_value_label))
-                addPreference(AdaptiveIntPreference(ctx = context, intKey = IntKey.NsClientUrgentAlarmStaleData, title = R.string.ns_alarm_urgent_stale_data_value_label))
-            })
-            addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                key = "ns_client_connection_options"
-                title = rh.gs(R.string.connection_settings_title)
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseCellular, title = R.string.ns_cellular))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseRoaming, title = R.string.ns_allow_roaming))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseWifi, title = R.string.ns_wifi))
-                addPreference(
-                    AdaptiveStringPreference(
-                        ctx = context, stringKey = StringKey.NsClientWifiSsids, dialogMessage = app.aaps.core.keys.R.string.ns_wifi_ssids_summary, title = app.aaps.core.keys.R.string.ns_wifi_ssids,
-                        validatorParams = DefaultEditTextValidator.Parameters(emptyAllowed = true)
-                    )
-                )
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseOnBattery, title = R.string.ns_battery))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseOnCharging, title = R.string.ns_charging))
-            })
-            addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                key = "ns_client_advanced"
-                title = rh.gs(app.aaps.core.ui.R.string.advanced_settings_title)
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientLogAppStart, title = R.string.ns_log_app_started_event))
-                addPreference(
-                    AdaptiveSwitchPreference(
-                        ctx = context,
-                        booleanKey = BooleanKey.NsClientCreateAnnouncementsFromErrors,
-                        summary = R.string.ns_create_announcements_from_errors_summary,
-                        title = R.string.ns_create_announcements_from_errors_title
-                    )
-                )
-                addPreference(
-                    AdaptiveSwitchPreference(
-                        ctx = context,
-                        booleanKey = BooleanKey.NsClientCreateAnnouncementsFromCarbsReq,
-                        summary = R.string.ns_create_announcements_from_carbs_req_summary,
-                        title = R.string.ns_create_announcements_from_carbs_req_title
-                    )
-                )
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientSlowSync, title = R.string.ns_sync_slow))
-            })
-        }
     }
 
     override fun getPreferenceScreenContent() = PreferenceSubScreenDef(

@@ -16,11 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -58,12 +58,8 @@ import app.aaps.core.interfaces.profile.ProfileErrorType
 import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.core.ui.R
 import app.aaps.core.ui.compose.AapsTopAppBar
-import app.aaps.core.ui.compose.SliderWithButtons
+import app.aaps.core.ui.compose.PlusMinusEdit
 import app.aaps.core.ui.compose.clearFocusOnTap
-import app.aaps.core.ui.compose.dialogs.ValueInputDialog
-import app.aaps.core.ui.compose.navigation.ElementType
-import app.aaps.core.ui.compose.navigation.color
-import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.ui.compose.profileManagement.viewmodels.ProfileEditorViewModel
 import app.aaps.ui.compose.profileManagement.viewmodels.ProfileUiState
 import app.aaps.ui.compose.profileManagement.viewmodels.SingleProfileState
@@ -82,12 +78,15 @@ fun ProfileEditorScreen(
 
     if (showUnsavedChangesDialog) {
         UnsavedChangesDialog(
+            saveEnabled = state.isValid,
             onSave = {
+                focusManager.clearFocus()
                 viewModel.saveProfile()
                 showUnsavedChangesDialog = false
                 onBackClick()
             },
             onDiscard = {
+                focusManager.clearFocus()
                 viewModel.resetProfile()
                 showUnsavedChangesDialog = false
                 onBackClick()
@@ -108,30 +107,22 @@ fun ProfileEditorScreen(
     Scaffold(
         topBar = {
             AapsTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = ElementType.PROFILE_MANAGEMENT.icon(),
-                            contentDescription = null,
-                            tint = ElementType.PROFILE_MANAGEMENT.color(),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.padding(start = 8.dp))
-                        Text(stringResource(R.string.localprofile))
-                    }
-                },
+                title = { Text(stringResource(R.string.localprofile)) },
                 navigationIcon = {
                     IconButton(onClick = handleBack) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.close)
                         )
                     }
                 },
                 actions = {
                     if (state.isEdited) {
                         // Reset button
-                        IconButton(onClick = { viewModel.resetProfile() }) {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            viewModel.resetProfile()
+                        }) {
                             Icon(
                                 Icons.Default.Refresh,
                                 contentDescription = stringResource(R.string.reset)
@@ -139,11 +130,14 @@ fun ProfileEditorScreen(
                         }
                         // Save button
                         IconButton(
-                            onClick = { viewModel.saveProfile() },
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.saveProfile()
+                            },
                             enabled = state.isValid
                         ) {
                             Icon(
-                                Icons.Default.Check,
+                                Icons.Default.Save,
                                 contentDescription = stringResource(R.string.save),
                                 tint = if (state.isValid) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -186,7 +180,6 @@ fun ProfileEditorScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // Tab layout with error indication
-                state.tabErrors.containsKey(ProfileErrorType.DIA)
                 val icHasError = state.tabErrors.containsKey(ProfileErrorType.IC)
                 val isfHasError = state.tabErrors.containsKey(ProfileErrorType.ISF)
                 val basalHasError = state.tabErrors.containsKey(ProfileErrorType.BASAL)
@@ -231,13 +224,12 @@ fun ProfileEditorScreen(
 
                 // Tab content with error display
                 state.currentProfile?.let { profile ->
-                    // Get error message for current tab
+                    // Get error message for current tab — tabs are 0=IC, 1=ISF, 2=BASAL, 3=TARGET
                     val currentTabError = when (state.selectedTab) {
-                        0 -> state.tabErrors[ProfileErrorType.DIA]
-                        1 -> state.tabErrors[ProfileErrorType.IC]
-                        2 -> state.tabErrors[ProfileErrorType.ISF]
-                        3 -> state.tabErrors[ProfileErrorType.BASAL]
-                        4 -> state.tabErrors[ProfileErrorType.TARGET]
+                        0 -> state.tabErrors[ProfileErrorType.IC]
+                        1 -> state.tabErrors[ProfileErrorType.ISF]
+                        2 -> state.tabErrors[ProfileErrorType.BASAL]
+                        3 -> state.tabErrors[ProfileErrorType.TARGET]
                         else -> null
                     }
 
@@ -247,6 +239,19 @@ fun ProfileEditorScreen(
                             text = error,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
+                    // Non-blocking pump-compatibility warning, shown on the basal tab only (basal is
+                    // the only pump-dependent value). Distinct from the red blocking errors above:
+                    // the profile can still be saved and synced — it just can't be activated on the
+                    // current pump until the basal fits the pump's limits.
+                    if (state.pumpIncompatible && state.selectedTab == 2) {
+                        Text(
+                            text = stringResource(app.aaps.core.ui.R.string.profile_basal_not_compatible_with_pump),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }
@@ -384,6 +389,7 @@ private fun ProfileNameHeader(
 
 @Composable
 private fun UnsavedChangesDialog(
+    saveEnabled: Boolean,
     onSave: () -> Unit,
     onDiscard: () -> Unit,
     onCancel: () -> Unit
@@ -393,7 +399,9 @@ private fun UnsavedChangesDialog(
         title = { Text(stringResource(R.string.unsaved_changes)) },
         text = { Text(stringResource(R.string.unsaved_changes_message)) },
         confirmButton = {
-            FilledTonalButton(onClick = onSave) {
+            // Disabled when the profile is invalid — an incomplete/invalid profile must not be saved
+            // (e.g. an unfinished new draft); the user can still Discard or Cancel.
+            FilledTonalButton(onClick = onSave, enabled = saveEnabled) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -418,7 +426,6 @@ private fun DiaContent(
     minDia: Double,
     maxDia: Double
 ) {
-    var showDialog by remember { mutableStateOf(false) }
     val valueFormat = remember { DecimalFormat("0.0") }
 
     ElevatedCard(
@@ -436,43 +443,25 @@ private fun DiaContent(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = stringResource(R.string.dia),
                     style = MaterialTheme.typography.bodyLarge
                 )
-                Text(
-                    text = "${valueFormat.format(dia)} h",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { showDialog = true }
+                PlusMinusEdit(
+                    value = dia,
+                    onValueChange = onDiaChange,
+                    valueRange = minDia..maxDia,
+                    step = 0.1,
+                    valueFormat = valueFormat,
+                    unitLabel = "h",
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp)
                 )
             }
-
-            SliderWithButtons(
-                value = dia,
-                onValueChange = onDiaChange,
-                valueRange = minDia..maxDia,
-                step = 0.1,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
-    }
-
-    if (showDialog) {
-        ValueInputDialog(
-            currentValue = dia,
-            valueRange = minDia..maxDia,
-            step = 0.1,
-            label = stringResource(R.string.dia),
-            unitLabel = "h",
-            valueFormat = valueFormat,
-            onValueConfirm = onDiaChange,
-            onDismiss = { showDialog = false }
-        )
     }
 }
 
@@ -515,7 +504,7 @@ private fun IcContent(
         Spacer(Modifier.height(16.dp))
 
         // Graph
-        viewModel.getEditedProfile()?.let { pureProfile ->
+        state.editedProfile?.let { pureProfile ->
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
@@ -572,7 +561,7 @@ private fun IsfContent(
         Spacer(Modifier.height(16.dp))
 
         // Graph
-        viewModel.getEditedProfile()?.let { pureProfile ->
+        state.editedProfile?.let { pureProfile ->
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
@@ -612,7 +601,7 @@ private fun BasalContent(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "∑ ${stringResource(R.string.format_insulin_units, viewModel.getBasalSum())}",
+                        text = "∑ ${stringResource(R.string.format_insulin_units, state.basalSum)}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -638,7 +627,7 @@ private fun BasalContent(
         Spacer(Modifier.height(16.dp))
 
         // Graph
-        viewModel.getEditedProfile()?.let { pureProfile ->
+        state.editedProfile?.let { pureProfile ->
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
@@ -688,7 +677,7 @@ private fun TargetContent(
         Spacer(Modifier.height(16.dp))
 
         // Graph
-        viewModel.getEditedProfile()?.let { pureProfile ->
+        state.editedProfile?.let { pureProfile ->
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)

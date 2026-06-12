@@ -12,15 +12,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -53,6 +53,7 @@ import app.aaps.core.data.configuration.Constants
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.ui.compose.AapsTopAppBar
 import app.aaps.core.ui.compose.DateTimeSection
+import app.aaps.core.ui.compose.bottomBarSafeArea
 import app.aaps.core.ui.compose.EventTimeRow
 import app.aaps.core.ui.compose.LocalDateUtil
 import app.aaps.core.ui.compose.NumberInputRow
@@ -60,9 +61,7 @@ import app.aaps.core.ui.compose.clearFocusOnTap
 import app.aaps.core.ui.compose.dialogs.DatePickerModal
 import app.aaps.core.ui.compose.dialogs.OkCancelDialog
 import app.aaps.core.ui.compose.dialogs.TimePickerModal
-import app.aaps.core.ui.compose.navigation.ElementType
-import app.aaps.core.ui.compose.navigation.color
-import app.aaps.core.ui.compose.navigation.icon
+import app.aaps.core.ui.compose.rememberBringIntoViewOnExpand
 import app.aaps.ui.R
 import java.util.Calendar
 
@@ -78,6 +77,9 @@ import java.util.Calendar
  * @param dateUtil DateUtil for formatting dates/times
  * @param rh ResourceHelper for string resources
  * @param onNavigateBack Callback to navigate back
+ * @param checkPumpCompatible Returns whether the profile's basal is deliverable by the current pump
+ *        at the given percentage. Re-queried as the percentage changes so the screen can block
+ *        activation before the user confirms.
  * @param onActivate Callback when profile is activated with (duration, percentage, timeshift, withTT, notes, timestamp, timeChanged)
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,6 +93,7 @@ fun ProfileActivationScreen(
     initialTimestamp: Long,
     rh: ResourceHelper,
     onNavigateBack: () -> Unit,
+    checkPumpCompatible: (percentage: Int) -> Boolean = { true },
     onActivate: (durationMinutes: Int, percentage: Int, timeshiftHours: Int, withTT: Boolean, notes: String, timestamp: Long, timeChanged: Boolean) -> Unit
 ) {
     val dateUtil = LocalDateUtil.current
@@ -111,6 +114,11 @@ fun ProfileActivationScreen(
 
     // TT option only visible when duration > 0 and percentage < 100
     val showTTOption = duration > 0 && percentage < 100
+
+    // Pump compatibility is percentage-aware (basal scales with %). Re-query as the user changes
+    // the percentage so the warning + the disabled Activate button track the current selection.
+    val percentageInt = percentage.toInt()
+    val pumpCompatible = remember(percentageInt, checkPumpCompatible) { checkPumpCompatible(percentageInt) }
 
     // Format duration as "Xh Ym" when >= 60 minutes
     val durationMinutes = duration.toInt()
@@ -217,31 +225,12 @@ fun ProfileActivationScreen(
     Scaffold(
         topBar = {
             AapsTopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = ElementType.PROFILE_MANAGEMENT.icon(),
-                            contentDescription = null,
-                            tint = ElementType.PROFILE_MANAGEMENT.color()
-                        )
-                        Column {
-                            Text(stringResource(R.string.activate_label))
-                            Text(
-                                text = profileName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
+                title = { Text(stringResource(R.string.activate_label)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(app.aaps.core.ui.R.string.back)
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(app.aaps.core.ui.R.string.close)
                         )
                     }
                 },
@@ -250,10 +239,14 @@ fun ProfileActivationScreen(
         },
         bottomBar = {
             Button(
-                onClick = { showConfirmDialog = true },
+                onClick = {
+                    focusManager.clearFocus()
+                    showConfirmDialog = true
+                },
+                enabled = pumpCompatible,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
+                    .bottomBarSafeArea()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Icon(
@@ -281,6 +274,22 @@ fun ProfileActivationScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Pre-emptive block: the profile's basal can't be delivered by the current pump at the
+            // selected percentage, so activation is disabled and the reason is shown up front.
+            if (!pumpCompatible) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Text(
+                        text = stringResource(app.aaps.core.ui.R.string.profile_basal_not_compatible_with_pump),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+
             // Single card with all inputs
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -311,7 +320,8 @@ fun ProfileActivationScreen(
 
                     // Timeshift (collapsible)
                     var timeshiftExpanded by rememberSaveable { mutableStateOf(false) }
-                    Column(modifier = itemModifier) {
+                    val timeshiftExpandRequester = rememberBringIntoViewOnExpand(timeshiftExpanded)
+                    Column(modifier = itemModifier.bringIntoViewRequester(timeshiftExpandRequester)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,

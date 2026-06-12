@@ -356,19 +356,17 @@ class DateUtilImplTest {
     @Test
     fun `dateStringRelative identifies today and yesterday and matches old behavior`() {
         val rh = FakeResourceHelper()
-        // This test is kept as a simple regression check. It's not fully deterministic.
-        val oneHourAgo = System.currentTimeMillis() - (60 * 60 * 1000)
-        val twentyFiveHoursAgo = System.currentTimeMillis() - (25 * 60 * 60 * 1000)
+        // Use a fixed clock anchored at noon so "one hour ago" stays in the same day
+        // regardless of when the test runs.
+        val noonToday = ZonedDateTime.of(2023, 10, 27, 12, 0, 0, 0, fixedZone).toInstant()
+        val clockAtNoon = Clock.fixed(noonToday, fixedZone)
+        val util = DateUtilImpl(mockContext, clockAtNoon)
+        val nowMillis = noonToday.toEpochMilli()
+        val oneHourAgo = nowMillis - TimeUnit.HOURS.toMillis(1)
+        val twentyFiveHoursAgo = nowMillis - TimeUnit.HOURS.toMillis(25)
 
-        val newTodayResult = dateUtilImpl.dateStringRelative(oneHourAgo, rh)
-        val oldTodayResult = dateUtilOldImpl.dateStringRelative(oneHourAgo, rh)
-        assertThat(newTodayResult).isEqualTo("Today")
-        assertThat(newTodayResult).isEqualTo(oldTodayResult)
-
-        val newYesterdayResult = dateUtilImpl.dateStringRelative(twentyFiveHoursAgo, rh)
-        val oldYesterdayResult = dateUtilOldImpl.dateStringRelative(twentyFiveHoursAgo, rh)
-        assertThat(newYesterdayResult).isEqualTo("Yesterday")
-        assertThat(newYesterdayResult).isEqualTo(oldYesterdayResult)
+        assertThat(util.dateStringRelative(oneHourAgo, rh)).startsWith("Today - ")
+        assertThat(util.dateStringRelative(twentyFiveHoursAgo, rh)).startsWith("Yesterday - ")
     }
 
     @Test
@@ -384,12 +382,12 @@ class DateUtilImplTest {
         // The clock is now fixed to a time later on the same day.
         val clockForTodayTest = Clock.fixed(startOfDay.plus(12, java.time.temporal.ChronoUnit.HOURS), fixedZone)
         val utilForToday = DateUtilImpl(mockContext, clockForTodayTest)
-        assertThat(utilForToday.dateStringRelative(todayTimestamp, rh)).isEqualTo("Today")
+        assertThat(utilForToday.dateStringRelative(todayTimestamp, rh)).isEqualTo("Today - 10/27/23")
 
         // --- Test for "Yesterday" ---
         // A timestamp from the previous day.
         val yesterdayTimestamp = startOfDay.minus(2, java.time.temporal.ChronoUnit.HOURS).toEpochMilli()
-        assertThat(utilForToday.dateStringRelative(yesterdayTimestamp, rh)).isEqualTo("Yesterday")
+        assertThat(utilForToday.dateStringRelative(yesterdayTimestamp, rh)).isEqualTo("Yesterday - 10/26/23")
 
         // --- Test for "Later today" ---
         val laterTodayTimestamp = startOfDay.plus(14, java.time.temporal.ChronoUnit.HOURS).toEpochMilli()
@@ -1499,8 +1497,5 @@ class DateUtilImplTest {
         override fun dpToPx(dp: Int): Int = dp
         override fun dpToPx(dp: Float): Int = dp.toInt()
         override fun shortTextMode(): Boolean = true
-        override fun gac(attributeId: Int): Int = 0
-        override fun gac(context: Context?, attributeId: Int): Int = 0
-        override fun getThemedCtx(context: Context): Context = context
     }
 }

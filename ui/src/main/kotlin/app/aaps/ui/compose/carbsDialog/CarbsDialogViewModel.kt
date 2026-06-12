@@ -15,6 +15,7 @@ import app.aaps.core.interfaces.automation.Automation
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.logging.AAPSLogger
@@ -22,28 +23,29 @@ import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
-import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.tempTargets.ttDurationMinutes
+import app.aaps.core.interfaces.tempTargets.ttTargetMgdl
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.DecimalFormatter
 import app.aaps.core.interfaces.utils.HardLimits
-import app.aaps.core.interfaces.tempTargets.ttDurationMinutes
-import app.aaps.core.interfaces.tempTargets.ttTargetMgdl
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.ui.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -55,7 +57,7 @@ class CarbsDialogViewModel @Inject constructor(
     private val constraintChecker: ConstraintsChecker,
     private val profileUtil: ProfileUtil,
     private val iobCobCalculator: IobCobCalculator,
-    glucoseStatusProvider: GlucoseStatusProvider,
+    private val glucoseStatusProvider: GlucoseStatusProvider,
     private val uel: UserEntryLogger,
     private val automation: Automation,
     private val commandQueue: CommandQueue,
@@ -65,25 +67,30 @@ class CarbsDialogViewModel @Inject constructor(
     private val decimalFormatter: DecimalFormatter,
     val rh: ResourceHelper,
     val dateUtil: DateUtil,
-    private val aapsLogger: AAPSLogger
+    private val aapsLogger: AAPSLogger,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
 
-    val uiState: StateFlow<CarbsDialogUiState>
-        field = MutableStateFlow(CarbsDialogUiState())
+    private val _uiState = MutableStateFlow(CarbsDialogUiState())
+    val uiState: StateFlow<CarbsDialogUiState> = _uiState.asStateFlow()
 
     sealed class SideEffect {
         data class ShowDeliveryError(val comment: String) : SideEffect()
         data object ShowNoActionDialog : SideEffect()
     }
 
-    val sideEffect: SharedFlow<SideEffect>
-        field = MutableSharedFlow(
-            replay = 0,
-            extraBufferCapacity = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST
-        )
+    private val _sideEffect = MutableSharedFlow<SideEffect>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val sideEffect: SharedFlow<SideEffect> = _sideEffect.asSharedFlow()
 
     init {
+        viewModelScope.launch { initialize() }
+    }
+
+    private suspend fun initialize() {
         val now = dateUtil.now()
         val maxCarbs = constraintChecker.getMaxCarbsAllowed().value()
         val units = profileUtil.units
@@ -97,7 +104,7 @@ class CarbsDialogViewModel @Inject constructor(
         // Auto-detect hypo condition
         val autoHypo = detectAutoHypo(now)
 
-        uiState.update {
+        _uiState.update {
             CarbsDialogUiState(
                 carbs = 0,
                 timeOffsetMinutes = 0,
@@ -129,14 +136,14 @@ class CarbsDialogViewModel @Inject constructor(
         }
     }
 
-    private fun detectAutoHypo(now: Long): Boolean {
+    private suspend fun detectAutoHypo(now: Long): Boolean {
         val bgReading = iobCobCalculator.ads.actualBg() ?: return false
         if (bgReading.recalculated >= 72) return false
 
         val hypoTTDuration = preferences.ttDurationMinutes(TT.Reason.HYPOGLYCEMIA)
 
         val activeTT = try {
-            runBlocking { persistenceLayer.getTemporaryTargetActiveAt(now) }
+            persistenceLayer.getTemporaryTargetActiveAt(now)
         } catch (_: Exception) {
             null
         }
@@ -153,7 +160,7 @@ class CarbsDialogViewModel @Inject constructor(
     }
 
     fun refreshCarbsButtons() {
-        uiState.update {
+        _uiState.update {
             it.copy(
                 carbsButtonIncrement1 = preferences.get(IntKey.OverviewCarbsButtonIncrement1),
                 carbsButtonIncrement2 = preferences.get(IntKey.OverviewCarbsButtonIncrement2),
@@ -165,20 +172,20 @@ class CarbsDialogViewModel @Inject constructor(
     fun updateCarbs(value: Int) {
         val state = uiState.value
         val clamped = value.coerceIn(-state.maxCarbs, state.maxCarbs)
-        uiState.update { it.copy(carbs = clamped) }
+        _uiState.update { it.copy(carbs = clamped) }
     }
 
     fun addCarbs(increment: Int) {
         val state = uiState.value
         val newValue = max(0, state.carbs + increment).coerceAtMost(state.maxCarbs)
-        uiState.update { it.copy(carbs = newValue) }
+        _uiState.update { it.copy(carbs = newValue) }
     }
 
     fun updateTimeOffset(minutes: Int) {
         val clamped = minutes.coerceIn(-7 * 24 * 60, 12 * 60)
         val state = uiState.value
         val newEventTime = state.eventTimeOriginal + clamped.toLong() * 60 * 1000
-        uiState.update {
+        _uiState.update {
             it.copy(
                 timeOffsetMinutes = clamped,
                 eventTime = newEventTime
@@ -188,11 +195,11 @@ class CarbsDialogViewModel @Inject constructor(
 
     fun updateDuration(hours: Int) {
         val clamped = hours.coerceIn(0, uiState.value.maxCarbsDurationHours.toInt())
-        uiState.update { it.copy(durationHours = clamped) }
+        _uiState.update { it.copy(durationHours = clamped) }
     }
 
     fun updateHypoTt(checked: Boolean) {
-        uiState.update {
+        _uiState.update {
             it.copy(
                 hypoTtChecked = checked,
                 eatingSoonTtChecked = if (checked) false else it.eatingSoonTtChecked,
@@ -202,7 +209,7 @@ class CarbsDialogViewModel @Inject constructor(
     }
 
     fun updateEatingSoonTt(checked: Boolean) {
-        uiState.update {
+        _uiState.update {
             it.copy(
                 eatingSoonTtChecked = checked,
                 hypoTtChecked = if (checked) false else it.hypoTtChecked,
@@ -212,7 +219,7 @@ class CarbsDialogViewModel @Inject constructor(
     }
 
     fun updateActivityTt(checked: Boolean) {
-        uiState.update {
+        _uiState.update {
             it.copy(
                 activityTtChecked = checked,
                 hypoTtChecked = if (checked) false else it.hypoTtChecked,
@@ -222,21 +229,21 @@ class CarbsDialogViewModel @Inject constructor(
     }
 
     fun updateAlarm(checked: Boolean) {
-        uiState.update { it.copy(alarmChecked = checked) }
+        _uiState.update { it.copy(alarmChecked = checked) }
     }
 
     fun updateBolusReminder(checked: Boolean) {
-        uiState.update { it.copy(bolusReminderChecked = checked) }
+        _uiState.update { it.copy(bolusReminderChecked = checked) }
     }
 
     fun updateNotes(value: String) {
-        uiState.update { it.copy(notes = value) }
+        _uiState.update { it.copy(notes = value) }
     }
 
     fun updateEventTime(timeMillis: Long) {
         val state = uiState.value
         val newOffset = ((timeMillis - state.eventTimeOriginal) / (1000 * 60)).toInt()
-        uiState.update {
+        _uiState.update {
             it.copy(
                 eventTime = timeMillis,
                 timeOffsetMinutes = newOffset
@@ -299,7 +306,7 @@ class CarbsDialogViewModel @Inject constructor(
         if (carbsAfterConstraints > 0) {
             lines.add(
                 rh.gs(app.aaps.core.ui.R.string.carbs) + ": " +
-                    rh.gs(app.aaps.core.objects.R.string.format_carbs, carbsAfterConstraints)
+                    rh.gs(app.aaps.core.ui.R.string.format_carbs, carbsAfterConstraints)
             )
             if (carbsAfterConstraints != carbs) {
                 lines.add(rh.gs(R.string.carbs_constraint_applied))
@@ -311,7 +318,7 @@ class CarbsDialogViewModel @Inject constructor(
             if (timeOffset != 0) carbsAfterConstraints = 0
             lines.add(
                 rh.gs(app.aaps.core.ui.R.string.carbs) + ": " +
-                    rh.gs(app.aaps.core.objects.R.string.format_carbs, carbsAfterConstraints)
+                    rh.gs(app.aaps.core.ui.R.string.format_carbs, carbsAfterConstraints)
             )
             if (carbsAfterConstraints != carbs) {
                 lines.add(rh.gs(R.string.carbs_constraint_applied))
@@ -381,7 +388,9 @@ class CarbsDialogViewModel @Inject constructor(
         }
 
         if (reason != TT.Reason.CUSTOM) {
-            viewModelScope.launch {
+            // appScope, not viewModelScope: the screen navigates back immediately after confirm,
+            // which cancels viewModelScope and could drop this direct DB write.
+            appScope.launch {
                 try {
                     persistenceLayer.insertAndCancelCurrentTemporaryTarget(
                         temporaryTarget = TT(
@@ -426,16 +435,15 @@ class CarbsDialogViewModel @Inject constructor(
                     ValueWithUnit.Hour(duration).takeIf { duration != 0 }
                 )
             )
-            commandQueue.bolus(detailedBolusInfo, object : Callback() {
-                override fun run() {
-                    automation.removeAutomationEventEatReminder()
-                    if (!result.success) {
-                        sideEffect.tryEmit(SideEffect.ShowDeliveryError(result.comment))
-                    } else if (preferences.get(BooleanKey.OverviewUseBolusReminder) && remindBolus) {
-                        automation.scheduleAutomationEventBolusReminder()
-                    }
+            viewModelScope.launch {
+                val result = commandQueue.bolus(detailedBolusInfo)
+                automation.removeAutomationEventEatReminder()
+                if (!result.success) {
+                    _sideEffect.tryEmit(SideEffect.ShowDeliveryError(result.comment))
+                } else if (preferences.get(BooleanKey.OverviewUseBolusReminder) && remindBolus) {
+                    automation.scheduleAutomationEventBolusReminder()
                 }
-            })
+            }
         }
 
         // Schedule eat reminder alarm

@@ -51,9 +51,7 @@ class IntelligoPlugin @Inject constructor(
                 title = resourceHelper.gs(R.string.intelligo)
             )
         }
-        .pluginIcon(app.aaps.core.ui.R.drawable.ic_intelligo)
         .icon(IcPluginIntelligo)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .pluginName(R.string.intelligo)
         .shortName(R.string.intelligo)
         .preferencesVisibleInSimpleMode(false)
@@ -86,13 +84,13 @@ class IntelligoPlugin @Inject constructor(
 
     private val disposable = CompositeDisposable()
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         handler = Handler(HandlerThread(this::class.java.simpleName + "Handler").also { it.start() }.looper)
         handler?.postDelayed(refreshLoop, T.secs(30).msecs()) // do not start immediately, app may be still starting
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         super.onStop()
         handler?.removeCallbacksAndMessages(null)
         handler?.looper?.quit()

@@ -14,18 +14,18 @@ import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.insulin.InsulinManager
 import app.aaps.core.interfaces.insulin.InsulinType
 import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.extensions.fromJsonObject
 import app.aaps.core.objects.extensions.toJsonObject
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -56,20 +56,22 @@ class InsulinImpl @Inject constructor(
 
     @Volatile private var cachedICfg: ICfg? = null
 
+    // Non-blocking: this getter is read during Compose composition (e.g. BolusCarbsScreen,
+    // StatusViewModel), so it must never load the profile synchronously. The cache is populated
+    // off-main in init and kept fresh by the EPS observer; until then fall back to the locally
+    // stored running config (insulins[0], which holds the current insulin in first position).
     override val iCfg: ICfg
-        get() = cachedICfg ?: run {
-            cachedICfg = runBlocking { profileFunction.getProfile()?.iCfg }
-            cachedICfg ?: insulins[0]
-        }
+        get() = cachedICfg ?: insulins[0]
 
     override var insulins: ArrayList<ICfg> = ArrayList()
     override var currentInsulinIndex = 0
 
     init {
         loadSettings()
+        // Populate the iCfg cache off the main thread so the synchronous getter never has to block.
+        appScope.launch { updateCachedICfg() }
         persistenceLayer.observeChanges<EPS>()
-            .onEach { updateCachedICfg() }
-            .launchIn(appScope)
+            .collectResilient(appScope, aapsLogger, LTag.CORE) { updateCachedICfg() }
     }
 
     private suspend fun updateCachedICfg() {

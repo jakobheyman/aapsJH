@@ -14,25 +14,28 @@ import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.db.observeChanges
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.profile.ProfileRepository
+import app.aaps.core.interfaces.profile.PureProfile
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.events.EventShowSnackbar
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.core.ui.R
 import app.aaps.core.ui.compose.SelectableListToolbar
-import app.aaps.core.ui.compose.SnackbarMessage
 import app.aaps.core.ui.compose.ToolbarConfig
 import app.aaps.ui.compose.treatments.viewmodels.TreatmentConstants.TREATMENT_HISTORY_DAYS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /**
@@ -41,13 +44,15 @@ import javax.inject.Inject
 @Stable
 class ProfileSwitchViewModel @Inject constructor(
     private val persistenceLayer: PersistenceLayer,
+    private val profileRepository: ProfileRepository,
     val rh: ResourceHelper,
     val dateUtil: DateUtil,
-    private val aapsLogger: AAPSLogger
+    private val aapsLogger: AAPSLogger,
+    private val rxBus: RxBus
 ) : ViewModel() {
 
-    val uiState: StateFlow<ProfileSwitchUiState>
-        field = MutableStateFlow(ProfileSwitchUiState())
+    private val _uiState = MutableStateFlow(ProfileSwitchUiState())
+    val uiState: StateFlow<ProfileSwitchUiState> = _uiState.asStateFlow()
 
     init {
         loadData()
@@ -62,7 +67,7 @@ class ProfileSwitchViewModel @Inject constructor(
             // Only show loading on initial load, not on refreshes
             val currentState = uiState.value
             if (currentState.profileSwitches.isEmpty()) {
-                uiState.update { it.copy(isLoading = true) }
+                _uiState.update { it.copy(isLoading = true) }
             }
 
             try {
@@ -85,21 +90,18 @@ class ProfileSwitchViewModel @Inject constructor(
                     eps.map { ProfileSealed.EPS(value = it, activePlugin = null) })
                     .sortedByDescending { it.timestamp }
 
-                uiState.update {
+                val activeEps = persistenceLayer.getEffectiveProfileSwitchActiveAt(dateUtil.now())
+                _uiState.update {
                     it.copy(
                         profileSwitches = profileSwitches,
-                        isLoading = false,
-                        snackbarMessage = null
+                        activeProfile = activeEps?.let { eps -> ProfileSealed.EPS(value = eps, activePlugin = null) },
+                        isLoading = false
                     )
                 }
             } catch (e: Exception) {
                 aapsLogger.error(LTag.UI, "Failed to load profile switches", e)
-                uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        snackbarMessage = SnackbarMessage.Error(e.message ?: "Unknown error loading profile switches")
-                    )
-                }
+                _uiState.update { it.copy(isLoading = false) }
+                rxBus.send(EventShowSnackbar(e.message ?: "Unknown error loading profile switches", EventShowSnackbar.Type.Error))
             }
         }
     }
@@ -120,17 +122,10 @@ class ProfileSwitchViewModel @Inject constructor(
     }
 
     /**
-     * Clear error state
-     */
-    fun clearSnackbar() {
-        uiState.update { it.copy(snackbarMessage = null) }
-    }
-
-    /**
      * Toggle show/hide invalidated items
      */
     fun toggleInvalidated() {
-        uiState.update { it.copy(showInvalidated = !it.showInvalidated) }
+        _uiState.update { it.copy(showInvalidated = !it.showInvalidated) }
         loadData()
     }
 
@@ -138,7 +133,7 @@ class ProfileSwitchViewModel @Inject constructor(
      * Enter selection mode with initial item selected
      */
     fun enterSelectionMode(item: ProfileSealed) {
-        uiState.update {
+        _uiState.update {
             it.copy(
                 isRemovingMode = true,
                 selectedItems = setOf(item)
@@ -150,7 +145,7 @@ class ProfileSwitchViewModel @Inject constructor(
      * Exit selection mode and clear selection
      */
     fun exitSelectionMode() {
-        uiState.update {
+        _uiState.update {
             it.copy(
                 isRemovingMode = false,
                 selectedItems = emptySet()
@@ -162,7 +157,7 @@ class ProfileSwitchViewModel @Inject constructor(
      * Toggle selection of an item
      */
     fun toggleSelection(item: ProfileSealed) {
-        uiState.update { state ->
+        _uiState.update { state ->
             val newSelection = if (item in state.selectedItems) {
                 state.selectedItems - item
             } else {
@@ -175,10 +170,7 @@ class ProfileSwitchViewModel @Inject constructor(
     /**
      * Get currently active effective profile switch
      */
-    fun getActiveProfile(): ProfileSealed? {
-        val eps = runBlocking { persistenceLayer.getEffectiveProfileSwitchActiveAt(dateUtil.now()) }
-        return eps?.let { ProfileSealed.EPS(value = it, activePlugin = null) }
-    }
+    fun getActiveProfile(): ProfileSealed? = uiState.value.activeProfile
 
     /**
      * Prepare delete confirmation message
@@ -221,7 +213,7 @@ class ProfileSwitchViewModel @Inject constructor(
                 loadData()
             } catch (e: Exception) {
                 aapsLogger.error(LTag.UI, "Failed to delete profile switches", e)
-                uiState.update { it.copy(snackbarMessage = SnackbarMessage.Error(e.message ?: "Unknown error deleting profile switches")) }
+                rxBus.send(EventShowSnackbar(e.message ?: "Unknown error deleting profile switches", EventShowSnackbar.Type.Error))
             }
         }
     }
@@ -246,6 +238,17 @@ class ProfileSwitchViewModel @Inject constructor(
             onToggleInvalidated = { toggleInvalidated() }
         )
     }
+
+    /**
+     * Persist a PureProfile (derived from an existing ProfileSwitch) into the local profile
+     * store as a new SingleProfile with the given [name]. Used by the "clone to local profile"
+     * action on the ProfileSwitchScreen.
+     */
+    fun copyToLocalProfile(profile: PureProfile, name: String) {
+        viewModelScope.launch {
+            profileRepository.add(profileRepository.copyFrom(profile, name))
+        }
+    }
 }
 
 /**
@@ -254,9 +257,9 @@ class ProfileSwitchViewModel @Inject constructor(
 @Immutable
 data class ProfileSwitchUiState(
     val profileSwitches: List<ProfileSealed> = emptyList(),
+    val activeProfile: ProfileSealed? = null,
     val isLoading: Boolean = true,
     val showInvalidated: Boolean = false,
     val isRemovingMode: Boolean = false,
-    val selectedItems: Set<ProfileSealed> = emptySet(),
-    val snackbarMessage: SnackbarMessage? = null
+    val selectedItems: Set<ProfileSealed> = emptySet()
 )

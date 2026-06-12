@@ -1,9 +1,5 @@
 package app.aaps.plugins.sync.tidepool
 
-import android.content.Context
-import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceManager
-import androidx.preference.PreferenceScreen
 import app.aaps.core.data.model.GV
 import app.aaps.core.data.plugin.PluginType
 import app.aaps.core.data.time.T
@@ -15,6 +11,7 @@ import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.AapsSchedulers
 import app.aaps.core.interfaces.rx.bus.RxBus
+import app.aaps.core.interfaces.rx.collectResilient
 import app.aaps.core.interfaces.rx.events.EventSWSyncStatus
 import app.aaps.core.interfaces.sync.Sync
 import app.aaps.core.interfaces.sync.Tidepool
@@ -25,9 +22,6 @@ import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.ui.compose.icons.IcPluginTidepool
 import app.aaps.core.ui.compose.preference.PreferenceSubScreenDef
-import app.aaps.core.validators.DefaultEditTextValidator
-import app.aaps.core.validators.preferences.AdaptiveStringPreference
-import app.aaps.core.validators.preferences.AdaptiveSwitchPreference
 import app.aaps.plugins.sync.R
 import app.aaps.plugins.sync.nsclient.ReceiverDelegate
 import app.aaps.plugins.sync.tidepool.auth.AuthFlowOut
@@ -48,8 +42,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -89,7 +81,6 @@ class TidepoolPlugin @Inject constructor(
                 onClearLog = { tidepoolRepository.clearLog() }
             )
         }
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .description(R.string.description_tidepool),
     ownPreferences = listOf(
         TidepoolBooleanKey::class.java, TidepoolLongNonKey::class.java,
@@ -103,16 +94,16 @@ class TidepoolPlugin @Inject constructor(
 
     private val isAllowed get() = receiverDelegate.allowed
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         receiverDelegate.connectivityStatusFlow
             .drop(1) // skip initial value
-            .onEach { ev ->
+            .collectResilient(scope, aapsLogger, LTag.TIDEPOOL) { ev ->
                 rxBus.send(EventTidepoolStatus("● CONNECTIVITY ${ev.blockingReason}"))
                 tidepoolUploader.resetInstance()
                 if (isAllowed) doUpload("CONNECTIVITY")
-            }.launchIn(scope)
+            }
         disposable += rxBus
             .toObservable(EventTidepoolDoUpload::class.java)
             .observeOn(aapsSchedulers.io)
@@ -127,22 +118,22 @@ class TidepoolPlugin @Inject constructor(
                            rxBus.send(EventSWSyncStatus(event.status))
                        }, fabricPrivacy::logException)
         persistenceLayer.observeChanges(GV::class.java)
-            .onEach { gvList ->
+            .collectResilient(scope, aapsLogger, LTag.TIDEPOOL) { gvList ->
                 gvList.maxByOrNull { it.timestamp }?.let { gv ->
                     if (gv.timestamp < uploadChunk.getLastEnd())
                         uploadChunk.setLastEnd(gv.timestamp)
                     if (isAllowed && rateLimit.rateLimit("tidepool-new-data-upload", T.mins(4).secs().toInt()))
                         doUpload("GlucoseValue")
                 }
-            }.launchIn(scope)
-        preferences.observe(TidepoolBooleanKey.UseTestServers).drop(1).onEach {
+            }
+        preferences.observe(TidepoolBooleanKey.UseTestServers).drop(1).collectResilient(scope, aapsLogger, LTag.TIDEPOOL) {
             authFlowOut.clearAllSavedData()
             tidepoolUploader.resetInstance()
-        }.launchIn(scope)
+        }
         authFlowOut.initAuthState()
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         scope.cancel()
         disposable.clear()
         super.onStop()
@@ -247,37 +238,4 @@ class TidepoolPlugin @Inject constructor(
         icon = pluginDescription.icon
     )
 
-    // TODO: Remove after full migration to Compose preferences (getPreferenceScreenContent)
-    override fun addPreferenceScreen(preferenceManager: PreferenceManager, parent: PreferenceScreen, context: Context, requiredKey: String?) {
-        if (requiredKey != null && requiredKey != "tidepool_connection_options") return
-        val category = PreferenceCategory(context)
-        parent.addPreference(category)
-        category.apply {
-            key = "tidepool_settings"
-            title = rh.gs(R.string.tidepool)
-            initialExpandedChildrenCount = 0
-            // Add direct preference to make category expandable (like NSClient pattern)
-            // Without this, category with only nested PreferenceScreens is not clickable
-            addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = TidepoolBooleanKey.UseTestServers, summary = R.string.summary_tidepool_dev_servers, title = R.string.title_tidepool_dev_servers))
-            addPreference(preferenceManager.createPreferenceScreen(context).apply {
-                key = "tidepool_connection_options"
-                title = rh.gs(R.string.connection_settings_title)
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseCellular, title = R.string.ns_cellular))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseRoaming, title = R.string.ns_allow_roaming))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseWifi, title = R.string.ns_wifi))
-                addPreference(
-                    AdaptiveStringPreference(
-                        ctx = context,
-                        stringKey = StringKey.NsClientWifiSsids,
-                        dialogMessage = app.aaps.core.keys.R.string.ns_wifi_ssids_summary,
-                        title = app.aaps.core.ui.R.string.ns_wifi_ssids,
-                        validatorParams = DefaultEditTextValidator.Parameters(emptyAllowed = true)
-                    )
-                )
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseOnBattery, title = R.string.ns_battery))
-                addPreference(AdaptiveSwitchPreference(ctx = context, booleanKey = BooleanKey.NsClientUseOnCharging, title = R.string.ns_charging))
-            })
-            // Advanced screen removed - UseTestServers moved to top level
-        }
-    }
 }

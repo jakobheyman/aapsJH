@@ -13,13 +13,18 @@ import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
-import app.aaps.core.interfaces.plugin.PluginDescription
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.ui.compose.ConfigPluginUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @Immutable
@@ -46,11 +51,15 @@ class ConfigurationViewModel @Inject constructor(
     private val preferences: Preferences
 ) : ViewModel() {
 
-    val uiState: StateFlow<ConfigurationUiState>
-        field = MutableStateFlow(ConfigurationUiState())
+    private val _uiState = MutableStateFlow(ConfigurationUiState())
+    val uiState: StateFlow<ConfigurationUiState> = _uiState.asStateFlow()
 
     // Keep plugin references for toggle callbacks (UI only sees IDs)
     private var pluginLookup: Map<String, PluginBase> = emptyMap()
+
+    // Serializes plugin enable/disable so concurrent toggles (double-tap, or two plugins in the
+    // same single-select category) can't race the shared plugin-state mutation in performPluginSwitch.
+    private val switchMutex = Mutex()
 
     init {
         loadCategories()
@@ -64,40 +73,55 @@ class ConfigurationViewModel @Inject constructor(
 
     fun togglePluginEnabled(pluginId: String, type: PluginType, enabled: Boolean) {
         val plugin = pluginLookup[pluginId] ?: return
-        val confirmationMessage = configBuilder.requestPluginSwitch(plugin, enabled, type)
-        if (confirmationMessage != null) {
-            uiState.update { state ->
-                state.copy(
-                    hardwarePumpConfirmation = HardwarePumpConfirmation(
-                        message = confirmationMessage,
-                        pluginId = pluginId,
-                        type = type,
-                        enabled = enabled
-                    )
-                )
+        // requestPluginSwitch persists settings and runs blocking pump-sync DB work (runBlocking in
+        // connectNewPump), so run it off the main thread to avoid stalling the UI on toggle.
+        viewModelScope.launch {
+            val confirmationMessage = switchMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    configBuilder.requestPluginSwitch(plugin, enabled, type)
+                }
             }
-        } else {
-            refreshCategories()
+            if (confirmationMessage != null) {
+                _uiState.update { state ->
+                    state.copy(
+                        hardwarePumpConfirmation = HardwarePumpConfirmation(
+                            message = confirmationMessage,
+                            pluginId = pluginId,
+                            type = type,
+                            enabled = enabled
+                        )
+                    )
+                }
+            } else {
+                refreshCategories()
+            }
         }
     }
 
     fun confirmHardwarePumpSwitch() {
         val confirmation = uiState.value.hardwarePumpConfirmation ?: return
         val plugin = pluginLookup[confirmation.pluginId] ?: return
-        configBuilder.confirmPumpPluginSwitch(plugin, confirmation.enabled, confirmation.type)
-        uiState.update { it.copy(hardwarePumpConfirmation = null) }
-        refreshCategories()
+        // confirmPumpPluginSwitch also reaches the blocking connectNewPump path — keep it off main.
+        viewModelScope.launch {
+            switchMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    configBuilder.confirmPumpPluginSwitch(plugin, confirmation.enabled, confirmation.type)
+                }
+            }
+            _uiState.update { it.copy(hardwarePumpConfirmation = null) }
+            refreshCategories()
+        }
     }
 
     fun dismissHardwarePumpDialog() {
-        uiState.update { it.copy(hardwarePumpConfirmation = null) }
+        _uiState.update { it.copy(hardwarePumpConfirmation = null) }
         refreshCategories()
     }
 
     private fun refreshCategories() {
         val isSimple = preferences.simpleMode
         val categories = buildCategories(isSimple)
-        uiState.update { state ->
+        _uiState.update { state ->
             state.copy(
                 categories = categories,
                 isSimpleMode = isSimple
@@ -118,31 +142,31 @@ class ConfigurationViewModel @Inject constructor(
                 val id = plugin.javaClass.simpleName
                 lookup[id] = plugin
                 val pluginEnabled = plugin.isEnabled(type)
-                val hasPreferences = plugin.preferencesId != PluginDescription.PREFERENCE_NONE
+                val hasPreferences = plugin.hasPreferences()
                 ConfigPluginUiModel(
                     id = id,
                     name = plugin.name,
                     description = plugin.description,
-                    menuIcon = plugin.menuIcon,
                     composeIcon = plugin.pluginDescription.icon,
                     isEnabled = pluginEnabled,
                     canToggle = !plugin.pluginDescription.alwaysEnabled && (isMultiSelect || !pluginEnabled),
-                    showPreferences = hasPreferences && pluginEnabled && (!isSimpleMode || plugin.pluginDescription.preferencesVisibleInSimpleMode)
+                    showPreferences = hasPreferences && pluginEnabled && (!isSimpleMode || plugin.pluginDescription.preferencesVisibleInSimpleMode),
+                    hasContent = plugin.hasComposeContent()
                 )
             }
 
             val enabledPlugins = pluginModels.filter { it.isEnabled }
             val subtitle = when {
-                enabledPlugins.size == 1 -> enabledPlugins.first().name
+                enabledPlugins.size == 1                     -> enabledPlugins.first().name
                 isMultiSelect && enabledPlugins.isNotEmpty() -> "${enabledPlugins.size}"
-                else -> "-"
+                else                                         -> "-"
             }
 
             val singleEnabled = enabledPlugins.singleOrNull()
             val defaultIcon = when (type) {
-                PluginType.SYNC -> Icons.Default.Sync
+                PluginType.SYNC    -> Icons.Default.Sync
                 PluginType.GENERAL -> Icons.Default.Extension
-                else -> Icons.Default.Settings
+                else               -> Icons.Default.Settings
             }
 
             categories.add(
@@ -152,18 +176,15 @@ class ConfigurationViewModel @Inject constructor(
                     plugins = pluginModels,
                     isMultiSelect = isMultiSelect,
                     subtitle = subtitle,
-                    categoryIcon = singleEnabled?.composeIcon ?: defaultIcon,
-                    categoryIconRes = singleEnabled?.let { if (it.menuIcon != -1) it.menuIcon else null }
+                    categoryIcon = singleEnabled?.composeIcon ?: defaultIcon
                 )
             )
         }
 
-        if (config.APS || config.PUMPCONTROL || config.isEngineeringMode()) {
-            addCategory(PluginType.INSULIN, app.aaps.core.ui.R.string.configbuilder_insulin)
-        }
         if (!config.AAPSCLIENT) {
             addCategory(PluginType.BGSOURCE, app.aaps.core.ui.R.string.configbuilder_bgsource)
             addCategory(PluginType.SMOOTHING, app.aaps.core.ui.R.string.configbuilder_smoothing)
+            addCategory(PluginType.CALIBRATION, app.aaps.core.ui.R.string.configbuilder_calibration)
             addCategory(PluginType.PUMP, app.aaps.core.ui.R.string.configbuilder_pump)
         }
         if (config.APS || config.PUMPCONTROL || config.isEngineeringMode()) {

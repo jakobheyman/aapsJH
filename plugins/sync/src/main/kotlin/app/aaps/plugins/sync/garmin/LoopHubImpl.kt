@@ -84,7 +84,7 @@ class LoopHubImpl @Inject constructor(
         get() = runBlocking { iobCobCalculator.getCobInfo("LoopHubImpl") }.displayCob
 
     /** Returns true if the pump is connected. */
-    override val isConnected: Boolean get() = loop.runningMode != RM.Mode.DISCONNECTED_PUMP
+    override val isConnected: Boolean get() = runBlocking { loop.runningMode() } != RM.Mode.DISCONNECTED_PUMP
 
     /** Returns true if the current profile is set of a limited amount of time. */
     override val isTemporaryProfile: Boolean
@@ -97,7 +97,7 @@ class LoopHubImpl @Inject constructor(
     override val temporaryBasal: Double
         get() {
             return currentProfile?.let {
-                val tb = processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis())
+                val tb = runBlocking { processedTbrEbData.getTempBasalIncludingConvertedExtended(clock.millis()) }
                 tb?.convertedToPercent(clock.millis(), it)?.div(100.0)
             } ?: Double.NaN
         }
@@ -116,22 +116,24 @@ class LoopHubImpl @Inject constructor(
     override fun connectPump() {
         appScope.launch {
             persistenceLayer.cancelCurrentRunningMode(clock.millis(), Action.RECONNECT, Sources.Garmin)
+            commandQueue.cancelTempBasal(enforceNew = true)
         }
-        commandQueue.cancelTempBasal(enforceNew = true, callback = null)
     }
 
     /** Tells the loop algorithm that the pump will be physically disconnected
      *  for the given number of minutes. */
     override fun disconnectPump(minutes: Int) {
         currentProfile?.let { p ->
-            loop.handleRunningModeChange(
-                durationInMinutes = minutes,
-                profile = p,
-                newRM = RM.Mode.DISCONNECTED_PUMP,
-                action = Action.DISCONNECT,
-                source = Sources.Garmin,
-                listValues = listOf(ValueWithUnit.Minute(minutes))
-            )
+            appScope.launch {
+                loop.handleRunningModeChange(
+                    durationInMinutes = minutes,
+                    profile = p,
+                    newRM = RM.Mode.DISCONNECTED_PUMP,
+                    action = Action.DISCONNECT,
+                    source = Sources.Garmin,
+                    listValues = listOf(ValueWithUnit.Minute(minutes))
+                )
+            }
         }
     }
 
@@ -155,7 +157,9 @@ class LoopHubImpl @Inject constructor(
             eventType = TE.Type.CARBS_CORRECTION
             carbs = carbsAfterConstraints.toDouble()
         }
-        commandQueue.bolus(detailedBolusInfo, null)
+        appScope.launch {
+            commandQueue.bolus(detailedBolusInfo)
+        }
     }
 
     /** Stores hear rate readings that a taken and averaged of the given interval. */
@@ -172,7 +176,7 @@ class LoopHubImpl @Inject constructor(
             device = device ?: "Garmin",
         )
         appScope.launch {
-            persistenceLayer.insertOrUpdateHeartRate(hr)
+            persistenceLayer.insertOrUpdateHeartRates(listOf(hr))
         }
     }
 }

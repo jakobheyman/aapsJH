@@ -1,6 +1,7 @@
 package app.aaps.core.keys
 
 import app.aaps.core.keys.interfaces.BooleanPreferenceKey
+import app.aaps.core.keys.interfaces.PreferenceEnabledCondition
 import app.aaps.core.keys.interfaces.PreferenceVisibility
 
 enum class BooleanKey(
@@ -19,11 +20,16 @@ enum class BooleanKey(
     override val hideParentScreenIfHidden: Boolean = false,
     override val engineeringModeOnly: Boolean = false,
     override val exportable: Boolean = true,
-    override val visibility: PreferenceVisibility = PreferenceVisibility.ALWAYS
+    override val visibility: PreferenceVisibility = PreferenceVisibility.ALWAYS,
+    override val enabledCondition: PreferenceEnabledCondition = PreferenceEnabledCondition.ALWAYS
 ) : BooleanPreferenceKey {
 
     GeneralSimpleMode("simple_mode", true, R.string.pref_title_simple_mode),
-    GeneralInsulinConcentration("insulin_concentration_enabled", false, R.string.pref_title_insulin_concentration, R.string.pref_summary_insulin_concentration, defaultedBySM = true),
+    GeneralInsulinConcentration(
+        "insulin_concentration_enabled", false, R.string.pref_title_insulin_concentration, R.string.pref_summary_insulin_concentration,
+        defaultedBySM = true,
+        enabledCondition = PreferenceEnabledCondition { it.isConcentrationEnabled }
+    ),
     OverviewKeepScreenOn("keep_screen_on", false, R.string.pref_title_keep_screen_on, R.string.pref_summary_keep_screen_on, calculatedDefaultValue = true),
     OverviewShowTreatmentButton("show_treatment_button", false, R.string.pref_title_show_treatment_button, defaultedBySM = true, hideParentScreenIfHidden = true),
     OverviewShowWizardButton("show_wizard_button", true, R.string.pref_title_show_wizard_button, defaultedBySM = true),
@@ -45,9 +51,11 @@ enum class BooleanKey(
     AlertCarbsRequired("enable_carbs_required_alert_local", true, R.string.pref_title_alert_carbs_required),
     AlertUrgentAsAndroidNotification("raise_urgent_alarms_as_android_notification", true, R.string.pref_title_alert_urgent_as_android_notification),
     AlertIncreaseVolume("gradually_increase_notification_volume", true, R.string.pref_title_alert_increase_volume),
+    AlertOverrideDoNotDisturb("alert_override_dnd", true, R.string.pref_title_alert_override_dnd, R.string.pref_summary_alert_override_dnd, defaultedBySM = true),
 
     BgSourceUploadToNs("dexcomg5_nsupload", true, R.string.pref_title_bg_source_upload_to_ns, defaultedBySM = true, hideParentScreenIfHidden = true),
     BgSourceCreateSensorChange("dexcom_lognssensorchange", true, R.string.pref_title_bg_source_create_sensor_change, R.string.pref_summary_bg_source_create_sensor_change, defaultedBySM = true),
+    BgSourceRandomBgRandomize("randombg_randomize", true, R.string.pref_title_random_bg_randomize, R.string.pref_summary_random_bg_randomize, defaultedBySM = true),
 
     ApsUseDynamicSensitivity("use_dynamic_sensitivity", false, R.string.pref_title_aps_use_dynamic_sensitivity, R.string.pref_summary_aps_use_dynamic_sensitivity),
     ApsUseAutosens("openapsama_useautosens", true, R.string.pref_title_aps_use_autosens, defaultedBySM = true, negativeDependency = ApsUseDynamicSensitivity),

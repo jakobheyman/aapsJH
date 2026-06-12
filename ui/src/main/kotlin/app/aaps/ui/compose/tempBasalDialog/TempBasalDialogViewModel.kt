@@ -11,19 +11,21 @@ import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.UserEntryLogger
 import app.aaps.core.interfaces.plugin.ActivePlugin
-import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.pump.PumpSync
-import app.aaps.core.interfaces.queue.Callback
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.objects.constraints.ConstraintObject
+import app.aaps.core.objects.runningMode.PumpCommandGate
+import app.aaps.core.objects.runningMode.RunningModeGuard
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,37 +36,42 @@ import kotlin.math.abs
 class TempBasalDialogViewModel @Inject constructor(
     private val constraintChecker: ConstraintsChecker,
     private val profileFunction: ProfileFunction,
-    activePlugin: ActivePlugin,
+    private val activePlugin: ActivePlugin,
     private val commandQueue: CommandQueue,
     private val uel: UserEntryLogger,
     private val rh: ResourceHelper,
-    private val aapsLogger: AAPSLogger
+    private val aapsLogger: AAPSLogger,
+    private val runningModeGuard: RunningModeGuard
 ) : ViewModel() {
 
-    val uiState: StateFlow<TempBasalDialogUiState>
-        field = MutableStateFlow(TempBasalDialogUiState())
+    private val _uiState = MutableStateFlow(TempBasalDialogUiState())
+    val uiState: StateFlow<TempBasalDialogUiState> = _uiState.asStateFlow()
 
     sealed class SideEffect {
         data class ShowDeliveryError(val comment: String) : SideEffect()
     }
 
-    val sideEffect: SharedFlow<SideEffect>
-        field = MutableSharedFlow(
-            replay = 0,
-            extraBufferCapacity = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST
-        )
-
-    private var cachedProfile: Profile? = null
+    private val _sideEffect = MutableSharedFlow<SideEffect>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val sideEffect: SharedFlow<SideEffect> = _sideEffect.asSharedFlow()
 
     init {
+        viewModelScope.launch { initialize() }
+    }
+
+    private suspend fun initialize() {
         val pumpDescription = activePlugin.activePump.pumpDescription
         val isPercentPump = pumpDescription.tempBasalStyle and PumpDescription.PERCENT == PumpDescription.PERCENT
+        val profile = profileFunction.getProfile()
+        val currentBasal = profile?.getBasal() ?: 0.0
 
-        uiState.update {
+        _uiState.update {
             TempBasalDialogUiState(
                 basalPercent = 100.0,
-                basalAbsolute = 0.0,
+                basalAbsolute = currentBasal,
                 durationMinutes = pumpDescription.tempDurationStep.toDouble(),
                 isPercentPump = isPercentPump,
                 maxTempPercent = pumpDescription.maxTempPercent.toDouble(),
@@ -73,29 +80,21 @@ class TempBasalDialogViewModel @Inject constructor(
                 tempAbsoluteStep = pumpDescription.tempAbsoluteStep,
                 tempDurationStep = pumpDescription.tempDurationStep.toDouble(),
                 tempMaxDuration = pumpDescription.tempMaxDuration.toDouble(),
+                profile = profile,
             )
-        }
-        viewModelScope.launch {
-            val profile = profileFunction.getProfile()
-            cachedProfile = profile
-            val currentBasal = profile?.getBasal() ?: 0.0
-            uiState.update { it.copy(basalAbsolute = currentBasal) }
         }
     }
 
     fun updateBasalPercent(value: Double) {
-        val clamped = value.coerceIn(0.0, uiState.value.maxTempPercent)
-        uiState.update { it.copy(basalPercent = clamped) }
+        _uiState.update { it.copy(basalPercent = value) }
     }
 
     fun updateBasalAbsolute(value: Double) {
-        val clamped = value.coerceIn(0.0, uiState.value.maxTempAbsolute)
-        uiState.update { it.copy(basalAbsolute = clamped) }
+        _uiState.update { it.copy(basalAbsolute = value) }
     }
 
     fun updateDuration(value: Double) {
-        val clamped = value.coerceIn(uiState.value.tempDurationStep, uiState.value.tempMaxDuration)
-        uiState.update { it.copy(durationMinutes = clamped) }
+        _uiState.update { it.copy(durationMinutes = value) }
     }
 
     fun hasAction(): Boolean {
@@ -108,7 +107,7 @@ class TempBasalDialogViewModel @Inject constructor(
     fun buildConfirmationSummary(): List<String> {
         val state = uiState.value
         confirmedState = state
-        val profile = cachedProfile ?: return emptyList()
+        val profile = uiState.value.profile ?: return emptyList()
         val lines = mutableListOf<String>()
         val durationInMinutes = state.durationMinutes.toInt()
 
@@ -142,18 +141,12 @@ class TempBasalDialogViewModel @Inject constructor(
         val profile = profileFunction.getProfile() ?: return
         val durationInMinutes = state.durationMinutes.toInt()
 
-        val callback = object : Callback() {
-            override fun run() {
-                if (!result.success) {
-                    sideEffect.tryEmit(SideEffect.ShowDeliveryError(result.comment))
-                }
-            }
-        }
-
         if (state.isPercentPump) {
             val percent = constraintChecker.applyBasalPercentConstraints(
                 ConstraintObject(state.basalPercent.toInt(), aapsLogger), profile
             ).value()
+            val gateKind = if (percent == 0) PumpCommandGate.CommandKind.TEMP_BASAL_ZERO else PumpCommandGate.CommandKind.TEMP_BASAL_NONZERO
+            if (runningModeGuard.checkWithSnackbar(gateKind)) return
             uel.log(
                 action = Action.TEMP_BASAL, source = Sources.TempBasalDialog,
                 listValues = listOf(
@@ -161,11 +154,14 @@ class TempBasalDialogViewModel @Inject constructor(
                     ValueWithUnit.Minute(durationInMinutes)
                 )
             )
-            commandQueue.tempBasalPercent(percent, durationInMinutes, true, profile, PumpSync.TemporaryBasalType.NORMAL, callback)
+            val result = commandQueue.tempBasalPercent(percent, durationInMinutes, true, profile, PumpSync.TemporaryBasalType.NORMAL)
+            if (!result.success) _sideEffect.tryEmit(SideEffect.ShowDeliveryError(result.comment))
         } else {
             val absolute = constraintChecker.applyBasalConstraints(
                 ConstraintObject(state.basalAbsolute, aapsLogger), profile
             ).value()
+            val gateKind = if (absolute == 0.0) PumpCommandGate.CommandKind.TEMP_BASAL_ZERO else PumpCommandGate.CommandKind.TEMP_BASAL_NONZERO
+            if (runningModeGuard.checkWithSnackbar(gateKind)) return
             uel.log(
                 action = Action.TEMP_BASAL, source = Sources.TempBasalDialog,
                 listValues = listOf(
@@ -173,7 +169,8 @@ class TempBasalDialogViewModel @Inject constructor(
                     ValueWithUnit.Minute(durationInMinutes)
                 )
             )
-            commandQueue.tempBasalAbsolute(absolute, durationInMinutes, true, profile, PumpSync.TemporaryBasalType.NORMAL, callback)
+            val result = commandQueue.tempBasalAbsolute(absolute, durationInMinutes, true, profile, PumpSync.TemporaryBasalType.NORMAL)
+            if (!result.success) _sideEffect.tryEmit(SideEffect.ShowDeliveryError(result.comment))
         }
     }
 }

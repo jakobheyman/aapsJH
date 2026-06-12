@@ -11,6 +11,7 @@ import app.aaps.core.interfaces.notifications.NotificationId
 import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
 import app.aaps.core.interfaces.pump.PumpEnactResult
+import app.aaps.core.interfaces.pump.PumpInsulin
 import app.aaps.core.interfaces.queue.Command
 import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.rx.events.EventInitializationChanged
@@ -41,7 +42,7 @@ import app.aaps.pump.danarkorean.comm.MessageHashTableRKorean
 import app.aaps.pump.danarkorean.comm.MsgCheckValueK
 import app.aaps.pump.danarkorean.comm.MsgSettingBasal_k
 import app.aaps.pump.danarkorean.comm.MsgStatusBasic_k
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
 
@@ -60,7 +61,7 @@ class DanaRKoreanExecutionService : AbstractDanaRExecutionService() {
         mBinder = LocalBinder()
     }
 
-    override fun getPumpStatus() {
+    override suspend fun getPumpStatus() {
         try {
             rxBus.send(EventPumpStatusChanged(rh.gs(R.string.gettingpumpstatus)))
             //MsgStatus_k statusMsg = new MsgStatus_k();
@@ -84,7 +85,7 @@ class DanaRKoreanExecutionService : AbstractDanaRExecutionService() {
             rxBus.send(EventPumpStatusChanged(rh.gs(R.string.gettingbolusstatus)))
             val now = System.currentTimeMillis()
             danaPump.lastConnection = now
-            val profile = runBlocking { pumpSync.expectedPumpState() }.profile
+            val profile = pumpSync.expectedPumpState().profile
             if (profile != null && abs(danaPump.currentBasal - profile.getBasal()) >= danaRKoreanPlugin.pumpDescription.basalStep) {
                 rxBus.send(EventPumpStatusChanged(rh.gs(R.string.gettingpumpsettings)))
                 mSerialIOThread?.sendMessage(MsgSettingBasal(injector))
@@ -129,18 +130,16 @@ class DanaRKoreanExecutionService : AbstractDanaRExecutionService() {
                 aapsLogger.debug(LTag.PUMP, "Approaching daily limit: " + danaPump.dailyTotalUnits + "/" + danaPump.maxDailyTotalUnits)
                 if (System.currentTimeMillis() > lastApproachingDailyLimit + 30 * 60 * 1000) {
                     notificationManager.post(NotificationId.APPROACHING_DAILY_LIMIT, R.string.approachingdailylimit)
-                    runBlocking {
-                        pumpSync.insertAnnouncement(
-                            rh.gs(R.string.approachingdailylimit) + ": " + danaPump.dailyTotalUnits + "/" + danaPump.maxDailyTotalUnits + "U",
-                            null,
-                            PumpType.DANA_R_KOREAN,
-                            danaRKoreanPlugin.serialNumber()
-                        )
-                    }
+                    pumpSync.insertAnnouncement(
+                        rh.gs(R.string.approachingdailylimit) + ": " + danaPump.dailyTotalUnits + "/" + danaPump.maxDailyTotalUnits + "U",
+                        null,
+                        PumpType.DANA_R_KOREAN,
+                        danaRKoreanPlugin.serialNumber()
+                    )
                     lastApproachingDailyLimit = System.currentTimeMillis()
                 }
             }
-            runBlocking { doSanityCheck() }
+            doSanityCheck()
         } catch (e: Exception) {
             aapsLogger.error("Unhandled exception", e)
         }
@@ -205,7 +204,7 @@ class DanaRKoreanExecutionService : AbstractDanaRExecutionService() {
             if (!danaPump.bolusStopped) {
                 mSerialIOThread?.sendMessage(start)
             } else {
-                bolusProgressData.updateProgress(bolusProgressData.state.value?.percent ?: 0, bolusProgressData.state.value?.status ?: "", 0.0)
+                bolusProgressData.updateProgress(bolusProgressData.state.value?.percent ?: 0, bolusProgressData.state.value?.status ?: "", PumpInsulin(0.0))
                 return false
             }
             while (!danaPump.bolusStopped && !start.failed && !connectionBroken) {
@@ -217,7 +216,8 @@ class DanaRKoreanExecutionService : AbstractDanaRExecutionService() {
             }
             SystemClock.sleep(300)
             danaPump.bolusingDetailedBolusInfo = null
-            commandQueue.readStatus(rh.gs(app.aaps.core.ui.R.string.bolus_ok), null)
+            // Queue-worker deadlock guard — don't unwrap the .launch. See CommandQueue kdoc.
+            appScope.launch { commandQueue.readStatus(rh.gs(app.aaps.core.ui.R.string.bolus_ok)) }
         }
         return !start.failed && !connectionBroken
     }
@@ -226,7 +226,7 @@ class DanaRKoreanExecutionService : AbstractDanaRExecutionService() {
 
     override fun tempBasalShortDuration(percent: Int, durationInMinutes: Int): Boolean = false
 
-    override fun updateBasalsInPump(profile: Profile): Boolean {
+    override suspend fun updateBasalsInPump(profile: Profile): Boolean {
         if (!isConnected) return false
         rxBus.send(EventPumpStatusChanged(rh.gs(R.string.updatingbasalrates)))
         val basal: Array<Double> = danaPump.buildDanaRProfileRecord(profile)

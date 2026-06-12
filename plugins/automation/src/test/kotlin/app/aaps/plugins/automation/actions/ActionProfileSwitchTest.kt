@@ -2,7 +2,6 @@ package app.aaps.plugins.automation.actions
 
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.PS
-import app.aaps.core.interfaces.queue.Callback
 import app.aaps.plugins.automation.R
 import app.aaps.plugins.automation.elements.InputProfileName
 import com.google.common.truth.Truth.assertThat
@@ -32,7 +31,7 @@ class ActionProfileSwitchTest : ActionsTestBase() {
         whenever(rh.gs(R.string.changengetoprofilename)).thenReturn("Change profile to %s")
         whenever(rh.gs(R.string.alreadyset)).thenReturn("Already set")
         whenever(rh.gs(app.aaps.core.ui.R.string.notexists)).thenReturn("not exists")
-        whenever(rh.gs(app.aaps.core.validators.R.string.error_field_must_not_be_empty)).thenReturn("The field must not be empty")
+        whenever(rh.gs(app.aaps.core.ui.R.string.error_field_must_not_be_empty)).thenReturn("The field must not be empty")
         whenever(rh.gs(app.aaps.core.ui.R.string.noprofile)).thenReturn("No profile loaded from NS yet")
         whenever(insulin.iCfg).thenReturn(iCfg)
 
@@ -50,53 +49,39 @@ class ActionProfileSwitchTest : ActionsTestBase() {
     @Test fun doAction() = runTest {
         //Empty input
         whenever(profileFunction.getProfileName()).thenReturn("Test")
-        sut.inputProfileName = InputProfileName(rh, localProfileManager, "")
-        sut.doAction(object : Callback() {
-            override fun run() {
-                assertThat(result.success).isFalse()
-            }
-        })
+        sut.inputProfileName = InputProfileName("")
+        assertThat(sut.doAction().success).isFalse()
 
         //Not initialized profileStore
         whenever(profileFunction.getProfile()).thenReturn(null)
-        sut.inputProfileName = InputProfileName(rh, localProfileManager, "someProfile")
-        sut.doAction(object : Callback() {
-            override fun run() {
-                assertThat(result.success).isFalse()
-            }
-        })
+        sut.inputProfileName = InputProfileName("someProfile")
+        assertThat(sut.doAction().success).isFalse()
 
         //profile already set
         whenever(profileFunction.getProfile()).thenReturn(effectiveProfile)
         whenever(profileFunction.getProfileName()).thenReturn("Test")
-        sut.inputProfileName = InputProfileName(rh, localProfileManager, "Test")
-        sut.doAction(object : Callback() {
-            override fun run() {
-                assertThat(result.success).isTrue()
-                assertThat(result.comment).isEqualTo("Already set")
-            }
-        })
+        sut.inputProfileName = InputProfileName("Test")
+        sut.doAction().let {
+            assertThat(it.success).isTrue()
+            assertThat(it.comment).isEqualTo("Already set")
+        }
 
         // profile doesn't exists
         whenever(profileFunction.getProfileName()).thenReturn("Active")
-        sut.inputProfileName = InputProfileName(rh, localProfileManager, "Test")
-        sut.doAction(object : Callback() {
-            override fun run() {
-                assertThat(result.success).isFalse()
-                assertThat(result.comment).isEqualTo("not exists")
-            }
-        })
+        sut.inputProfileName = InputProfileName("Test")
+        sut.doAction().let {
+            assertThat(it.success).isFalse()
+            assertThat(it.comment).isEqualTo("not exists")
+        }
 
         // do profile switch
         whenever(profileFunction.getProfileName()).thenReturn("Test")
         whenever(profileFunction.createProfileSwitch(anyOrNull(), anyString(), anyInt(), anyInt(), anyInt(), anyLong(), any(), any(), any(), any(), any())).thenReturn(mock<PS>())
-        sut.inputProfileName = InputProfileName(rh, localProfileManager, TESTPROFILENAME)
-        sut.doAction(object : Callback() {
-            override fun run() {
-                assertThat(result.success).isTrue()
-                assertThat(result.comment).isEqualTo("OK")
-            }
-        })
+        sut.inputProfileName = InputProfileName(TESTPROFILENAME)
+        sut.doAction().let {
+            assertThat(it.success).isTrue()
+            assertThat(it.comment).isEqualTo("OK")
+        }
         verify(profileFunction, times(1)).createProfileSwitch(anyOrNull(), anyString(), anyInt(), anyInt(), anyInt(), anyLong(), any(), any(), any(), any(), any())
     }
 
@@ -105,16 +90,12 @@ class ActionProfileSwitchTest : ActionsTestBase() {
     }
 
     @Test fun toJSONTest() = runTest {
-        sut.inputProfileName = InputProfileName(rh, localProfileManager, "Test")
+        sut.inputProfileName = InputProfileName("Test")
         JSONAssert.assertEquals(STRING_JSON, sut.toJSON(), true)
     }
 
     @Test fun fromJSONTest() = runTest {
         sut.fromJSON("""{"profileToSwitchTo":"Test"}""")
         assertThat(sut.inputProfileName.value).isEqualTo("Test")
-    }
-
-    @Test fun iconTest() = runTest {
-        assertThat(sut.icon()).isEqualTo(app.aaps.core.ui.R.drawable.ic_actions_profileswitch_24dp)
     }
 }

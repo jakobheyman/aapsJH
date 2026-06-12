@@ -2,14 +2,15 @@ package app.aaps.ui.compose.quickLaunch
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.ui.graphics.vector.ImageVector
 import app.aaps.core.interfaces.automation.Automation
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.plugin.PluginBase
-import app.aaps.core.interfaces.profile.LocalProfileManager
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.resources.ResourceHelper
+import app.aaps.core.interfaces.tempTargets.toTTPresets
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
-import androidx.compose.ui.graphics.vector.ImageVector
 import app.aaps.core.objects.wizard.QuickWizard
 import app.aaps.core.objects.wizard.QuickWizardMode
 import app.aaps.core.ui.compose.icons.IcBolus
@@ -18,7 +19,8 @@ import app.aaps.core.ui.compose.navigation.descriptionResId
 import app.aaps.core.ui.compose.navigation.icon
 import app.aaps.core.ui.compose.navigation.labelResId
 import app.aaps.ui.compose.navigation.ElementAvailability
-import app.aaps.core.interfaces.tempTargets.toTTPresets
+import app.aaps.ui.compose.scenes.SceneIcons
+import app.aaps.ui.compose.scenes.SceneRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,7 +35,8 @@ class QuickLaunchResolver @Inject constructor(
     private val quickWizard: QuickWizard,
     private val automation: Automation,
     private val activePlugin: ActivePlugin,
-    private val localProfileManager: LocalProfileManager,
+    private val profileRepository: ProfileRepository,
+    private val sceneRepository: SceneRepository,
     private val rh: ResourceHelper,
     private val elementAvailability: ElementAvailability
 ) {
@@ -58,9 +61,13 @@ class QuickLaunchResolver @Inject constructor(
             when (entry.mode()) {
                 QuickWizardMode.INSULIN -> IcBolus
                 QuickWizardMode.CARBS   -> IcCarbs
-                QuickWizardMode.WIZARD  -> action.elementType?.icon()
+                QuickWizardMode.WIZARD  -> action.elementType.icon()
             }
-        } ?: action.elementType?.icon() ?: Icons.Default.Extension
+        } ?: action.elementType.icon()
+
+        is QuickLaunchAction.SceneAction       -> sceneRepository.getScene(action.sceneId)
+            ?.let { SceneIcons.fromKey(it.icon).icon }
+            ?: action.elementType.icon()
 
         else                                   -> action.elementType?.icon() ?: Icons.Default.Extension
     }
@@ -79,9 +86,11 @@ class QuickLaunchResolver @Inject constructor(
         }
 
         is QuickLaunchAction.ProfileAction     -> {
-            val profileList = localProfileManager.profile?.getProfileList()
+            val profileList = profileRepository.profile.value?.getProfileList()
             profileList?.any { it.toString() == action.profileName } == true
         }
+
+        is QuickLaunchAction.SceneAction       -> sceneRepository.getScene(action.sceneId)?.isEnabled == true
 
         is QuickLaunchAction.PluginAction      -> {
             val plugin = findPlugin(action.className)
@@ -102,6 +111,7 @@ class QuickLaunchResolver @Inject constructor(
         }
 
         is QuickLaunchAction.ProfileAction     -> buildProfileLabel(action)
+        is QuickLaunchAction.SceneAction       -> sceneRepository.getScene(action.sceneId)?.name ?: "?"
         is QuickLaunchAction.PluginAction      -> findPlugin(action.className)?.let { rh.gs(it.pluginDescription.pluginName) } ?: "?"
 
         else                                   -> {
@@ -115,7 +125,7 @@ class QuickLaunchResolver @Inject constructor(
             when (entry.mode()) {
                 QuickWizardMode.INSULIN -> {
                     val insulin = entry.insulin()
-                    if (insulin > 0.0) "${rh.gs(app.aaps.core.ui.R.string.format_insulin_units, insulin)}" else null
+                    if (insulin > 0.0) rh.gs(app.aaps.core.ui.R.string.format_insulin_units, insulin) else null
                 }
 
                 QuickWizardMode.CARBS   -> {
@@ -143,6 +153,11 @@ class QuickLaunchResolver @Inject constructor(
         }
 
         is QuickLaunchAction.ProfileAction     -> null // label already shows profile name + params
+        is QuickLaunchAction.SceneAction       -> {
+            val scene = sceneRepository.getScene(action.sceneId)
+            scene?.let { "${it.actions.size} actions" }
+        }
+
         is QuickLaunchAction.PluginAction      -> findPlugin(action.className)
             ?.pluginDescription?.description?.takeIf { it != -1 }?.let { rh.gs(it) }
 

@@ -55,6 +55,7 @@ enum class Action(val colorGroup: ColorGroup) {
     TT_NS_REFRESH(ColorGroup.TT),
     AUTOMATION_REMOVED(ColorGroup.Aaps),
     BG_REMOVED(ColorGroup.Aaps),
+    CALIBRATION_REMOVED(ColorGroup.Careportal),
     CAREPORTAL_REMOVED(ColorGroup.Careportal),
     EXTENDED_BOLUS_REMOVED(ColorGroup.InsulinTreatment),
     FOOD_REMOVED(ColorGroup.CarbTreatment),
@@ -99,6 +100,8 @@ enum class Action(val colorGroup: ColorGroup) {
     RUNNING_MODE(ColorGroup.RunningMode),
     RUNNING_MODE_REMOVED(ColorGroup.RunningMode),
     RUNNING_MODE_UPDATED(ColorGroup.RunningMode),
+    SCENE_ACTIVATED(ColorGroup.Aaps),
+    SCENE_DEACTIVATED(ColorGroup.Aaps),
     UNKNOWN(ColorGroup.Aaps)
     ;
 

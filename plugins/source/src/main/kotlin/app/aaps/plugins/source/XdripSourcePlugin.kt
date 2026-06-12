@@ -3,6 +3,7 @@ package app.aaps.plugins.source
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import androidx.hilt.work.HiltWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import app.aaps.core.data.model.GV
@@ -22,12 +23,17 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.source.BgSource
 import app.aaps.core.interfaces.source.XDripSource
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.workflow.LoggingWorker
 import app.aaps.core.ui.compose.icons.IcXDrip
-import app.aaps.core.utils.receivers.DataWorkerStorage
+import app.aaps.core.utils.receivers.DataInbox
+import app.aaps.core.utils.receivers.Inbox
 import app.aaps.plugins.source.compose.BgSourceComposeContent
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,9 +54,7 @@ class XdripSourcePlugin @Inject constructor(
                 title = rh.gs(R.string.source_xdrip)
             )
         }
-        .pluginIcon((app.aaps.core.objects.R.drawable.ic_blooddrop_48))
         .icon(IcXDrip)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .pluginName(R.string.source_xdrip)
         .preferencesVisibleInSimpleMode(false)
         .description(R.string.description_source_xdrip),
@@ -62,16 +66,18 @@ class XdripSourcePlugin @Inject constructor(
     override var sensorBatteryLevel = -1
 
     // cannot be inner class because of needed injection
-    class XdripSourceWorker(
-        context: Context,
-        params: WorkerParameters
-    ) : LoggingWorker(context, params, Dispatchers.IO) {
-
-        @Inject lateinit var xdripSourcePlugin: XdripSourcePlugin
-        @Inject lateinit var persistenceLayer: PersistenceLayer
-        @Inject lateinit var preferences: Preferences
-        @Inject lateinit var dateUtil: DateUtil
-        @Inject lateinit var dataWorkerStorage: DataWorkerStorage
+    @HiltWorker
+    class XdripSourceWorker @AssistedInject constructor(
+        @Assisted context: Context,
+        @Assisted params: WorkerParameters,
+        aapsLogger: AAPSLogger,
+        fabricPrivacy: FabricPrivacy,
+        private val xdripSourcePlugin: XdripSourcePlugin,
+        private val persistenceLayer: PersistenceLayer,
+        private val preferences: Preferences,
+        private val dateUtil: DateUtil,
+        private val dataInbox: DataInbox
+    ) : LoggingWorker(context, params, Dispatchers.IO, aapsLogger, fabricPrivacy) {
 
         fun getSensorStartTime(bundle: Bundle): Long? {
             val now = dateUtil.now()
@@ -89,12 +95,39 @@ class XdripSourcePlugin @Inject constructor(
 
         @SuppressLint("CheckResult")
         override suspend fun doWorkAndLog(): Result {
-            var ret = Result.success()
-
+            // Drain first, unconditionally: drain() clears DataInbox's pending-work gate, so every
+            // enqueued worker MUST reach it. If we returned early (plugin disabled) before draining,
+            // the gate would stay set and silently block all future enqueues for this slot until
+            // the process restarts. Bundles drained while disabled are intentionally discarded.
+            val bundles = dataInbox.drain(XdripInbox)
             if (!xdripSourcePlugin.isEnabled()) return Result.success(workDataOf("Result" to "Plugin not enabled"))
-            val bundle = dataWorkerStorage.pickupBundle(inputData.getLong(DataWorkerStorage.STORE_KEY, -1))
-                ?: return Result.failure(workDataOf("Error" to "missing input data"))
+            if (bundles.isEmpty()) return Result.success(workDataOf("Result" to "no data"))
 
+            var hadFailure = false
+            for ((index, bundle) in bundles.withIndex()) {
+                try {
+                    processBundle(bundle)
+                } catch (e: CancellationException) {
+                    // WorkManager stopped this run (e.g. chain overload / run-attempt limit). The
+                    // coroutine contract requires CancellationException to propagate, otherwise the
+                    // loop keeps fighting a cancelled Job and spams failures for every remaining
+                    // bundle. drain() already removed the whole batch, so re-queue this bundle plus
+                    // everything not yet processed before propagating — otherwise those readings are
+                    // lost. requeue/enqueue are non-suspending, so they complete despite cancellation.
+                    dataInbox.requeue(XdripInbox, bundles.subList(index, bundles.size))
+                    throw e
+                } catch (e: Exception) {
+                    // processBundle early-returns on malformed-bundle conditions; anything that
+                    // reaches the catch is a real exception (typically a DB write). Surface as
+                    // failure so WorkInfo reflects the truth.
+                    aapsLogger.error(LTag.BGSOURCE, "Failed processing xDrip bundle", e)
+                    hadFailure = true
+                }
+            }
+            return if (hadFailure) Result.failure(workDataOf("Error" to "one or more bundles failed")) else Result.success()
+        }
+
+        private suspend fun processBundle(bundle: Bundle) {
             aapsLogger.debug(LTag.BGSOURCE, "Received xDrip data: $bundle")
             val glucoseValues = mutableListOf<GV>()
             glucoseValues += GV(
@@ -127,14 +160,14 @@ class XdripSourcePlugin @Inject constructor(
             }
             // Always update glucoseValues, but use the decided sensorStartTime
             if (glucoseValues[0].timestamp > 0 && glucoseValues[0].value > 0.0) {
-                try {
-                    persistenceLayer.insertCgmSourceData(Sources.Xdrip, glucoseValues, emptyList(), finalSensorStartTime)
-                } catch (e: Exception) {
-                    ret = Result.failure(workDataOf("Error" to e.toString()))
-                }
-            } else return Result.failure(workDataOf("Error" to "missing glucoseValue"))
+                persistenceLayer.insertCgmSourceData(Sources.Xdrip, glucoseValues, emptyList(), finalSensorStartTime)
+            } else {
+                aapsLogger.warn(LTag.BGSOURCE, "Skipping xDrip bundle: missing glucoseValue")
+                return
+            }
             xdripSourcePlugin.sensorBatteryLevel = bundle.getInt(Intents.EXTRA_SENSOR_BATTERY, -1)
-            return ret
         }
     }
 }
+
+object XdripInbox : Inbox<Bundle>("xdrip-bg", XdripSourcePlugin.XdripSourceWorker::class.java)

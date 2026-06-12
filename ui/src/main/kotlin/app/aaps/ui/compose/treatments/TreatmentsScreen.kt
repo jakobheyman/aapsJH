@@ -160,7 +160,7 @@ fun TreatmentsScreen(
     Scaffold(
         topBar = {
             AapsTopAppBar(
-                title = { Text(activeToolbar.title) },
+                title = { Text(activeToolbar.title.ifEmpty { stringResource(app.aaps.core.ui.R.string.treatments_history) }) },
                 navigationIcon = { activeToolbar.navigationIcon() },
                 actions = { activeToolbar.actions(this) }
             )
@@ -245,7 +245,6 @@ fun TreatmentsScreen(
                     app.aaps.core.ui.R.string.careportal_profileswitch ->
                         ProfileSwitchScreen(
                             viewModel = viewModel.profileSwitchViewModel,
-                            localProfileManager = viewModel.localProfileManager,
                             decimalFormatter = viewModel.decimalFormatter,
                             uel = viewModel.uel,
                             setToolbarConfig = setConfig,

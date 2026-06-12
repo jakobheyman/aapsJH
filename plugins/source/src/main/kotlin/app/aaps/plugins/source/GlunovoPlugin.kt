@@ -51,9 +51,7 @@ class GlunovoPlugin @Inject constructor(
                 title = resourceHelper.gs(R.string.glunovo)
             )
         }
-        .pluginIcon(app.aaps.core.objects.R.drawable.ic_glunovo)
         .icon(IcPluginGlunovo)
-        .preferencesId(PluginDescription.PREFERENCE_SCREEN)
         .pluginName(R.string.glunovo)
         .shortName(R.string.glunovo)
         .preferencesVisibleInSimpleMode(false)
@@ -86,13 +84,13 @@ class GlunovoPlugin @Inject constructor(
 
     private val disposable = CompositeDisposable()
 
-    override fun onStart() {
+    override suspend fun onStart() {
         super.onStart()
         handler = Handler(HandlerThread(this::class.java.simpleName + "Handler").also { it.start() }.looper)
         handler?.postDelayed(refreshLoop, T.secs(30).msecs()) // do not start immediately, app may be still starting
     }
 
-    override fun onStop() {
+    override suspend fun onStop() {
         super.onStop()
         handler?.removeCallbacksAndMessages(null)
         handler?.looper?.quit()

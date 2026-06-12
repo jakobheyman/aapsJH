@@ -16,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.notifications.AapsNotification
+import app.aaps.core.interfaces.notifications.AlarmSoundPlayer
 import app.aaps.core.interfaces.notifications.NotificationAction
 import app.aaps.core.interfaces.notifications.NotificationHandle
 import app.aaps.core.interfaces.notifications.NotificationHolder
@@ -24,9 +25,9 @@ import app.aaps.core.interfaces.notifications.NotificationLevel
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.ui.IconsProvider
-import app.aaps.core.interfaces.ui.UiInteraction
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.implementation.androidNotification.AlarmNotificationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -49,17 +50,30 @@ class NotificationManagerImpl @Inject constructor(
     private val preferences: Preferences,
     private val iconsProvider: IconsProvider,
     private val notificationHolder: NotificationHolder,
-    private val uiInteraction: UiInteraction
+    private val alarmNotificationManager: AlarmNotificationManager,
+    private val alarmSoundPlayer: AlarmSoundPlayer
 ) : NotificationManager {
 
     private val _notifications = MutableStateFlow<List<AapsNotification>>(emptyList())
     override val notifications: StateFlow<List<AapsNotification>> = _notifications.asStateFlow()
 
+    /** instanceKey of the URGENT alarm currently owning [AlarmSoundPlayer], or null when silent. */
+    private var soundingKey: Int? = null
+
     private val nextInstanceKey = AtomicInteger(10000)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val dismissReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val ordinal = intent?.getIntExtra("alertID", -1) ?: -1
+            NotificationId.fromOrdinal(ordinal)?.let { dismiss(it) }
+        }
+    }
+
     init {
+        createNotificationChannel()
+
         // Periodic cleanup for expiration when no new posts arrive
         scope.launch {
             while (true) {
@@ -75,7 +89,7 @@ class NotificationManagerImpl @Inject constructor(
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    override fun createNotificationChannel() {
+    private fun createNotificationChannel() {
         val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as AndroidNotificationManager
         val channel = NotificationChannel(NotificationManager.CHANNEL_ID, NotificationManager.CHANNEL_ID, AndroidNotificationManager.IMPORTANCE_HIGH)
         mgr.createNotificationChannel(channel)
@@ -144,10 +158,10 @@ class NotificationManagerImpl @Inject constructor(
         if (id.allowMultiple) {
             instanceKey = nextInstanceKey.getAndIncrement()
         } else {
-            instanceKey = id.legacyId
-            // Stop alarm for replaced notification if it had sound
+            instanceKey = id.ordinal
+            // Cancel just the replaced notification's own sound — not any other concurrent alarms.
             current.filter { it.id == id }.forEach { old ->
-                if (old.soundRes != null) uiInteraction.stopAlarm("Replaced ${old.text}")
+                cancelSilentAlarmNotification(old)
             }
             current.removeAll { it.id == id }
         }
@@ -168,15 +182,22 @@ class NotificationManagerImpl @Inject constructor(
         current.sortBy { it.level.priority }
         _notifications.value = current
 
-        // Start alarm if sound specified
-        if (soundRes != null && soundRes != 0) {
-            uiInteraction.startAlarm(soundRes, text)
-        }
-
-        // Raise Android system notification if pref enabled and no action buttons
-        if (preferences.get(BooleanKey.AlertUrgentAsAndroidNotification) && actions.isEmpty()) {
+        // Alarm tier (URGENT + sound): the system notification is silent (heads-up + vibration, no
+        // channel sound); the ramping audio is owned by AlarmSoundPlayer and driven by
+        // refreshAlarmSound() below so concurrent URGENT alarms hand off correctly. Sound is gated
+        // on URGENT — a soundRes on a lower level is intentionally ignored (only the alarm tier rings).
+        if (level == NotificationLevel.URGENT && soundRes != null && soundRes != 0) {
+            alarmNotificationManager.postSilentAlarmNotification(
+                notificationKey = instanceKey,
+                title = rh.gs(app.aaps.core.ui.R.string.urgent_alarm),
+                body = text,
+                urgent = true
+            )
+        } else if (preferences.get(BooleanKey.AlertUrgentAsAndroidNotification) && actions.isEmpty()) {
+            // No-sound visual-only path (preference-gated).
             raiseSystemNotification(notification)
         }
+        refreshAlarmSound()
 
         aapsLogger.debug(LTag.NOTIFICATION, "Notification posted: [${id.name}] $text")
         return NotificationHandle(instanceKey)
@@ -211,9 +232,10 @@ class NotificationManagerImpl @Inject constructor(
         val filtered = current.filter { it.id != id }
         if (filtered.size != current.size) {
             dismissed.forEach { n ->
-                if (n.soundRes != null) uiInteraction.stopAlarm("Dismissed ${n.text}")
+                cancelSilentAlarmNotification(n)
             }
             _notifications.value = filtered
+            refreshAlarmSound()
             aapsLogger.debug(LTag.NOTIFICATION, "Notification dismissed: ${id.name}")
         }
     }
@@ -225,13 +247,45 @@ class NotificationManagerImpl @Inject constructor(
         val filtered = current.filter { it.instanceKey != handle.instanceKey }
         if (filtered.size != current.size) {
             dismissed.forEach { n ->
-                if (n.soundRes != null) uiInteraction.stopAlarm("Dismissed ${n.text}")
+                cancelSilentAlarmNotification(n)
             }
             _notifications.value = filtered
+            refreshAlarmSound()
             aapsLogger.debug(LTag.NOTIFICATION, "Notification dismissed by handle: ${handle.instanceKey}")
         }
     }
 
+    /**
+     * Silence and dismiss every active audible alarm — the global "mute all" path used by the Wear
+     * snooze/mute gesture, the full-screen acknowledge, and app onTerminate.
+     *
+     * Drops every audible URGENT notification from the registry so [refreshAlarmSound] stops the
+     * internal ([AlarmSoundPlayer.OWNER_INTERNAL]) player and clears [soundingKey]; then stops the
+     * full-screen ([AlarmSoundPlayer.OWNER_FULLSCREEN]) audio and cancels every alarm system
+     * notification (FSI + the silent sound ones). A visible full-screen ErrorActivity stays on
+     * screen but goes silent until the user dismisses it.
+     */
+    @Synchronized
+    override fun muteAllAlarms() {
+        val current = _notifications.value
+        val audible = current.filter { it.level == NotificationLevel.URGENT && it.soundRes != null && it.soundRes != 0 }
+        if (audible.isNotEmpty()) {
+            audible.forEach { cancelSilentAlarmNotification(it) }
+            _notifications.value = current - audible.toSet()
+        }
+        refreshAlarmSound()
+        alarmSoundPlayer.stop(AlarmSoundPlayer.OWNER_FULLSCREEN)
+        alarmNotificationManager.cancelAlarm()
+        aapsLogger.debug(LTag.NOTIFICATION, "Muted all alarms")
+    }
+
+    /**
+     * Mutates `_notifications.value` — must run while holding this object's monitor.
+     * Both current callers (`@Synchronized postInternal` via `removeExpired()` and
+     * `@Synchronized cleanUp()`) satisfy that, but the @Synchronized annotation here makes
+     * the contract explicit and safe against future direct callers.
+     */
+    @Synchronized
     private fun removeExpired() {
         val now = System.currentTimeMillis()
         val current = _notifications.value
@@ -240,10 +294,47 @@ class NotificationManagerImpl @Inject constructor(
         }
         if (expired.isNotEmpty()) {
             expired.forEach { n ->
-                if (n.soundRes != null) uiInteraction.stopAlarm("Expired ${n.text}")
+                cancelSilentAlarmNotification(n)
                 aapsLogger.debug(LTag.NOTIFICATION, "Notification expired: ${n.text}")
             }
             _notifications.value = current - expired.toSet()
+            refreshAlarmSound()
+        }
+    }
+
+    /**
+     * Cancel the silent system notification for [n] (no-op if it never carried sound). The ramping
+     * audio is (re)evaluated separately by [refreshAlarmSound] after the registry has changed.
+     */
+    private fun cancelSilentAlarmNotification(n: AapsNotification) {
+        if (n.soundRes != null) alarmNotificationManager.cancelSoundAlarm(n.instanceKey)
+    }
+
+    /**
+     * Re-evaluate which alarm owns the ramping audio: the highest-priority active URGENT
+     * notification carrying a sound owns it; when it changes the player switches, when none remain
+     * it stops. Replaces a single "currently sounding" slot so concurrent URGENT alarms hand off
+     * correctly — dismissing the audible one promotes the next remaining one instead of going silent.
+     *
+     * Must run after every [_notifications] mutation. Uses [AlarmSoundPlayer.OWNER_INTERNAL] so it
+     * never silences a full-screen (ErrorActivity) alarm.
+     */
+    private fun refreshAlarmSound() {
+        val top = _notifications.value
+            .filter { it.level == NotificationLevel.URGENT && it.soundRes != null && it.soundRes != 0 }
+            .maxByOrNull { it.date }
+        when {
+            top == null                    ->
+                if (soundingKey != null) {
+                    alarmSoundPlayer.stop(AlarmSoundPlayer.OWNER_INTERNAL)
+                    soundingKey = null
+                }
+
+            top.instanceKey != soundingKey -> {
+                soundingKey = top.instanceKey
+                alarmSoundPlayer.play(top.soundRes!!, AlarmSoundPlayer.OWNER_INTERNAL)
+            }
+            // else: already playing the top alarm — leave the ramp running.
         }
     }
 
@@ -258,7 +349,7 @@ class NotificationManagerImpl @Inject constructor(
             .setContentText(n.text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(n.text))
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setDeleteIntent(deleteIntent(n.id.legacyId))
+            .setDeleteIntent(deleteIntent(n.id.ordinal))
             .setContentIntent(notificationHolder.openAppIntent(context))
         if (n.level == NotificationLevel.URGENT) {
             notificationBuilder.setVibrate(longArrayOf(1000, 1000, 1000, 1000))
@@ -268,14 +359,7 @@ class NotificationManagerImpl @Inject constructor(
             notificationBuilder.setVibrate(longArrayOf(0, 100, 50, 100, 50))
                 .setContentTitle(rh.gs(app.aaps.core.ui.R.string.info))
         }
-        mgr.notify(n.id.legacyId, notificationBuilder.build())
-    }
-
-    private val dismissReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val legacyId = intent?.getIntExtra("alertID", -1) ?: -1
-            NotificationId.fromLegacyId(legacyId)?.let { dismiss(it) }
-        }
+        mgr.notify(n.id.ordinal, notificationBuilder.build())
     }
 
     private fun deleteIntent(id: Int): PendingIntent {

@@ -4,6 +4,7 @@ import android.content.Context
 import app.aaps.core.interfaces.configuration.ConfigBuilder
 import app.aaps.core.interfaces.constraints.Constraint
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
+import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.pump.BolusProgressData
@@ -51,6 +52,8 @@ import app.aaps.shared.tests.TestBase
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
@@ -70,6 +73,7 @@ import org.mockito.kotlin.whenever
 class BLECommIntegrationTest : TestBase() {
 
     @Mock lateinit var rh: ResourceHelper
+    @Mock lateinit var ch: ConcentrationHelper
     @Mock lateinit var context: Context
     @Mock lateinit var danaRSMessageHashTable: DanaRSMessageHashTable
     @Mock lateinit var danaRSPlugin: DanaRSPlugin
@@ -397,7 +401,7 @@ class BLECommIntegrationTest : TestBase() {
         bleComm.sendMessage(startPacket)
 
         // Stop the bolus
-        val stopPacket = DanaRSPacketBolusSetStepBolusStop(aapsLogger, BolusProgressData(), rh, danaPump)
+        val stopPacket = DanaRSPacketBolusSetStepBolusStop(aapsLogger, BolusProgressData(ch, rh, CoroutineScope(Dispatchers.Unconfined)), rh, danaPump)
         bleComm.sendMessage(stopPacket)
 
         assertThat(stopPacket.isReceived).isTrue()

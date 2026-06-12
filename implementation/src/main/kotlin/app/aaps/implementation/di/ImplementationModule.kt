@@ -11,12 +11,14 @@ import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.local.LocaleDependentSetting
 import app.aaps.core.interfaces.logging.LoggerUtils
 import app.aaps.core.interfaces.logging.UserEntryLogger
+import app.aaps.core.interfaces.notifications.AlarmSoundPlayer
 import app.aaps.core.interfaces.notifications.NotificationHolder
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.interfaces.overview.LastBgData
+import app.aaps.core.interfaces.overview.OverviewData
 import app.aaps.core.interfaces.plugin.ActivePlugin
-import app.aaps.core.interfaces.profile.LocalProfileManager
 import app.aaps.core.interfaces.profile.ProfileFunction
+import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.profile.ProfileStore
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.profiling.Profiler
@@ -31,7 +33,6 @@ import app.aaps.core.interfaces.pump.PumpStatusProvider
 import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.PumpWithConcentration
 import app.aaps.core.interfaces.pump.TemporaryBasalStorage
-import app.aaps.core.interfaces.pump.WarnColors
 import app.aaps.core.interfaces.receivers.ReceiverStatusStore
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.stats.DexcomTirCalculator
@@ -48,6 +49,7 @@ import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.implementation.alerts.LocalAlertUtilsImpl
+import app.aaps.implementation.androidNotification.AlarmSoundPlayerImpl
 import app.aaps.implementation.androidNotification.NotificationHolderImpl
 import app.aaps.implementation.aps.DetermineBasalResult
 import app.aaps.implementation.db.ProcessedTbrEbDataImpl
@@ -60,10 +62,11 @@ import app.aaps.implementation.logging.LoggerUtilsImpl
 import app.aaps.implementation.logging.UserEntryLoggerImpl
 import app.aaps.implementation.notifications.NotificationManagerImpl
 import app.aaps.implementation.overview.LastBgDataImpl
+import app.aaps.implementation.overview.OverviewDataImpl
 import app.aaps.implementation.plugin.PluginStore
 import app.aaps.implementation.preference.PreferenceVisibilityContextImpl
-import app.aaps.implementation.profile.LocalProfileManagerImpl
 import app.aaps.implementation.profile.ProfileFunctionImpl
+import app.aaps.implementation.profile.ProfileRepositoryImpl
 import app.aaps.implementation.profile.ProfileStoreObject
 import app.aaps.implementation.profile.ProfileUtilImpl
 import app.aaps.implementation.profiling.ProfilerImpl
@@ -78,7 +81,6 @@ import app.aaps.implementation.pump.PumpStatusProviderImpl
 import app.aaps.implementation.pump.PumpSyncImplementation
 import app.aaps.implementation.pump.PumpWithConcentrationImpl
 import app.aaps.implementation.pump.TemporaryBasalStorageImpl
-import app.aaps.implementation.pump.WarnColorsImpl
 import app.aaps.implementation.receivers.NetworkChangeReceiver
 import app.aaps.implementation.receivers.ReceiverStatusStoreImpl
 import app.aaps.implementation.resources.IconsProviderImplementation
@@ -122,6 +124,7 @@ class ImplementationModule {
         @Binds fun bindFabricPrivacy(fabricPrivacyImpl: FabricPrivacyImpl): FabricPrivacy
         @Binds fun bindActivePlugin(pluginStore: PluginStore): ActivePlugin
         @Binds fun bindLastBgData(lastBgData: LastBgDataImpl): LastBgData
+        @Binds fun bindOverviewData(overviewData: OverviewDataImpl): OverviewData
         @Binds fun bindProcessedTbrEbData(pProcessedTbrEbData: ProcessedTbrEbDataImpl): ProcessedTbrEbData
         @Binds fun bindUserEntryLogger(userEntryLoggerImpl: UserEntryLoggerImpl): UserEntryLogger
         @Binds fun bindInsulin(insulinImpl: InsulinImpl): Insulin
@@ -136,7 +139,6 @@ class ImplementationModule {
         @Binds fun bindSecureEncrypt(secureEncryptImpl: SecureEncryptImpl): SecureEncrypt
         @Binds fun bindLoggerUtils(loggerUtilsImpl: LoggerUtilsImpl): LoggerUtils
         @Binds fun bindProfiler(profilerImpl: ProfilerImpl): Profiler
-        @Binds fun bindWarnColors(warnColorsImpl: WarnColorsImpl): WarnColors
         @Binds fun bindHardLimits(hardLimitsImpl: HardLimitsImpl): HardLimits
         @Binds fun bindResourceHelper(resourceHelperImpl: ResourceHelperImpl): ResourceHelper
         @Binds fun bindBlePreCheck(blePreCheckImpl: BlePreCheckImpl): BlePreCheck
@@ -153,9 +155,10 @@ class ImplementationModule {
         @Binds fun bindIconsProviderInterface(iconsProvider: IconsProviderImplementation): IconsProvider
         @Binds fun bindNotificationHolderInterface(notificationHolder: NotificationHolderImpl): NotificationHolder
         @Binds fun bindNotificationManager(notificationManagerImpl: NotificationManagerImpl): NotificationManager
+        @Binds fun bindAlarmSoundPlayer(alarmSoundPlayerImpl: AlarmSoundPlayerImpl): AlarmSoundPlayer
         @Binds fun bindsProfileFunction(profileFunctionImpl: ProfileFunctionImpl): ProfileFunction
         @Binds fun bindsProfileUtil(profileUtilImpl: ProfileUtilImpl): ProfileUtil
-        @Binds fun bindsLocalProfileManager(localProfileManagerImpl: LocalProfileManagerImpl): LocalProfileManager
+        @Binds fun bindsProfileRepository(profileRepositoryImpl: ProfileRepositoryImpl): ProfileRepository
         @Binds fun bindsStorage(fileStorage: FileStorage): Storage
         @Binds fun bindsReceiverStatusStore(receiverStatusStoreImpl: ReceiverStatusStoreImpl): ReceiverStatusStore
         @Binds fun bindsUserEntryPresentationHelper(userEntryPresentationHelperImpl: UserEntryPresentationHelperImpl): UserEntryPresentationHelper

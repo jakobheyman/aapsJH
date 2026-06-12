@@ -25,13 +25,13 @@ class Objective6 @Inject constructor(
         tasks.add(MinimumDurationTask(this, T.days(0).msecs()))
         tasks.add(
             object : Task(this, R.string.closedmodeenabled) {
-                override fun isCompleted(): Boolean = true
-                //override fun isCompleted(): Boolean = loop.runningMode == RM.Mode.CLOSED_LOOP
+                override suspend fun isCompleted(): Boolean = true
+                //override suspend fun isCompleted(): Boolean = loop.runningMode() == RM.Mode.CLOSED_LOOP
             })
         tasks.add(
             object : Task(this, R.string.maxiobset) {
 
-                override fun isCompleted(): Boolean {
+                override suspend fun isCompleted(): Boolean {
                     return true
                     //val maxIOB = constraintChecker.getMaxIOBAllowed().value()
                     //return maxIOB > 0

@@ -1,6 +1,7 @@
 package app.aaps.ui.compose.main
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -16,12 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.aaps.core.ui.compose.icons.IcSettingsOff
 import app.aaps.ui.search.M3SearchBar
 import app.aaps.ui.search.SearchUiState
 
 /**
  * Main top bar with M3-style search bar.
- * Layout: [Menu] [----Search Bar----] [Settings]
+ * Layout: [Menu] [----Search Bar----] [SimpleMode?] [Settings]
  *
  * @param searchUiState Current search UI state
  * @param onMenuClick Called when menu button is clicked
@@ -29,6 +31,7 @@ import app.aaps.ui.search.SearchUiState
  * @param onSearchQueryChange Called when search query changes
  * @param onSearchClear Called when search query is cleared
  * @param onSearchActiveChange Called when search active state changes
+ * @param isSimpleMode When true, shows a non-interactive simple-mode indicator next to Settings
  * @param modifier Modifier for the component
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +43,7 @@ fun MainTopBar(
     onSearchQueryChange: (String) -> Unit,
     onSearchClear: () -> Unit,
     onSearchActiveChange: (Boolean) -> Unit,
+    isSimpleMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -68,8 +72,10 @@ fun MainTopBar(
         },
         actions = {
             IconButton(onClick = onPreferencesClick) {
+                // In simple mode the gear shows "crossed" (IcSettingsOff) to signal the mode;
+                // the button action (open settings) is unchanged.
                 Icon(
-                    imageVector = Icons.Default.Settings,
+                    imageVector = if (isSimpleMode) IcSettingsOff else Icons.Default.Settings,
                     contentDescription = stringResource(app.aaps.core.ui.R.string.settings)
                 )
             }
@@ -77,6 +83,7 @@ fun MainTopBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent
         ),
+        windowInsets = WindowInsets(0),
         modifier = modifier
     )
 }
