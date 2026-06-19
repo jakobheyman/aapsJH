@@ -30,8 +30,12 @@ class BolusProgressData @Inject constructor(
     private val _state = MutableStateFlow<BolusProgressState?>(null)
     val state: StateFlow<BolusProgressState?> = _state.asStateFlow()
 
-    /** Generation counter — incremented on each [start]; guards the delayed clear in [completeAndAutoClear]. */
+    /** Generation counter — incremented on each [start]; guards the delayed clear in [completeAndAutoClear]
+     *  and the stall flag in [markStalled]. */
     private val generation = AtomicLong(0)
+
+    /** Snapshot of the current generation, captured by the client watchdog when it arms (see [markStalled]). */
+    val currentGeneration: Long get() = generation.get()
 
     /**
      * Called by CommandQueue before bolus delivery starts.
@@ -56,7 +60,8 @@ class BolusProgressData @Inject constructor(
      * Purely informational — does not control dialog lifecycle.
      */
     fun updateProgress(percent: Int, status: String, delivered: PumpInsulin = PumpInsulin(0.0)) {
-        _state.update { it?.copy(percent = percent, status = status, wearStatus = status, delivered = delivered) }
+        // A fresh frame proves liveness → clear any prior stall flag (lets the client dialog recover).
+        _state.update { it?.copy(percent = percent, status = status, wearStatus = status, delivered = delivered, stalled = false) }
     }
 
     /**
@@ -72,7 +77,7 @@ class BolusProgressData @Inject constructor(
                          else rh.gs(app.aaps.core.interfaces.R.string.bolus_delivered_successfully, insulin)
             val wearStatus = if (percent < 100) ch.bolusProgressString(delivered, insulin, state.isPriming)
                              else rh.gs(app.aaps.core.interfaces.R.string.bolus_delivered_successfully, insulin)
-            _state.update { it?.copy(percent = percent, status = status, wearStatus = wearStatus, delivered = delivered) }
+            _state.update { it?.copy(percent = percent, status = status, wearStatus = wearStatus, delivered = delivered, stalled = false) }
         }
     }
 
@@ -86,7 +91,7 @@ class BolusProgressData @Inject constructor(
             val percent = (ch.fromPump(delivered, state.isPriming) / insulin * 100).toInt().coerceAtMost(100)
             val status = ch.bolusProgressString(delivered, state.isPriming)
             val wearStatus = ch.bolusProgressString(delivered, insulin, state.isPriming)
-            _state.update { it?.copy(percent = percent, status = status, wearStatus = wearStatus, delivered = delivered) }
+            _state.update { it?.copy(percent = percent, status = status, wearStatus = wearStatus, delivered = delivered, stalled = false) }
         }
     }
 
@@ -118,7 +123,9 @@ class BolusProgressData @Inject constructor(
      * finishing the current command.
      */
     fun completeAndAutoClear(delayMs: Long = AUTO_CLEAR_DELAY_MS) {
-        _state.update { it?.copy(percent = 100) }
+        // Also clear any stall flag: if the client recovered via a terminal Complete frame (no intervening
+        // Active frame to reset it), the success state must not keep showing the "connection lost" UI.
+        _state.update { it?.copy(percent = 100, stalled = false) }
         val expectedGeneration = generation.get()
         appScope.launch {
             delay(delayMs)
@@ -136,6 +143,26 @@ class BolusProgressData @Inject constructor(
         _state.value = null
     }
 
+    /**
+     * Called by the client/follower remote-progress watchdog when no progress frame has arrived from
+     * the master for too long (lost connection / relay outage) before a terminal frame. Flags the
+     * existing state so the client dialog can surface a "connection lost" message + manual dismiss.
+     *
+     * [expectedGeneration] is the generation captured when the watchdog armed (see [currentGeneration]).
+     * The watchdog runs on a pool thread and is only cooperatively cancellable, so a cancel() racing in
+     * right after its delay() resumes cannot stop this call. The guards make a stray fire a no-op:
+     *  - generation mismatch → a newer bolus has begun; don't flag it,
+     *  - percent >= 100 → the bolus already completed; don't flip the success view to "connection lost",
+     *  - null → already dismissed/cleared.
+     * Never invoked on the master — a local bolus is driven straight by [updateProgress].
+     */
+    fun markStalled(expectedGeneration: Long) {
+        _state.update {
+            if (it != null && it.percent < 100 && generation.get() == expectedGeneration) it.copy(stalled = true)
+            else it
+        }
+    }
+
     companion object {
         private const val AUTO_CLEAR_DELAY_MS = 5_000L
     }
@@ -150,5 +177,11 @@ data class BolusProgressState(
     val wearStatus: String,
     val delivered: PumpInsulin,
     val stopPressed: Boolean,
-    val stopDeliveryEnabled: Boolean
+    val stopDeliveryEnabled: Boolean,
+    /**
+     * Client/follower only: set by the remote progress watchdog when progress frames from the master
+     * stop arriving (lost connection / relay outage) before a terminal frame. Drives the dialog's
+     * "connection lost" state + manual dismiss. Always false for a local (master) bolus.
+     */
+    val stalled: Boolean = false
 )
