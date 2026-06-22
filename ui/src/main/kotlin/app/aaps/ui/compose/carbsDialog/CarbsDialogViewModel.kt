@@ -85,6 +85,8 @@ class CarbsDialogViewModel @Inject constructor(
         val now = dateUtil.now()
         val maxCarbs = constraintChecker.getMaxCarbsAllowed().value()
         val units = profileUtil.units
+        // COB removal limit: a negative entry may remove at most the carbs currently on board (floored, ≥0).
+        val cobLimit = (iobCobCalculator.getCobInfo("carbsDialog").displayCob ?: 0.0).toInt().coerceAtLeast(0)
 
         // Bolus reminder: visible when preference enabled AND predicted BG is low
         val showBolusReminder = if (preferences.get(BooleanKey.OverviewUseBolusReminder)) {
@@ -109,6 +111,7 @@ class CarbsDialogViewModel @Inject constructor(
                 eventTime = now,
                 eventTimeOriginal = now,
                 maxCarbs = maxCarbs,
+                cobLimit = cobLimit,
                 carbsButtonIncrement1 = preferences.get(IntKey.OverviewCarbsButtonIncrement1),
                 carbsButtonIncrement2 = preferences.get(IntKey.OverviewCarbsButtonIncrement2),
                 carbsButtonIncrement3 = preferences.get(IntKey.OverviewCarbsButtonIncrement3),
@@ -162,8 +165,13 @@ class CarbsDialogViewModel @Inject constructor(
 
     fun updateCarbs(value: Int) {
         val state = uiState.value
-        val clamped = value.coerceIn(-state.maxCarbs, state.maxCarbs)
-        _uiState.update { it.copy(carbs = clamped) }
+        // Lower bound = -COB (can't remove more than is on board); upper bound = max carbs.
+        val clamped = value.coerceIn(-state.cobLimit, state.maxCarbs)
+        // A negative entry (COB removal) can't be future-dated — pin the time back to "now" if it was in the future.
+        if (clamped < 0 && state.timeOffsetMinutes > 0)
+            _uiState.update { it.copy(carbs = clamped, timeOffsetMinutes = 0, eventTime = it.eventTimeOriginal) }
+        else
+            _uiState.update { it.copy(carbs = clamped) }
     }
 
     fun addCarbs(increment: Int) {
@@ -173,8 +181,10 @@ class CarbsDialogViewModel @Inject constructor(
     }
 
     fun updateTimeOffset(minutes: Int) {
-        val clamped = minutes.coerceIn(-7 * 24 * 60, 12 * 60)
         val state = uiState.value
+        // Negative carbs (COB removal) may only be now/past — cap the forward range at 0.
+        val upper = if (state.carbs < 0) 0 else 12 * 60
+        val clamped = minutes.coerceIn(-7 * 24 * 60, upper)
         val newEventTime = state.eventTimeOriginal + clamped.toLong() * 60 * 1000
         _uiState.update {
             it.copy(
@@ -233,11 +243,13 @@ class CarbsDialogViewModel @Inject constructor(
 
     fun updateEventTime(timeMillis: Long) {
         val state = uiState.value
-        val newOffset = ((timeMillis - state.eventTimeOriginal) / (1000 * 60)).toInt()
+        val rawOffset = ((timeMillis - state.eventTimeOriginal) / (1000 * 60)).toInt()
+        // Negative carbs (COB removal) may only be now/past — snap a future pick back to "now".
+        val pinToNow = state.carbs < 0 && rawOffset > 0
         _uiState.update {
             it.copy(
-                eventTime = timeMillis,
-                timeOffsetMinutes = newOffset
+                eventTime = if (pinToNow) it.eventTimeOriginal else timeMillis,
+                timeOffsetMinutes = if (pinToNow) 0 else rawOffset
             )
         }
     }
@@ -260,9 +272,12 @@ class CarbsDialogViewModel @Inject constructor(
             }
             when (val prepared = batchExecutor.prepare(actions, Sources.CarbDialog, rh.gs(app.aaps.core.ui.R.string.carbs))) {
                 is ActionProgress.Prepared -> _sideEffect.tryEmit(SideEffect.ShowConfirmation(prepared.id, prepared.lines))
-                is ActionProgress.Rejected ->
-                    if (prepared.reason == FailureReason.NotReachable) _sideEffect.tryEmit(SideEffect.ShowDeliveryError(rh.gs(app.aaps.core.ui.R.string.clientcontrol_fail_not_reachable)))
-                    else prepared.detail?.let { _sideEffect.tryEmit(SideEffect.ShowDeliveryError(it)) }
+                is ActionProgress.Rejected -> when (prepared.reason) {
+                    FailureReason.NotReachable -> _sideEffect.tryEmit(SideEffect.ShowDeliveryError(rh.gs(app.aaps.core.ui.R.string.clientcontrol_fail_not_reachable)))
+                    // No-op (e.g. nothing left to remove after a COB-shrink between open and confirm): neutral message, NOT the bolus-error alarm.
+                    FailureReason.NoAction     -> _sideEffect.tryEmit(SideEffect.ShowNoActionDialog)
+                    else                       -> prepared.detail?.let { _sideEffect.tryEmit(SideEffect.ShowDeliveryError(it)) }
+                }
 
                 else                       -> Unit // Unconfirmed → app-level modal
             }

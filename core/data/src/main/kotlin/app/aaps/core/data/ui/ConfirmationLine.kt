@@ -10,7 +10,7 @@ package app.aaps.core.data.ui
  */
 enum class ConfirmationRole {
 
-    NORMAL, PRIMARY, BOLUS, CARBS, COB, WARNING, INFO
+    NORMAL, PRIMARY, BOLUS, CARBS, COB, WARNING, INFO, TEMP_TARGET
 }
 
 /**

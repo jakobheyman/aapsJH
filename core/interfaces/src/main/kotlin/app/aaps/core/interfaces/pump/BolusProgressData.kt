@@ -39,9 +39,13 @@ class BolusProgressData @Inject constructor(
 
     /**
      * Called by CommandQueue before bolus delivery starts.
+     *
+     * Returns the generation token assigned to this bolus. Callers should keep it and pass it to the
+     * generation-scoped [clear] at the end of their command so a finished/cancelled bolus can never
+     * wipe the progress state of a NEWER bolus that has already started (see [clear]).
      */
-    fun start(insulin: Double, isSMB: Boolean, isPriming: Boolean = false) {
-        generation.incrementAndGet()
+    fun start(insulin: Double, isSMB: Boolean, isPriming: Boolean = false): Long {
+        val gen = generation.incrementAndGet()
         _state.value = BolusProgressState(
             insulin = insulin,
             isSMB = isSMB,
@@ -53,6 +57,7 @@ class BolusProgressData @Inject constructor(
             stopPressed = false,
             stopDeliveryEnabled = true
         )
+        return gen
     }
 
     /**
@@ -138,9 +143,35 @@ class BolusProgressData @Inject constructor(
     /**
      * Called by CommandQueue to dismiss the UI.
      * Sets state to null — no bolus in progress.
+     *
+     * Unconditional: use only on genuine abort-everything paths (connection timeout, cancelAllBoluses,
+     * remote Cleared frame). A per-bolus command MUST use the generation-scoped [clear] overload instead.
      */
     fun clear() {
         _state.value = null
+    }
+
+    /**
+     * Generation-scoped clear for a single bolus command at the end of execute()/on cancel().
+     *
+     * Only nulls the state when [expectedGeneration] (the token returned by this command's [start]) is
+     * still the current generation. If a newer bolus has begun in the meantime, this is a no-op so the
+     * finishing/cancelled command cannot wipe the newer bolus's progress state.
+     *
+     * Why this matters: [start] is called at ENQUEUE time, so an SMB queued just before a manual bolus
+     * (while the pump is reconnecting) gets generation N and the manual bolus generation N+1 — both before
+     * either executes. The SMB then executes first and, without this guard, its terminal unconditional
+     * [clear] would null the state the still-pending manual bolus depends on. Every subsequent
+     * [updateProgress] frame would then be a no-op (state == null), so the driver's deliverTreatment reads
+     * delivered = 0 and raises a false BOLUS_DELIVERY_FAILED even though the pump delivered in full.
+     *
+     * [start] (enqueue thread, under the queue's lock) and this clear (queue-worker thread) can run
+     * concurrently, so the check-and-null is done atomically via [MutableStateFlow.update]: the generation
+     * is re-read inside the CAS loop, so a newer bolus's [start] that bumps the generation turns this into
+     * a no-op instead of wiping the state it just installed.
+     */
+    fun clear(expectedGeneration: Long) {
+        _state.update { current -> if (generation.get() == expectedGeneration) null else current }
     }
 
     /**

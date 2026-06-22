@@ -311,10 +311,19 @@ class SceneExecutor @Inject constructor(
 
         val now = dateUtil.now()
 
-        // Only revert actions that have no duration and persist until manually reverted
+        // Revert actions whose effect does NOT end on its own once the duration elapses:
+        //  - SmbToggle: a preference with no duration model — must be restored explicitly.
+        //  - ProfileSwitch: the timed ProfileSwitch record expires, but the EffectiveProfileSwitch it
+        //    produced does NOT — getEffectiveProfileSwitchActiveAt() selects the latest EPS by timestamp
+        //    and ignores originalEnd, so the base profile only resumes once a NEW base-profile EPS exists.
+        //    revertAction() creates it now (cancelProfileSwitch + EventProfileChangeRequested), exactly as
+        //    deactivate() does, instead of leaving it to the master's next KeepAliveWorker pass — that pass
+        //    can be up to ~5 min late and is skipped entirely while the pump is disconnected, widening the
+        //    window during which a reconnecting client mirrors no active profile ("no profile set").
+        // TT / LoopMode / CarePortal records self-expire via their own timestamp+duration queries.
         for (action in activeState.scene.actions) {
-            if (action is SceneAction.SmbToggle) {
-                aapsLogger.info(LTag.UI, "XXXX onExpiry() reverting SmbToggle")
+            if (action is SceneAction.SmbToggle || action is SceneAction.ProfileSwitch) {
+                aapsLogger.info(LTag.UI, "XXXX onExpiry() reverting ${action::class.simpleName}")
                 revertAction(action, activeState, now)
             }
         }

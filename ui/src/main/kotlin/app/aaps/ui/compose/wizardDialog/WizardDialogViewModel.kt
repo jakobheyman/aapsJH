@@ -84,6 +84,9 @@ class WizardDialogViewModel @Inject constructor(
     sealed class SideEffect {
         data class ShowDeliveryError(val comment: String) : SideEffect()
         data class ShowTempBasalError(val comment: String) : SideEffect()
+
+        /** Close the wizard after the user confirmed the delivery (like the insulin dialog); Cancel keeps it open. */
+        data object NavigateBack : SideEffect()
     }
 
     private val _sideEffect = MutableSharedFlow<SideEffect>(
@@ -511,6 +514,8 @@ class WizardDialogViewModel @Inject constructor(
             when (val prepared = wizardExecutor.prepare(WizardExecutor.WizardSource.Manual(inputs), label)) {
                 is ActionProgress.Prepared ->
                     showWizardBolusConfirmation(rxBus, rh, rh.gs(app.aaps.core.ui.R.string.boluswizard), IcCalculator, prepared.advisorApplies, prepared.lines, prepared.advisorLines) { asAdvisor ->
+                        // Confirmed → close the wizard (Cancel leaves it open with inputs intact, like the insulin dialog).
+                        _sideEffect.tryEmit(SideEffect.NavigateBack)
                         appScope.launch { wizardExecutor.commit(prepared.id, asAdvisor, Sources.WizardDialog, label) }
                     }
                 // Master-local compute failure (no modal) or client offline; a client round-trip failure already showed on the app modal.

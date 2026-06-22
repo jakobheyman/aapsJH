@@ -156,6 +156,7 @@ class AcceptActivity : DaggerAppCompatActivity() {
                                                         "CARBS", "COB"   -> CarbsOrange
                                                         "WARNING"        -> WearWarningAmber
                                                         "INFO"           -> WearSecondaryText
+                                                        "TEMP_TARGET"    -> TempTargetYellow
                                                         "NORMAL", "PRIMARY" -> Color.White
                                                         else             -> Color.White
                                                     },

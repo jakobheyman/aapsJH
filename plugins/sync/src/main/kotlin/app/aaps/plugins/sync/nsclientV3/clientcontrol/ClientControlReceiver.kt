@@ -421,6 +421,12 @@ class ClientControlReceiver @Inject constructor(
                 AckOutcome(AckStatus.Failed, FailureReason.ExecutionFailed.name, result.message)
             }
 
+            // Scene prepare never resolves to a no-op, but the sealed type requires the branch — treat as a no-action reject.
+            WizardBolusExecutor.PrepareResult.NoAction   -> {
+                nsClientRepository.addLog("◄ CLIENTCTL", "scene.prepare sceneId=${message.sceneId} from ${entry.name}: no action")
+                AckOutcome(AckStatus.Failed, FailureReason.NoAction.name)
+            }
+
             is WizardBolusExecutor.PrepareResult.Preview -> {
                 val preview = BolusPreview(
                     bolusId = result.bolusId,
@@ -493,6 +499,11 @@ class ClientControlReceiver @Inject constructor(
                 nsClientRepository.addLog("◄ CLIENTCTL", "bolus.prepare from ${entry.name}: ${result.message}")
                 // Surface the master's specific reason (no BG / profile / pump) to the client via the payload.
                 AckOutcome(AckStatus.Failed, FailureReason.BolusComputeFailed.name, result.message)
+            }
+
+            WizardBolusExecutor.PrepareResult.NoAction   -> {
+                nsClientRepository.addLog("◄ CLIENTCTL", "bolus.prepare from ${entry.name}: no action")
+                AckOutcome(AckStatus.Failed, FailureReason.NoAction.name)
             }
 
             is WizardBolusExecutor.PrepareResult.Preview -> {
@@ -579,6 +590,11 @@ class ClientControlReceiver @Inject constructor(
                 AckOutcome(AckStatus.Failed, FailureReason.BolusComputeFailed.name, result.message)
             }
 
+            WizardBolusExecutor.PrepareResult.NoAction   -> {
+                nsClientRepository.addLog("◄ CLIENTCTL", "wizard.prepare from ${entry.name}: no action")
+                AckOutcome(AckStatus.Failed, FailureReason.NoAction.name)
+            }
+
             is WizardBolusExecutor.PrepareResult.Preview -> {
                 val preview = BolusPreview(
                     bolusId = result.bolusId,
@@ -604,6 +620,11 @@ class ClientControlReceiver @Inject constructor(
             is WizardBolusExecutor.PrepareResult.Error   -> {
                 nsClientRepository.addLog("◄ CLIENTCTL", "batch.prepare from ${entry.name}: ${result.message}")
                 AckOutcome(AckStatus.Failed, FailureReason.BolusComputeFailed.name, result.message)
+            }
+
+            WizardBolusExecutor.PrepareResult.NoAction   -> {
+                nsClientRepository.addLog("◄ CLIENTCTL", "batch.prepare from ${entry.name}: no action")
+                AckOutcome(AckStatus.Failed, FailureReason.NoAction.name)
             }
 
             is WizardBolusExecutor.PrepareResult.Preview -> {

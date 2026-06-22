@@ -176,6 +176,13 @@ interface WizardBolusExecutor {
         ) : PrepareResult
 
         data class Error(val message: String) : PrepareResult
+
+        /**
+         * The prepare resolved to a no-op: nothing to do after caps/clamps (e.g. negative carbs entered with no COB
+         * to remove, a back-dated COB removal, or an empty batch). This is NOT a delivery error — the caller should
+         * surface it as the neutral "no action selected" message, never the bolus-error alarm/title.
+         */
+        data object NoAction : PrepareResult
     }
 
     sealed interface ConfirmResult {

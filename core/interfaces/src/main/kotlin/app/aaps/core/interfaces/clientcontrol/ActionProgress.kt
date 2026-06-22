@@ -66,6 +66,7 @@ enum class FailureReason {
     SceneDisabled,   // scene is disabled
     PartialFailure,  // scene chained but some actions failed (detail = "x/y")
     ExecutionFailed, // master-side execution failed (detail = message)
+    NoAction,        // prepare resolved to a no-op (nothing to do, e.g. negative carbs with no COB to remove) — NOT an error
     NoPendingBolus,  // bolus commit: the prepared dose was already consumed / superseded → re-prepare
     BolusComputeFailed, // bolus prepare: master couldn't compute the dose (no BG / profile / pump not ready)
 

@@ -58,6 +58,7 @@ import app.aaps.core.interfaces.rx.events.EventAcceptOpenLoopChange
 import app.aaps.core.interfaces.rx.events.EventLoopUpdateGui
 import app.aaps.core.interfaces.rx.events.EventMobileToWear
 import app.aaps.core.interfaces.rx.events.EventNewOpenLoopNotification
+import app.aaps.core.interfaces.rx.events.EventPumpStatusChanged
 import app.aaps.core.interfaces.rx.events.EventRefreshOverview
 import app.aaps.core.interfaces.rx.weardata.EventData
 import app.aaps.core.interfaces.ui.UiInteraction
@@ -172,7 +173,31 @@ class LoopPlugin @Inject constructor(
         persistenceLayer.observeChanges(TT::class.java)
             // Skip db change of ending previous TT
             .debounce(10_000L)
-            .onEach { invoke("TempTargetChange", true) }
+            // try/catch keeps this app-lifetime subscription alive: an uncaught throw in onEach would
+            // permanently cancel the collection (invoke() is try/finally, not try/catch, so it propagates).
+            .onEach {
+                try {
+                    invoke("TempTargetChange", true)
+                } catch (e: Exception) {
+                    aapsLogger.error(LTag.APS, "invoke on TempTarget change failed", e)
+                }
+            }
+            .launchIn(appScope)
+        // Pump-state changes (suspend/resume, typically detected on a status read): reconcile the running
+        // mode promptly instead of waiting for the next loop/keepalive tick (~5 min). EventPumpStatusChanged
+        // is fired centrally by the command queue after every command, so it is pump-agnostic and arrives
+        // exactly when isSuspended() may have flipped. runningModePreCheck() is idempotent (writes only when
+        // isSuspended() and the RM mode disagree, APS-gated) and emits only EventRefreshOverview — never
+        // EventPumpStatusChanged — so there is no feedback loop. The debounce collapses connection chatter.
+        rxBus.toFlow(EventPumpStatusChanged::class.java)
+            .debounce(1000L)
+            .onEach {
+                try {
+                    runningModePreCheck()
+                } catch (e: Exception) {
+                    aapsLogger.error(LTag.APS, "runningModePreCheck on pump status change failed", e)
+                }
+            }
             .launchIn(appScope)
     }
 

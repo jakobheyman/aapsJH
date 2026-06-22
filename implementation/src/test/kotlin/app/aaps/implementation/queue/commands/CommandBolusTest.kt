@@ -26,7 +26,7 @@ class CommandBolusTest : TestBaseWithProfile() {
     private fun newCommand(type: Command.CommandType = Command.CommandType.BOLUS, callback: Callback? = null) =
         CommandBolus(
             aapsLogger, rh, activePlugin, pumpEnactResultProvider, bolusProgressData,
-            info, callback, type
+            info, callback, type, BOLUS_GENERATION
         )
 
     @Test
@@ -54,7 +54,7 @@ class CommandBolusTest : TestBaseWithProfile() {
         val result = newCommand().execute()
 
         assertThat(result).isSameInstanceAs(pumpResult)
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -90,7 +90,7 @@ class CommandBolusTest : TestBaseWithProfile() {
 
         assertThat(received).isNotNull()
         assertThat(received!!.success).isTrue()
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -107,7 +107,7 @@ class CommandBolusTest : TestBaseWithProfile() {
 
         assertThat(received).isNotNull()
         assertThat(received!!.success).isFalse()
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -116,4 +116,8 @@ class CommandBolusTest : TestBaseWithProfile() {
         assertThat(newCommand(type = Command.CommandType.SMB_BOLUS).commandType).isEqualTo(Command.CommandType.SMB_BOLUS)
     }
 
+    private companion object {
+
+        const val BOLUS_GENERATION = 7L
+    }
 }

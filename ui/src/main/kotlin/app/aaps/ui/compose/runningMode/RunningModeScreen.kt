@@ -95,8 +95,10 @@ fun RunningModeScreen(
                 }
             }
 
-            // No valid profile — show explanation instead of empty screen
-            if (!state.isLoading && state.allowedNextModes.isEmpty()) {
+            // No valid profile — show explanation instead of empty screen. Gate on the actual profile-validity
+            // flag, not on an empty allowedNextModes (which is also empty when the pump force-suspends — that case
+            // is already explained by the reasons card above and must not show "no profile set").
+            if (!state.isLoading && !state.profileSet) {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),

@@ -323,11 +323,20 @@ private fun CarbsDialogContent(
                             labelResId = CoreUiR.string.carbs,
                             value = uiState.carbs.toDouble(),
                             onValueChange = onCarbsChange,
-                            valueRange = (-uiState.maxCarbs).toDouble()..uiState.maxCarbs.toDouble(),
+                            // Lower bound = -COB (can't remove more than is on board); at COB 0 the minimum is 0.
+                            valueRange = (-uiState.cobLimit).toDouble()..uiState.maxCarbs.toDouble(),
                             step = 1.0,
                             valueFormat = DecimalFormat("0"),
                             unitLabel = stringResource(CoreUiR.string.shortgramm)
                         )
+                        // Removing carbs (negative): show the COB-bounded limit so the user understands why it can't go lower.
+                        if (uiState.carbs < 0) {
+                            Text(
+                                text = stringResource(CoreUiR.string.carbs_removal_cob_limit, uiState.cobLimit),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         QuickAddButtons(
                             increment1 = uiState.carbsButtonIncrement1,
                             increment2 = uiState.carbsButtonIncrement2,
@@ -375,7 +384,8 @@ private fun CarbsDialogContent(
                         onOffsetChange = { onTimeOffsetChange(it.toDouble()) },
                         onAlarmChange = onAlarmChange,
                         resolvedTimeText = if (uiState.timeOffsetMinutes != 0) timeString else null,
-                        offsetRange = -7 * 24 * 60..12 * 60,
+                        // Negative carbs (COB removal) can't be future-dated — cap the forward range at 0 (now).
+                        offsetRange = -7 * 24 * 60..(if (uiState.carbs < 0) 0 else 12 * 60),
                         dateTimeContent = {
                             DateTimeSection(
                                 dateString = dateString,

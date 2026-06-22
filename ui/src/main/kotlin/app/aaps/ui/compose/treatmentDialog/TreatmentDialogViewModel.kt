@@ -127,9 +127,12 @@ class TreatmentDialogViewModel @Inject constructor(
             }
             when (val prepared = batchExecutor.prepare(actions, Sources.TreatmentDialog, rh.gs(app.aaps.core.ui.R.string.bolus))) {
                 is ActionProgress.Prepared -> _sideEffect.tryEmit(SideEffect.ShowConfirmation(prepared.id, prepared.lines))
-                is ActionProgress.Rejected ->
-                    if (prepared.reason == FailureReason.NotReachable) _sideEffect.tryEmit(SideEffect.ShowDeliveryError(rh.gs(app.aaps.core.ui.R.string.clientcontrol_fail_not_reachable)))
-                    else prepared.detail?.let { _sideEffect.tryEmit(SideEffect.ShowDeliveryError(it)) }
+                is ActionProgress.Rejected -> when (prepared.reason) {
+                    FailureReason.NotReachable -> _sideEffect.tryEmit(SideEffect.ShowDeliveryError(rh.gs(app.aaps.core.ui.R.string.clientcontrol_fail_not_reachable)))
+                    // No-op after caps (e.g. the bolus was constraint-capped to 0): neutral message, NOT the bolus-error alarm.
+                    FailureReason.NoAction     -> _sideEffect.tryEmit(SideEffect.ShowNoActionDialog)
+                    else                       -> prepared.detail?.let { _sideEffect.tryEmit(SideEffect.ShowDeliveryError(it)) }
+                }
 
                 else                       -> Unit // Unconfirmed → app-level modal
             }

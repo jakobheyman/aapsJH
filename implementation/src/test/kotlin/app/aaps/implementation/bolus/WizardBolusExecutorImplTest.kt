@@ -7,6 +7,7 @@ import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.RM
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.model.TT
+import app.aaps.core.data.iob.CobInfo
 import app.aaps.core.data.pump.defs.PumpDescription
 import app.aaps.core.data.time.T
 import app.aaps.core.data.ue.Action
@@ -329,6 +330,65 @@ class WizardBolusExecutorImplTest : TestBaseWithProfile() {
 
         assertThat(result).isInstanceOf(WizardBolusExecutor.PrepareResult.Error::class.java)
         verify(profileFunction, never()).createProfileSwitch(any(), any(), any(), any(), any(), anyOrNull(), any())
+    }
+
+    // ---- prepareBatch(): negative carbs = COB removal (issue: was mislabeled "Bolus reported an error") ----
+
+    @Test
+    fun prepareBatch_negativeCarbsWithinCob_atNow_parksTheRemoval() = runTest {
+        stubPassthroughConstraints()
+        whenever(iobCobCalculator.getCobInfo(any())).thenReturn(CobInfo(0L, displayCob = 30.0, futureCarbs = 0.0))
+        val executor = create()
+
+        val prepared = executor.prepareBatch(
+            listOf(BatchAction.Bolus(insulin = 0.0, carbs = -10, carbsTimeOffsetMinutes = 0, carbsDurationHours = 0, recordOnly = false, notes = "", timestamp = 0L, iCfg = null))
+        )
+
+        // A removal within COB is a real action — NOT a no-op — and is parked verbatim.
+        assertThat(prepared).isInstanceOf(WizardBolusExecutor.PrepareResult.Preview::class.java)
+        assertThat((prepared as WizardBolusExecutor.PrepareResult.Preview).carbs).isEqualTo(-10)
+    }
+
+    @Test
+    fun prepareBatch_negativeCarbsExceedingCob_clampsMagnitudeToCob() = runTest {
+        stubPassthroughConstraints()
+        whenever(iobCobCalculator.getCobInfo(any())).thenReturn(CobInfo(0L, displayCob = 5.0, futureCarbs = 0.0))
+        val executor = create()
+
+        val prepared = executor.prepareBatch(
+            listOf(BatchAction.Bolus(insulin = 0.0, carbs = -10, carbsTimeOffsetMinutes = 0, carbsDurationHours = 0, recordOnly = false, notes = "", timestamp = 0L, iCfg = null))
+        )
+
+        // Can't remove more than the 5 g on board → clamped to -5, still a real action.
+        assertThat((prepared as WizardBolusExecutor.PrepareResult.Preview).carbs).isEqualTo(-5)
+    }
+
+    @Test
+    fun prepareBatch_negativeCarbsWithNoCob_isNoAction() = runTest {
+        stubPassthroughConstraints()
+        whenever(iobCobCalculator.getCobInfo(any())).thenReturn(CobInfo(0L, displayCob = 0.0, futureCarbs = 0.0))
+        val executor = create()
+
+        val prepared = executor.prepareBatch(
+            listOf(BatchAction.Bolus(insulin = 0.0, carbs = -10, carbsTimeOffsetMinutes = 0, carbsDurationHours = 0, recordOnly = false, notes = "", timestamp = 0L, iCfg = null))
+        )
+
+        // Nothing on board to remove → a genuine no-op, surfaced as NoAction (neutral), never the bolus-error path.
+        assertThat(prepared).isEqualTo(WizardBolusExecutor.PrepareResult.NoAction)
+    }
+
+    @Test
+    fun prepareBatch_negativeCarbsInFuture_isNoAction() = runTest {
+        stubPassthroughConstraints()
+        whenever(iobCobCalculator.getCobInfo(any())).thenReturn(CobInfo(0L, displayCob = 30.0, futureCarbs = 0.0))
+        val executor = create()
+
+        val prepared = executor.prepareBatch(
+            listOf(BatchAction.Bolus(insulin = 0.0, carbs = -10, carbsTimeOffsetMinutes = 60, carbsDurationHours = 0, recordOnly = false, notes = "", timestamp = 0L, iCfg = null))
+        )
+
+        // A future-dated removal is dropped (you can't pre-remove carbs not yet on board) → NoAction.
+        assertThat(prepared).isEqualTo(WizardBolusExecutor.PrepareResult.NoAction)
     }
 
     @Test

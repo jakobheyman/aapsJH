@@ -119,6 +119,10 @@ fun WizardDialogScreen(
                 is WizardDialogViewModel.SideEffect.ShowTempBasalError -> {
                     onShowDeliveryError(effect.comment)
                 }
+
+                is WizardDialogViewModel.SideEffect.NavigateBack       -> {
+                    onNavigateBack()
+                }
             }
         }
     }
@@ -150,10 +154,9 @@ fun WizardDialogScreen(
             uiState.forcedRecordOnly -> showRecordOnly = true
             // Deliver role-transparently: the master recomputes, caps + authors the confirmation and shows it on the
             // single app-level dialog (both roles); the advisor fork is decided from the master's prepared result.
-            else                     -> {
-                viewModel.deliverManualWizard()
-                onNavigateBack()
-            }
+            // The wizard stays open behind the confirmation — it closes only after the user confirms (via the
+            // NavigateBack side effect from deliverManualWizard); Cancel keeps it open with inputs intact.
+            else                     -> viewModel.deliverManualWizard()
         }
     }
 
@@ -283,11 +286,14 @@ private fun WizardDialogContent(
                 if (uiState.totalInsulin > 0.0) {
                     Text(stringResource(CoreUiR.string.format_insulin_units, uiState.totalInsulin))
                 }
-                if (uiState.totalInsulin > 0.0 && uiState.carbs > 0) {
+                if (uiState.totalInsulin > 0.0 && (uiState.effectiveCarbs > 0 || uiState.eCarbs > 0)) {
                     Spacer(modifier = Modifier.width(4.dp))
                 }
-                if (uiState.carbs > 0) {
-                    Text(stringResource(CoreUiR.string.format_carbs, uiState.carbs))
+                if (uiState.effectiveCarbs > 0 || uiState.eCarbs > 0) {
+                    Text(
+                        if (uiState.eCarbs > 0) stringResource(CoreUiR.string.format_carbs_split, uiState.effectiveCarbs, uiState.eCarbs)
+                        else stringResource(CoreUiR.string.format_carbs, uiState.effectiveCarbs)
+                    )
                 }
                 if (!uiState.okVisible) {
                     Text(stringResource(CoreUiR.string.ok))
@@ -345,9 +351,10 @@ private fun WizardDialogContent(
                                         color = ElementType.INSULIN.color()
                                     )
                                 }
-                                if (uiState.carbs > 0) {
+                                if (uiState.effectiveCarbs > 0 || uiState.eCarbs > 0) {
                                     Text(
-                                        text = stringResource(CoreUiR.string.format_carbs, uiState.carbs),
+                                        text = if (uiState.eCarbs > 0) stringResource(CoreUiR.string.format_carbs_split, uiState.effectiveCarbs, uiState.eCarbs)
+                                        else stringResource(CoreUiR.string.format_carbs, uiState.effectiveCarbs),
                                         fontWeight = FontWeight.Bold,
                                         color = ElementType.CARBS.color()
                                     )

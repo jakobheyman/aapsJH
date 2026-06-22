@@ -29,7 +29,7 @@ class CommandSMBBolusTest : TestBaseWithProfile() {
     private fun newCommand(info: DetailedBolusInfo, callback: Callback? = null) =
         CommandSMBBolus(
             aapsLogger, rh, dateUtil, activePlugin, persistenceLayer, preferences, bolusProgressData,
-            pumpEnactResultProvider, info, callback
+            pumpEnactResultProvider, info, callback, BOLUS_GENERATION
         )
 
     private fun smbInfo(deliverAtTheLatest: Long = System.currentTimeMillis()) =
@@ -49,7 +49,7 @@ class CommandSMBBolusTest : TestBaseWithProfile() {
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -66,7 +66,7 @@ class CommandSMBBolusTest : TestBaseWithProfile() {
         val result = newCommand(info).execute()
 
         assertThat(result).isSameInstanceAs(pumpResult)
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -80,7 +80,7 @@ class CommandSMBBolusTest : TestBaseWithProfile() {
 
         assertThat(result.success).isFalse()
         assertThat(result.enacted).isFalse()
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -130,7 +130,7 @@ class CommandSMBBolusTest : TestBaseWithProfile() {
 
         assertThat(received).isNotNull()
         assertThat(received!!.success).isTrue()
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
@@ -147,11 +147,16 @@ class CommandSMBBolusTest : TestBaseWithProfile() {
 
         assertThat(received).isNotNull()
         assertThat(received!!.success).isFalse()
-        verify(bolusProgressData).clear()
+        verify(bolusProgressData).clear(BOLUS_GENERATION)
     }
 
     @Test
     fun `commandType is SMB_BOLUS`() {
         assertThat(newCommand(smbInfo()).commandType).isEqualTo(Command.CommandType.SMB_BOLUS)
+    }
+
+    private companion object {
+
+        const val BOLUS_GENERATION = 7L
     }
 }

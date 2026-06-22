@@ -49,6 +49,7 @@ import app.aaps.core.objects.wizard.BolusWizard
 import app.aaps.core.objects.wizard.QuickWizard
 import app.aaps.core.objects.wizard.QuickWizardEntry
 import app.aaps.core.ui.R
+import app.aaps.core.ui.compose.formatMinutesAsDuration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -246,7 +247,15 @@ class WizardBolusExecutorImpl @Inject constructor(
             insulin = wizard.calculatedTotalInsulin,
             carbs = wizard.carbs,
             bolusId = wizard.timeStamp,
-            lines = wizard.buildConfirmationLines(advisor = false),
+            // Pass the eCarbs split (food type → extended carbs) so the delivery confirmation shows the eCarbs line too —
+            // the record-only path already does this via getConfirmationSummary(). Advisor = correction-only ("eat later"),
+            // so eCarbs don't apply there.
+            lines = wizard.buildConfirmationLines(
+                advisor = false,
+                eCarbsGrams = inputs.eCarbsGrams,
+                eCarbsDelayMinutes = inputs.eCarbsDelayMinutes,
+                eCarbsDurationHours = inputs.eCarbsDurationHours
+            ),
             advisorApplies = advisorApplies,
             advisorLines = if (advisorApplies) wizard.buildConfirmationLines(advisor = true) else emptyList()
         )
@@ -351,8 +360,10 @@ class WizardBolusExecutorImpl @Inject constructor(
         // client gets an error instead of a silent no-op at confirm (the batch confirm path has no per-action failure channel).
         if (ia != null && profileFunction.getProfile() !is ProfileSealed.EPS)
             return WizardBolusExecutor.PrepareResult.Error(rh.gs(R.string.no_profile_set))
-        if (insulin <= 0.0 && carbs <= 0 && tt == null && ps == null && rm == null && tb == null && eb == null && ctb == null && ceb == null && ia == null)
-            return WizardBolusExecutor.PrepareResult.Error(rh.gs(R.string.no_action_selected))
+        if (insulin <= 0.0 && carbs == 0 && tt == null && ps == null && rm == null && tb == null && eb == null && ctb == null && ceb == null && ia == null)
+            // Nothing to do after caps/clamps (e.g. negative carbs with no COB to remove): a no-op, NOT a delivery
+            // error — the caller renders the neutral "no action selected" message, never the bolus-error title.
+            return WizardBolusExecutor.PrepareResult.NoAction
         val bolusId = dateUtil.now()
         evictStalePending()
         pending[bolusId] = PendingBolus(
@@ -365,8 +376,9 @@ class WizardBolusExecutorImpl @Inject constructor(
         )
         // The master is the SOLE author of the confirmation: build the MERGED lines for the whole batch here, so the
         // client renders the master's exact string and a master-local dialog renders the identical one (decision 1).
+        val isTtOnly = bolus == null && ps == null && rm == null && cappedTb == null && cappedEb == null && ctb == null && ceb == null && ia == null
         val lines = buildFixedLines(bolus, insulin, carbs, recordOnly) +
-            (tt?.let { buildTtLine(it) } ?: emptyList()) +
+            (tt?.let { buildTtLine(it, isTtOnly) } ?: emptyList()) +
             (ps?.let { buildPsLine(it) } ?: emptyList()) +
             (rm?.let { buildRmLine(it) } ?: emptyList()) +
             (cappedTb?.let { buildTempBasalLine(it, tb) } ?: emptyList()) +
@@ -422,10 +434,11 @@ class WizardBolusExecutorImpl @Inject constructor(
                     )
                 }
 
-                p.insulin == 0.0 && p.carbs > 0 ->
-                    // Carbs-only: funnel through the SAME eCarbs path the local Carbs dialog uses, so a client carb
-                    // entry and a master carb entry are identical (TE.Type, duration, delay) — not the generic deliver()
-                    // which would tag it CARBS_CORRECTION instead of deliverECarbs's CORRECTION_BOLUS convention.
+                p.insulin == 0.0 && p.carbs != 0 ->
+                    // Carbs-only (positive add OR negative COB removal): funnel through the SAME eCarbs path the local
+                    // Carbs dialog uses, so a client carb entry and a master carb entry are identical (TE.Type, duration,
+                    // delay) — not the generic deliver() which would tag it CARBS_CORRECTION instead of deliverECarbs's
+                    // CORRECTION_BOLUS convention.
                     deliverECarbs(p.carbs, dateUtil.now() + T.mins(p.carbTimeMinutes.toLong()).msecs(), p.carbsDurationHours, p.carbTimeMinutes, notes, source, wrapped)
 
                 else                            -> {
@@ -519,14 +532,18 @@ class WizardBolusExecutorImpl @Inject constructor(
         return Triple(cappedInsulin, cappedCarbs, eventType)
     }
 
-    /** Negative carbs = COB removal: clamp so we never remove more than the master's CURRENT COB, and drop a back-dated removal (matches the Carbs dialog, now on the master). */
-    private fun clampNegativeCarbs(carbs: Int, carbsTimeOffsetMinutes: Int): Int {
+    /**
+     * Negative carbs = COB removal. Two invariants (mirrored by the Carbs dialog UI, re-enforced here as the master is
+     * the authority + TOCTOU/relayed-client safety net): never remove more than the CURRENT COB (so COB can't be driven
+     * to a misleading 0-by-overshoot), and never remove in the FUTURE (you can't pre-remove carbs not yet on board, and
+     * `getCobInfo.futureCarbs` isn't floored — a future negative would render negative future COB). A back-dated removal
+     * stays allowed: the COB integration re-floors the past correctly.
+     */
+    private suspend fun clampNegativeCarbs(carbs: Int, carbsTimeOffsetMinutes: Int): Int {
         if (carbs >= 0) return carbs
-        val cob = iobCobCalculator.ads.getLastAutosensData("prepareBatch", aapsLogger, dateUtil)?.cob ?: 0.0
-        var c = carbs
-        if (c < -cob) c = ceil(-cob).toInt()
-        if (carbsTimeOffsetMinutes != 0) c = 0
-        return c
+        if (carbsTimeOffsetMinutes > 0) return 0 // future removal is not allowed → no-op
+        val cob = iobCobCalculator.getCobInfo("prepareBatch").displayCob ?: 0.0
+        return if (carbs < -cob) ceil(-cob).toInt() else carbs // cap magnitude to current COB
     }
 
     /** Apply a batch TempTarget via the dialog-free domain path (mirrors onVerifiedTempTargetSet). */
@@ -572,7 +589,7 @@ class WizardBolusExecutorImpl @Inject constructor(
                 out += ConfirmationLine(ConfirmationRole.WARNING, rh.gs(R.string.bolus_constraint_applied_warn, bolus.insulin, insulin))
             }
         }
-        if (carbs > 0) {
+        if (carbs != 0) {
             out += ConfirmationLine(ConfirmationRole.CARBS, rh.gs(R.string.confirmation_line, rh.gs(R.string.carbs), rh.gs(R.string.format_carbs, carbs)))
             if (!recordOnly && carbs != bolus.carbs)
                 out += ConfirmationLine(ConfirmationRole.WARNING, rh.gs(R.string.constraint_applied))
@@ -594,7 +611,7 @@ class WizardBolusExecutorImpl @Inject constructor(
      * reason line, or a "cancel" line when [durationMinutes] is 0. [lowMgdl]/[highMgdl] in mg/dL; [reasonDisplay]
      * already localized (or "").
      */
-    private fun buildTempTargetLines(reasonDisplay: String, lowMgdl: Double, highMgdl: Double, durationMinutes: Int): List<ConfirmationLine> {
+    private fun buildTempTargetLines(reasonDisplay: String, lowMgdl: Double, highMgdl: Double, durationMinutes: Int, standalone: Boolean = false): List<ConfirmationLine> {
         val out = mutableListOf<ConfirmationLine>()
         if (durationMinutes == 0) {
             out += ConfirmationLine(ConfirmationRole.NORMAL, rh.gs(R.string.confirmation_line, rh.gs(R.string.temporary_target), rh.gs(R.string.cancel)))
@@ -603,9 +620,15 @@ class WizardBolusExecutorImpl @Inject constructor(
             val unitLabel = if (units == GlucoseUnit.MMOL) rh.gs(R.string.mmol) else rh.gs(R.string.mgdl)
             val low = decimalFormatter.to1Decimal(profileUtil.fromMgdlToUnits(lowMgdl, units))
             val target = if (lowMgdl == highMgdl) low else low + " – " + decimalFormatter.to1Decimal(profileUtil.fromMgdlToUnits(highMgdl, units))
+            val durationText = formatMinutesAsDuration(durationMinutes, rh)
+            val targetLabel = if (standalone) rh.gs(R.string.target_label) else rh.gs(R.string.temporary_target)
+            out += ConfirmationLine(
+                ConfirmationRole.TEMP_TARGET,
+                rh.gs(R.string.confirmation_line, targetLabel, rh.gs(R.string.value_with_unit, target, unitLabel))
+            )
             out += ConfirmationLine(
                 ConfirmationRole.NORMAL,
-                rh.gs(R.string.confirmation_line, rh.gs(R.string.temporary_target), rh.gs(R.string.value_with_unit, target, unitLabel) + " (" + rh.gs(R.string.format_mins, durationMinutes) + ")")
+                rh.gs(R.string.confirmation_line, rh.gs(R.string.duration), durationText)
             )
             if (reasonDisplay.isNotEmpty())
                 out += ConfirmationLine(ConfirmationRole.NORMAL, rh.gs(R.string.confirmation_line, rh.gs(R.string.reason), reasonDisplay))
@@ -614,8 +637,8 @@ class WizardBolusExecutorImpl @Inject constructor(
     }
 
     /** The TT line(s) for any batch (wear / client / phone) — range + duration + a localized reason, or a cancel line. */
-    private fun buildTtLine(tt: BatchAction.TempTarget): List<ConfirmationLine> =
-        buildTempTargetLines(localizeTtReason(tt.reason), tt.lowMgdl, tt.highMgdl, tt.durationMinutes)
+    private fun buildTtLine(tt: BatchAction.TempTarget, standalone: Boolean = false): List<ConfirmationLine> =
+        buildTempTargetLines(localizeTtReason(tt.reason), tt.lowMgdl, tt.highMgdl, tt.durationMinutes, standalone)
 
     /**
      * Apply a batch ProfileSwitch via the dialog-free domain path. [profileName] non-null → switch to that named

@@ -26,14 +26,16 @@ fun List<ConfirmationLine>.toAnnotatedString(primaryColor: Color): AnnotatedStri
     val cob = AapsTheme.elementColors.cob
     val warning = MaterialTheme.colorScheme.error
     val info = AapsTheme.elementColors.tempTarget
+    val tempTarget = AapsTheme.generalColors.inProgress
     fun color(role: ConfirmationRole): Color? = when (role) {
-        ConfirmationRole.NORMAL  -> null
-        ConfirmationRole.PRIMARY -> primaryColor
-        ConfirmationRole.BOLUS   -> insulin
-        ConfirmationRole.CARBS   -> carbs
-        ConfirmationRole.COB     -> cob
-        ConfirmationRole.WARNING -> warning
-        ConfirmationRole.INFO    -> info
+        ConfirmationRole.NORMAL      -> null
+        ConfirmationRole.PRIMARY     -> primaryColor
+        ConfirmationRole.BOLUS       -> insulin
+        ConfirmationRole.CARBS       -> carbs
+        ConfirmationRole.COB         -> cob
+        ConfirmationRole.WARNING     -> warning
+        ConfirmationRole.INFO        -> info
+        ConfirmationRole.TEMP_TARGET -> tempTarget
     }
     return buildAnnotatedString {
         this@toAnnotatedString.forEachIndexed { index, confirmationLine ->
