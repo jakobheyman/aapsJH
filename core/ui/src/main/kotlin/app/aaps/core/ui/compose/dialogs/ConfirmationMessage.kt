@@ -27,15 +27,29 @@ fun List<ConfirmationLine>.toAnnotatedString(primaryColor: Color): AnnotatedStri
     val warning = MaterialTheme.colorScheme.error
     val info = AapsTheme.elementColors.tempTarget
     val tempTarget = AapsTheme.generalColors.inProgress
+    val scene = AapsTheme.elementColors.scene
+    val loopClosed = AapsTheme.elementColors.loopClosed
+    val loopOpen = AapsTheme.elementColors.loopOpened
+    val loopLgs = AapsTheme.elementColors.loopLgs
+    val loopSuspended = AapsTheme.elementColors.loopSuspended
+    val loopDisabled = AapsTheme.elementColors.loopDisabled
+    val loopDisconnected = AapsTheme.elementColors.loopDisconnected
     fun color(role: ConfirmationRole): Color? = when (role) {
-        ConfirmationRole.NORMAL      -> null
-        ConfirmationRole.PRIMARY     -> primaryColor
-        ConfirmationRole.BOLUS       -> insulin
-        ConfirmationRole.CARBS       -> carbs
-        ConfirmationRole.COB         -> cob
-        ConfirmationRole.WARNING     -> warning
-        ConfirmationRole.INFO        -> info
-        ConfirmationRole.TEMP_TARGET -> tempTarget
+        ConfirmationRole.NORMAL            -> null
+        ConfirmationRole.PRIMARY           -> primaryColor
+        ConfirmationRole.BOLUS             -> insulin
+        ConfirmationRole.CARBS             -> carbs
+        ConfirmationRole.COB               -> cob
+        ConfirmationRole.WARNING           -> warning
+        ConfirmationRole.INFO              -> info
+        ConfirmationRole.TEMP_TARGET       -> tempTarget
+        ConfirmationRole.SCENE             -> scene
+        ConfirmationRole.LOOP_CLOSED       -> loopClosed
+        ConfirmationRole.LOOP_OPEN         -> loopOpen
+        ConfirmationRole.LOOP_LGS          -> loopLgs
+        ConfirmationRole.LOOP_SUSPENDED    -> loopSuspended
+        ConfirmationRole.LOOP_DISABLED     -> loopDisabled
+        ConfirmationRole.LOOP_DISCONNECTED -> loopDisconnected
     }
     return buildAnnotatedString {
         this@toAnnotatedString.forEachIndexed { index, confirmationLine ->

@@ -4,6 +4,7 @@ import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.bolus.WizardBolusExecutor
 import app.aaps.core.interfaces.clientcontrol.FailureReason
+import app.aaps.core.interfaces.rx.weardata.EventData
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.di.ApplicationScope
@@ -19,6 +20,7 @@ import app.aaps.core.interfaces.queue.CommandQueue
 import app.aaps.core.interfaces.scenes.SceneAutomationApi
 import app.aaps.core.interfaces.scenes.SceneAutomationResult
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.LongComposedKey
 import app.aaps.core.keys.interfaces.BooleanNonPreferenceKey
 import app.aaps.core.keys.interfaces.DoubleNonPreferenceKey
@@ -36,6 +38,7 @@ import app.aaps.core.nssdk.localmodel.clientcontrol.BolusPreview
 import app.aaps.core.nssdk.localmodel.clientcontrol.ClientControlMessage
 import app.aaps.core.nssdk.localmodel.clientcontrol.ClientState
 import app.aaps.core.nssdk.localmodel.clientcontrol.ConfirmationLineDto
+import app.aaps.core.nssdk.localmodel.clientcontrol.WizardDetailDto
 import app.aaps.core.nssdk.localmodel.clientcontrol.ProgressEnvelope
 import app.aaps.core.nssdk.localmodel.clientcontrol.ProgressPhase
 import app.aaps.core.nssdk.localmodel.clientcontrol.SignedEnvelope
@@ -319,6 +322,18 @@ class ClientControlReceiver @Inject constructor(
         // typically. Treat it the same as an unknown type: advance the counter so the next
         // envelope can be processed.
         val message = runCatching { json.decodeFromString(ClientControlMessage.serializer(), envelope.payload) }.getOrNull()
+        // Master policy gate: when client control is OFF, reject mutating commands cleanly (signed Done/Failed ACK)
+        // instead of silently dropping them — a silent drop times the client out → Unconfirmed → a false "master
+        // offline" alarm in the toggle-propagation race window. Exempts Hello (pairing must still work while disabled)
+        // and Ping (a liveness probe). Placed BEFORE the Hello branch so that branch stays adjacent to (and keeps
+        // exhaustive) the when(message) below. Covers the WS push AND the poll fallback; consume the counter like expiry.
+        if (message !is ClientControlMessage.Hello && message !is ClientControlMessage.Ping && !preferences.get(BooleanKey.NsClientAllowClientControl)) {
+            authorizedRepository.bumpLastSeen(entry.clientId, envelope.counter, now)
+            nsClientRepository.addLog("◄ CLIENTCTL", "control disabled, rejecting ${envelope.type} from ${entry.name}")
+            aapsLogger.warn(LTag.NSCLIENT, "ClientControl: $identifier rejected — client control disabled on master")
+            if (envelope.wantsAck) writeAck(client, lookup.secretBytes, envelope.clientId, envelope.counter, AckPhase.Done, AckStatus.Failed, FailureReason.ControlDisabled.name, null, now)
+            return
+        }
         // Hello is the pairing handshake, not a user action — no ACK round-trip. Its handling
         // includes the Pending → Active transition + offer-doc cleanup (suspends on deleteOffer).
         if (message is ClientControlMessage.Hello) {
@@ -511,7 +526,8 @@ class ClientControlReceiver @Inject constructor(
                     bolusId = result.bolusId,
                     lines = result.lines.map { ConfirmationLineDto(it.role.name, it.text) },
                     advisorApplies = result.advisorApplies,
-                    advisorLines = result.advisorLines.map { ConfirmationLineDto(it.role.name, it.text) }
+                    advisorLines = result.advisorLines.map { ConfirmationLineDto(it.role.name, it.text) },
+                    wizardDetail = result.wizardDetail?.toDto(),
                 )
                 nsClientRepository.addLog("◄ CLIENTCTL", "bolus.prepare from ${entry.name}: ${result.insulin}U ${result.carbs}g" + if (result.advisorApplies) " advisor" else "")
                 AckOutcome(AckStatus.Ok, null, json.encodeToString(BolusPreview.serializer(), preview))
@@ -600,7 +616,8 @@ class ClientControlReceiver @Inject constructor(
                     bolusId = result.bolusId,
                     lines = result.lines.map { ConfirmationLineDto(it.role.name, it.text) },
                     advisorApplies = result.advisorApplies,
-                    advisorLines = result.advisorLines.map { ConfirmationLineDto(it.role.name, it.text) }
+                    advisorLines = result.advisorLines.map { ConfirmationLineDto(it.role.name, it.text) },
+                    wizardDetail = result.wizardDetail?.toDto(),
                 )
                 nsClientRepository.addLog("◄ CLIENTCTL", "wizard.prepare from ${entry.name}: ${result.insulin}U ${result.carbs}g" + if (result.advisorApplies) " advisor" else "")
                 AckOutcome(AckStatus.Ok, null, json.encodeToString(BolusPreview.serializer(), preview))
@@ -817,3 +834,26 @@ class ClientControlReceiver @Inject constructor(
     /** Result a command handler reports back so [verifyAndAck] can write the terminal Done ack. */
     private data class AckOutcome(val status: AckStatus, val reason: String?, val payload: String? = null)
 }
+
+private fun EventData.WizardDetail.toDto() = WizardDetailDto(
+    totalInsulin = totalInsulin,
+    carbs = carbs,
+    insulinFromBG = insulinFromBG,
+    insulinFromTrend = insulinFromTrend,
+    insulinFromCOB = insulinFromCOB,
+    insulinFromCarbs = insulinFromCarbs,
+    insulinFromBolusIOB = insulinFromBolusIOB,
+    insulinFromBasalIOB = insulinFromBasalIOB,
+    includeBolusIOB = includeBolusIOB,
+    includeBasalIOB = includeBasalIOB,
+    percentageCorrection = percentageCorrection,
+    cob = cob,
+    tempTargetLabel = tempTargetLabel,
+    ic = ic,
+    sens = sens,
+    eCarbsGrams = eCarbsGrams,
+    eCarbsDelayMinutes = eCarbsDelayMinutes,
+    eCarbsDurationHours = eCarbsDurationHours,
+    carbTimeMinutes = carbTimeMinutes,
+    alarm = alarm,
+)

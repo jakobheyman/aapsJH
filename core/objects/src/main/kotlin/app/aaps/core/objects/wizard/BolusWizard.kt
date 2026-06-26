@@ -13,6 +13,7 @@ import app.aaps.core.data.ui.ConfirmationLine
 import app.aaps.core.data.ui.ConfirmationRole
 import app.aaps.core.data.ui.confirmationLines
 import app.aaps.core.interfaces.aps.GlucoseStatus
+import app.aaps.core.interfaces.rx.weardata.EventData
 import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.automation.Automation
 import app.aaps.core.interfaces.bolus.WizardBolusExecutor
@@ -51,6 +52,7 @@ import app.aaps.core.objects.runningMode.RunningModeGuard
 import app.aaps.core.utils.JsonHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.text.DecimalFormat
 import java.util.Calendar
 import javax.inject.Inject
 import kotlin.math.abs
@@ -446,6 +448,32 @@ class BolusWizard @Inject constructor(
                 line(ConfirmationRole.INFO, rh.gs(app.aaps.core.ui.R.string.wizard_ecarbs, eCarbsGrams, eCarbsDurationHours, eCarbsDelayMinutes))
             }
         }
+
+    fun buildWizardDetail(): EventData.WizardDetail {
+        val ttLabel = if (useTT && tempTarget != null) {
+            val fmt = DecimalFormat("0.0#")
+            val low = fmt.format(profileUtil.fromMgdlToUnits(tempTarget!!.lowTarget))
+            val high = fmt.format(profileUtil.fromMgdlToUnits(tempTarget!!.highTarget))
+            if (low == high) low else "$low-$high"
+        } else null
+        return EventData.WizardDetail(
+            totalInsulin = calculatedTotalInsulin,
+            carbs = carbs,
+            insulinFromBG = insulinFromBG,
+            insulinFromTrend = insulinFromTrend,
+            insulinFromCOB = insulinFromCOB,
+            insulinFromCarbs = insulinFromCarbs,
+            insulinFromBolusIOB = insulinFromBolusIOB,
+            insulinFromBasalIOB = insulinFromBasalIOB,
+            includeBolusIOB = includeBolusIOB,
+            includeBasalIOB = includeBasalIOB,
+            percentageCorrection = percentageCorrection,
+            cob = cob,
+            tempTargetLabel = ttLabel,
+            ic = ic,
+            sens = sens,
+        )
+    }
 
     private fun calcPercentageWithConstraints() {
         calculatedPercentage = 100

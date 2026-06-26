@@ -10,6 +10,7 @@ import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.tempTargets.toTTPresets
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.objects.extensions.profileNames
 import app.aaps.core.objects.wizard.QuickWizard
 import app.aaps.core.ui.compose.pluginCategoryTitleRes
@@ -49,7 +50,8 @@ class QuickLaunchConfigViewModel @Inject constructor(
     private val activePlugin: ActivePlugin,
     private val profileRepository: ProfileRepository,
     private val sceneRepository: SceneStore,
-    private val resolver: QuickLaunchResolver
+    private val resolver: QuickLaunchResolver,
+    private val visibilityContext: VisibilityContext
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickLaunchConfigUiState())
@@ -65,15 +67,19 @@ class QuickLaunchConfigViewModel @Inject constructor(
         // Resolve selected items
         val selectedResolved = selectedActions.map { resolver.resolveItem(it) }
 
-        // Available static items (not already selected)
+        // Available static items (not already selected, visible in current mode). isVisibleInMode applies the
+        // same ElementVisibility gate as search/Manage — e.g. MASTER_OR_PAIRED_CLIENT hides bolus/carbs/fill on
+        // an unpaired client, so they can't be pinned to the toolbar there.
         val availableStatic = QuickLaunchAction.staticActions
             .filter { actionKey(it) !in selectedSet }
+            .filter { it.isVisibleInMode() }
             .map { resolver.resolveItem(it) }
 
         // Available QuickWizard items (not already selected)
         val availableQw = quickWizard.list()
             .map { QuickLaunchAction.QuickWizardAction(it.guid()) }
             .filter { actionKey(it) !in selectedSet }
+            .filter { it.isVisibleInMode() }
             .map { resolver.resolveItem(it) }
 
         // Available Automation items (user actions only). Reads the flow snapshot directly so the
@@ -91,18 +97,21 @@ class QuickLaunchConfigViewModel @Inject constructor(
         val availableTt = presets
             .map { QuickLaunchAction.TempTargetPreset(it.id) }
             .filter { actionKey(it) !in selectedSet }
+            .filter { it.isVisibleInMode() }
             .map { resolver.resolveItem(it) }
 
         // Available Profiles (always show all — duplicates with different presets are allowed)
         val profileNames = profileRepository.profileNames()
         val availableProfiles = profileNames
             .map { QuickLaunchAction.ProfileAction(it) }
+            .filter { it.isVisibleInMode() }
             .map { resolver.resolveItem(it) }
 
         // Available Scenes
         val availableScenes = sceneRepository.getScenes()
             .map { QuickLaunchAction.SceneAction(it.id) }
             .filter { actionKey(it) !in selectedSet }
+            .filter { it.isVisibleInMode() }
             .map { resolver.resolveItem(it) }
 
         // Available Plugins — enabled with compose content, grouped by PluginType
@@ -176,7 +185,12 @@ class QuickLaunchConfigViewModel @Inject constructor(
         )
 
         val plugins = activePlugin.getPluginsList()
-            .filter { it.isEnabled(it.pluginDescription.mainType) && it.hasComposeContent() }
+            // showInList mirrors search/plugin-list gating: a plugin hidden from its list (e.g. VirtualPump on
+            // a client) must not be offered as a quick-launch either.
+            .filter {
+                it.isEnabled(it.pluginDescription.mainType) && it.hasComposeContent() &&
+                    it.showInList(it.pluginDescription.mainType)
+            }
 
         return typeOrder.mapNotNull { type ->
             val items = plugins
@@ -189,4 +203,12 @@ class QuickLaunchConfigViewModel @Inject constructor(
 
     private fun actionKey(action: QuickLaunchAction): String =
         action.dynamicId?.let { "${action.typeId}_$it" } ?: action.typeId
+
+    /**
+     * Mode-based visibility for an action's backing element — the same [ElementVisibility] gate search and the
+     * Manage sheet use (e.g. MASTER_OR_PAIRED_CLIENT hides command actions on an unpaired client). Actions with no
+     * element (plugins) are visible; those are gated by showInList in [buildPluginGroups] instead.
+     */
+    private fun QuickLaunchAction.isVisibleInMode(): Boolean =
+        elementType?.visibility?.isVisible(visibilityContext) ?: true
 }

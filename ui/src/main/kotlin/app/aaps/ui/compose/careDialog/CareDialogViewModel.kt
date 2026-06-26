@@ -7,12 +7,13 @@ import androidx.lifecycle.viewModelScope
 import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.time.T
-import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
-import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.data.ui.ConfirmationLine
 import app.aaps.core.data.ui.ConfirmationRole
 import app.aaps.core.data.ui.confirmationLines
+import app.aaps.core.interfaces.bolus.BatchAction
+import app.aaps.core.interfaces.bolus.BatchExecutor
+import app.aaps.core.interfaces.clientcontrol.ActionProgress
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
@@ -42,6 +43,7 @@ import javax.inject.Inject
 class CareDialogViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val persistenceLayer: PersistenceLayer,
+    private val batchExecutor: BatchExecutor,
     private val profileFunction: ProfileFunction,
     private val profileUtil: ProfileUtil,
     private val glucoseStatusProvider: GlucoseStatusProvider,
@@ -208,64 +210,41 @@ class CareDialogViewModel @Inject constructor(
     fun confirmAndSave() {
         val state = confirmedState ?: return
         val eventType = state.eventType
-
         val eventTime = state.eventTime - (state.eventTime % 1000)
 
         val isSensorChange = eventType == CareportalEventType.SENSOR_INSERT
         val location = if (isSensorChange) state.siteLocation.takeIf { it != TE.Location.NONE } else null
         val arrow = if (isSensorChange) state.siteArrow.takeIf { it != TE.Arrow.NONE } else null
 
-        val therapyEvent = TE(
+        // Route through the master via the client-control batch channel (RoleBranch): on a client a signed
+        // round-trip, on a master a local persist — the master is the SOLE writer (no local insert here; the event
+        // syncs back via NS treatments). On an OFFLINE client the batch is rejected (not queued), consistent with bolus/scene.
+        val action = BatchAction.TherapyEvent(
+            teType = eventType.toTEType(),
             timestamp = eventTime,
-            type = eventType.toTEType(),
-            glucoseUnit = state.glucoseUnits,
+            glucoseMgdl = if (state.showBgSection) profileUtil.convertToMgdl(state.bgValue, state.glucoseUnits) else null,
+            glucoseType = if (state.showBgSection) state.meterType else null,
+            durationMinutes = if (state.showDurationSection) state.duration.toInt() else 0,
+            note = state.notes.ifEmpty { null },
             location = location,
-            arrow = arrow
+            arrow = arrow,
+            source = eventType.toSource()
         )
+        val label = rh.gs(app.aaps.core.ui.R.string.careportal)
 
-        val valuesWithUnit = mutableListOf<ValueWithUnit?>()
-
-        if (state.showBgSection) {
-            therapyEvent.glucoseType = state.meterType
-            therapyEvent.glucose = state.bgValue
-            valuesWithUnit.add(ValueWithUnit.fromGlucoseUnit(state.bgValue, state.glucoseUnits))
-            valuesWithUnit.add(ValueWithUnit.TEMeterType(state.meterType))
-        }
-
-        if (state.showDurationSection) {
-            therapyEvent.duration = T.mins(state.duration.toLong()).msecs()
-            valuesWithUnit.add(
-                ValueWithUnit.Minute(state.duration.toInt()).takeIf { state.duration != 0.0 }
-            )
-        }
-
-        if (state.notes.isNotEmpty()) {
-            therapyEvent.note = state.notes
-        }
-
-        therapyEvent.enteredBy = "AAPS"
-
-        val source = eventType.toSource()
-
-        valuesWithUnit.add(0, ValueWithUnit.Timestamp(eventTime).takeIf { state.eventTimeChanged })
-        valuesWithUnit.add(1, ValueWithUnit.TEType(therapyEvent.type))
-
-        // appScope, not viewModelScope: the screen navigates back immediately after confirm,
-        // which cancels viewModelScope and could drop this therapy-event write.
+        // appScope, not viewModelScope: the screen navigates back immediately after confirm.
         appScope.launch {
-            try {
-                persistenceLayer.insertPumpTherapyEventIfNewByTimestamp(
-                    therapyEvent = therapyEvent,
-                    action = Action.CAREPORTAL,
-                    source = source,
-                    note = state.notes,
-                    listValues = valuesWithUnit.filterNotNull()
-                )
-            } catch (e: Exception) {
-                aapsLogger.error(LTag.UI, "Failed to save therapy event", e)
+            when (val prepared = batchExecutor.prepare(listOf(action), action.source, label)) {
+                is ActionProgress.Prepared -> {
+                    val committed = batchExecutor.commit(prepared.id, action.source, label)
+                    if (committed is ActionProgress.Rejected)
+                        aapsLogger.warn(LTag.UI, "Therapy event rejected: ${committed.reason} ${committed.detail}")
+                }
+
+                is ActionProgress.Rejected -> aapsLogger.warn(LTag.UI, "Therapy event prepare rejected: ${prepared.reason}")
+                else                       -> Unit
             }
         }
-
     }
 
     private fun CareportalEventType.toTEType(): TE.Type = when (this) {

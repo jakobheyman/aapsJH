@@ -1,6 +1,7 @@
 package app.aaps.core.interfaces.clientcontrol
 
 import app.aaps.core.data.ui.ConfirmationLine
+import app.aaps.core.interfaces.rx.weardata.EventData
 
 /**
  * Progress/outcome of an action dispatched through [ClientControlActionDispatcher]. A `dispatch`
@@ -35,7 +36,8 @@ sealed interface ActionProgress {
         val id: Long,
         val lines: List<ConfirmationLine> = emptyList(),
         val advisorApplies: Boolean = false,
-        val advisorLines: List<ConfirmationLine> = emptyList()
+        val advisorLines: List<ConfirmationLine> = emptyList(),
+        val wizardDetail: EventData.WizardDetail? = null,
     ) : ActionProgress
 
     /** Terminal: definitely not applied — master refused / failed, or it never reached NS. */
@@ -66,6 +68,7 @@ enum class FailureReason {
     SceneDisabled,   // scene is disabled
     PartialFailure,  // scene chained but some actions failed (detail = "x/y")
     ExecutionFailed, // master-side execution failed (detail = message)
+    ControlDisabled, // master has client control turned OFF — command refused by policy (not an error, not offline)
     NoAction,        // prepare resolved to a no-op (nothing to do, e.g. negative carbs with no COB to remove) — NOT an error
     NoPendingBolus,  // bolus commit: the prepared dose was already consumed / superseded → re-prepare
     BolusComputeFailed, // bolus prepare: master couldn't compute the dose (no BG / profile / pump not ready)

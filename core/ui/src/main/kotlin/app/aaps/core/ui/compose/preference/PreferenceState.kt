@@ -20,7 +20,7 @@ import app.aaps.core.keys.interfaces.IntNonPreferenceKey
 import app.aaps.core.keys.interfaces.IntPreferenceKey
 import app.aaps.core.keys.interfaces.IntentPreferenceKey
 import app.aaps.core.keys.interfaces.PreferenceKey
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.keys.interfaces.StringNonPreferenceKey
 import app.aaps.core.keys.interfaces.StringPreferenceKey
@@ -49,10 +49,10 @@ data class PreferenceVisibilityState(
  * the shared state map, making visibility checks reactive.
  */
 private class ReactiveVisibilityContext(
-    private val delegate: PreferenceVisibilityContext,
+    private val delegate: VisibilityContext,
     private val delegatePreferences: Preferences,
     private val sharedStates: SnapshotStateMap<String, Any?>
-) : PreferenceVisibilityContext {
+) : VisibilityContext {
 
     override val isPatchPump: Boolean get() = delegate.isPatchPump
     override val isBatteryReplaceable: Boolean get() = delegate.isBatteryReplaceable
@@ -101,7 +101,7 @@ private class ReactiveVisibilityContext(
 fun calculatePreferenceVisibility(
     preferenceKey: PreferenceKey,
     engineeringModeOnly: Boolean = false,
-    visibilityContext: PreferenceVisibilityContext? = null
+    visibilityContext: VisibilityContext? = null
 ): PreferenceVisibilityState {
     val preferences = LocalPreferences.current
     val config = LocalConfig.current
@@ -194,7 +194,7 @@ fun calculatePreferenceVisibility(
 @Composable
 fun calculateIntentPreferenceVisibility(
     intentKey: IntentPreferenceKey,
-    visibilityContext: PreferenceVisibilityContext? = null
+    visibilityContext: VisibilityContext? = null
 ): PreferenceVisibilityState {
     val preferences = LocalPreferences.current
     val sharedStates = LocalSharedPreferenceStates.current

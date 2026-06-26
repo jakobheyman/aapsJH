@@ -308,7 +308,7 @@ class AutotunePlugin @Inject constructor(
         strResult += line
         val tuneInsulin = preferences.get(BooleanKey.AutotuneTuneInsulinCurve)
         if (tuneInsulin) {
-            strResult += rh.gs(R.string.autotune_log_peak, rh.gs(R.string.insulin_peak), pumpProfile.iCfg.peak, tunedProfile.iCfg.peak)
+            strResult += rh.gs(R.string.autotune_log_peak, rh.gs(R.string.autotune_peak), pumpProfile.iCfg.peak, tunedProfile.iCfg.peak)
             strResult += rh.gs(R.string.autotune_log_dia, rh.gs(app.aaps.core.ui.R.string.ic_short), pumpProfile.iCfg.dia, tunedProfile.iCfg.dia)
         }
         // show ISF and CR

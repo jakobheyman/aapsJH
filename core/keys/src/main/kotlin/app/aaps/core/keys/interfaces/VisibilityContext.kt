@@ -1,13 +1,13 @@
 package app.aaps.core.keys.interfaces
 
 /**
- * Context provided to [PreferenceVisibility] lambdas for evaluating
+ * Context provided to [ElementVisibility] lambdas for evaluating
  * whether a preference should be visible.
  *
  * This interface abstracts away the need for preferences to know about
  * specific plugin implementations while still allowing runtime visibility decisions.
  */
-interface PreferenceVisibilityContext {
+interface VisibilityContext {
 
     /**
      * Whether the active pump is a patch pump (like Omnipod).
@@ -44,6 +44,16 @@ interface PreferenceVisibilityContext {
         get() = false
 
     /**
+     * On a client (AAPSCLIENT): whether currently paired with a master — a snapshot of the
+     * Client-Control pairing (NsClientControlClientId set) at context-read time. Always true on a
+     * master. Gates [ElementVisibility.MASTER_OR_PAIRED_CLIENT]: an unpaired client hides mutating/command
+     * UI because its signed commands would be silently dropped. Distinct from the transient
+     * "master reachable" signal — this flips only on an explicit pair/unpair.
+     */
+    val masterOrPairedClient: Boolean
+        get() = true
+
+    /**
      * Whether the pump is currently paired/connected.
      * Used by pump plugins like ComboV2 to enable/disable pairing preferences.
      */
@@ -75,7 +85,7 @@ interface PreferenceVisibilityContext {
  * }
  * ```
  */
-fun PreferenceVisibilityContext.intEquals(key: IntPreferenceKey, value: Int): Boolean =
+fun VisibilityContext.intEquals(key: IntPreferenceKey, value: Int): Boolean =
     preferences.get(key) == value
 
 /**
@@ -89,5 +99,5 @@ fun PreferenceVisibilityContext.intEquals(key: IntPreferenceKey, value: Int): Bo
  * }
  * ```
  */
-fun PreferenceVisibilityContext.intIn(key: IntPreferenceKey, values: Set<Int>): Boolean =
+fun VisibilityContext.intIn(key: IntPreferenceKey, values: Set<Int>): Boolean =
     preferences.get(key) in values

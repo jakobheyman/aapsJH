@@ -960,10 +960,14 @@ class LoopPlugin @Inject constructor(
                     it.put("time", dateUtil.toISOString(lastRun.lastAPSRun))
                 }
                 val requested = JSONObject()
-                if (lastRun.tbrSetByPump?.enacted == true) { // enacted
+                // Snapshot the mutable field once: the APS loop (invoke()) can null/reassign
+                // lastRun.tbrSetByPump concurrently, so re-dereferencing it with !! below raced and
+                // threw NPE. A single read is also a consistent snapshot (it was read 3x before).
+                val tbrSetByPump = lastRun.tbrSetByPump
+                if (tbrSetByPump?.enacted == true) { // enacted
                     enacted = lastRun.request?.json()?.also {
-                        it.put("rate", lastRun.tbrSetByPump!!.json(profile.getBasal())["rate"])
-                        it.put("duration", lastRun.tbrSetByPump!!.json(profile.getBasal())["duration"])
+                        it.put("rate", tbrSetByPump.json(profile.getBasal())["rate"])
+                        it.put("duration", tbrSetByPump.json(profile.getBasal())["duration"])
                         it.put("received", true)
                     }
                     requested.put("duration", lastRun.request?.duration)
@@ -971,7 +975,7 @@ class LoopPlugin @Inject constructor(
                     requested.put("temp", "absolute")
                     requested.put("smb", lastRun.request?.smb)
                     enacted?.put("requested", requested)
-                    enacted?.put("smb", lastRun.tbrSetByPump?.bolusDelivered)
+                    enacted?.put("smb", tbrSetByPump.bolusDelivered)
                 }
             }
         }

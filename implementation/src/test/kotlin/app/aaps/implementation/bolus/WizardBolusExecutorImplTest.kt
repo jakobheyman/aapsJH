@@ -72,7 +72,7 @@ class WizardBolusExecutorImplTest : TestBaseWithProfile() {
     @Mock lateinit var automation: Automation
 
     private fun create() = WizardBolusExecutorImpl(
-        aapsLogger, rh, quickWizard, bolusWizardProvider, profileFunction, profileRepository, insulin, iobCobCalculator, constraintsChecker, activePlugin,
+        aapsLogger, rh, config, quickWizard, bolusWizardProvider, profileFunction, profileRepository, insulin, iobCobCalculator, constraintsChecker, activePlugin,
         runningModeGuard, commandQueue, persistenceLayer, uel, loop, dateUtil, decimalFormatter, profileUtil, automation, notificationManager,
         CoroutineScope(Dispatchers.Unconfined)
     )
@@ -687,6 +687,7 @@ class WizardBolusExecutorImplTest : TestBaseWithProfile() {
     @Test
     fun prepareQuickWizard_netZeroInsulinAndZeroCarbs_returnsNoInsulinRequiredAndParksNothing() = runTest {
         // A correction-only QuickWizard (0 carbs) that nets to <= 0 insulin must error, not park an empty confirm.
+        whenever(config.appInitialized).thenReturn(true)
         whenever(runningModeGuard.rejectionMessage(any())).thenReturn(null)
         val ads = mock<AutosensDataStore>()
         whenever(iobCobCalculator.ads).thenReturn(ads)
@@ -716,6 +717,23 @@ class WizardBolusExecutorImplTest : TestBaseWithProfile() {
         assertThat((result as WizardBolusExecutor.PrepareResult.Error).message).isEqualTo("No insulin required")
         // Nothing parked → a confirm of the wizard timestamp finds no pending dose (no phantom delivery).
         verify(commandQueue, never()).bolus(anyOrNull())
+    }
+
+    @Test
+    fun prepareQuickWizard_beforeAppInitialized_returnsErrorWithoutTouchingPlugins() = runTest {
+        // Regression: a remote QuickWizard prepare landing during the master's startup window (before
+        // verifySelectionInCategories() populated activeAPS) must be rejected here — NOT crash later in
+        // BolusWizard.doCalc with "APS not defined". The guard bails before any plugin / profile access.
+        whenever(config.appInitialized).thenReturn(false)
+        whenever(rh.gs(any<Int>())).thenReturn("Initializing…")
+        val executor = create()
+
+        val result = executor.prepareQuickWizard("g")
+
+        assertThat(result).isInstanceOf(WizardBolusExecutor.PrepareResult.Error::class.java)
+        assertThat((result as WizardBolusExecutor.PrepareResult.Error).message).isEqualTo("Initializing…")
+        verify(runningModeGuard, never()).rejectionMessage(any())
+        verify(quickWizard, never()).get(any<String>())
     }
 
     @Test

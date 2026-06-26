@@ -12,13 +12,41 @@ import kotlinx.serialization.Serializable
  *
  * [advisorApplies] tells the client to offer the high-BG "correct now, eat later" choice (showing
  * [advisorLines] instead of the normal [lines]); the user's pick rides back in `BolusCommit.asAdvisor`.
+ * [wizardDetail] carries the raw calculation breakdown for wizard/quick-wizard boluses so the wear watch
+ * can show a dedicated "Calculations" page (absent for batch-only/scene prepares).
  */
 @Serializable
 data class BolusPreview(
     val bolusId: Long,
     val lines: List<ConfirmationLineDto> = emptyList(),
     val advisorApplies: Boolean = false,
-    val advisorLines: List<ConfirmationLineDto> = emptyList()
+    val advisorLines: List<ConfirmationLineDto> = emptyList(),
+    val wizardDetail: WizardDetailDto? = null,
+)
+
+/** Wire mirror of [app.aaps.core.interfaces.rx.weardata.EventData.WizardDetail] (same module-boundary pattern as [ConfirmationLineDto]). */
+@Serializable
+data class WizardDetailDto(
+    val totalInsulin: Double,
+    val carbs: Int,
+    val insulinFromBG: Double,
+    val insulinFromTrend: Double,
+    val insulinFromCOB: Double,
+    val insulinFromCarbs: Double,
+    val insulinFromBolusIOB: Double,
+    val insulinFromBasalIOB: Double,
+    val includeBolusIOB: Boolean,
+    val includeBasalIOB: Boolean,
+    val percentageCorrection: Int,
+    val cob: Double,
+    val tempTargetLabel: String?,
+    val ic: Double,
+    val sens: Double,
+    val eCarbsGrams: Int = 0,
+    val eCarbsDelayMinutes: Int = 0,
+    val eCarbsDurationHours: Int = 0,
+    val carbTimeMinutes: Int = 0,
+    val alarm: Boolean = false,
 )
 
 /**

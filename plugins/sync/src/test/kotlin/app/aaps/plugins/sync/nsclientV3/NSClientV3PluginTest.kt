@@ -167,6 +167,11 @@ internal class NSClientV3PluginTest : TestBaseWithProfile() {
         val orphanDetector = mock<OrphanDetector>()
         whenever(orphanDetector.authorized).thenReturn(authorizedFlow)
         whenever(preferences.observe(StringNonKey.NsClientControlClientId)).thenReturn(pairedFlow)
+        // pairedFlow (NsClient.pairedFlow) is seeded synchronously from this at construction — start unpaired.
+        whenever(preferences.get(StringNonKey.NsClientControlClientId)).thenReturn("")
+        // Master's allow-client-control switch, synced master→client — the 5th masterReachable term. Default ON.
+        val controlFlow = MutableStateFlow(true)
+        whenever(preferences.observe(BooleanKey.NsClientAllowClientControl)).thenReturn(controlFlow)
 
         val client = buildPlugin(orphanDetector)
         // Heartbeat stays 0L until the first batch — the gate FAILS CLOSED at boot (no optimistic enable).
@@ -186,6 +191,10 @@ internal class NSClientV3PluginTest : TestBaseWithProfile() {
                 authorizedFlow.value = false
                 awaitValue(client.masterReachable, false)                         // revoked / orphaned → gated
                 authorizedFlow.value = true
+                awaitValue(client.masterReachable, true)
+                controlFlow.value = false
+                awaitValue(client.masterReachable, false)                         // master switched OFF client control → gated
+                controlFlow.value = true
                 awaitValue(client.masterReachable, true)
             } finally {
                 collector.cancel()
@@ -481,6 +490,76 @@ internal class NSClientV3PluginTest : TestBaseWithProfile() {
         whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(200, "aaa"))
         sut.nsUpdate("treatments", dataPair, "1/3")
         assertThat(storeDataForDb.nsIdRunningModes).hasSize(2)
+    }
+
+    // ---- 404/400-on-UPDATE bounded retry (NS read-after-write race fix) ----
+    // nsUpdate()'s Boolean return is what DataSyncSelectorV3 uses to advance the cursor:
+    // false = held (retry next round, cursor NOT advanced), true = advance.
+
+    private fun runningModePair(nsId: String, valid: Boolean = true, syncId: Long = 1000) =
+        DataSyncSelector.PairRunningMode(
+            RM(timestamp = 10000, isValid = valid, mode = RM.Mode.SUSPENDED_BY_PUMP, duration = 30000, ids = IDs(nightscoutId = nsId)),
+            syncId
+        )
+
+    @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun `404 on UPDATE of a valid record is retried (cursor held) up to the cap then gives up`() = runTest {
+        val dataPair = runningModePair("rm-retry")
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(404, null))
+        // first (maxUpdateRetries - 1) attempts -> retry -> false -> cursor NOT advanced
+        repeat(4) { assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isFalse() }
+        // cap reached -> give up -> true -> cursor advances (queue not wedged)
+        assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isTrue()
+    }
+
+    @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun `two different records 404ing on UPDATE do not thrash the per-id retry counter`() = runTest {
+        val a = runningModePair("rm-A", syncId = 1000)
+        val b = runningModePair("rm-B", syncId = 1001)
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(404, null))
+        // interleaved, as in a single doUpload pass — each id is counted independently
+        repeat(4) {
+            assertThat(sut.nsUpdate("treatments", a, "1/3")).isFalse()
+            assertThat(sut.nsUpdate("treatments", b, "1/3")).isFalse()
+        }
+        // both reach the cap and give up independently (a single shared slot never would)
+        assertThat(sut.nsUpdate("treatments", a, "1/3")).isTrue()
+        assertThat(sut.nsUpdate("treatments", b, "1/3")).isTrue()
+    }
+
+    @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun `404 on a deletion (invalid record) is not retried`() = runTest {
+        val dataPair = runningModePair("rm-del", valid = false)
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(404, null))
+        // a successful idempotent delete surfaces as 404 -> must advance immediately, not retry
+        assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isTrue()
+    }
+
+    @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun `400 on UPDATE is not retried`() = runTest {
+        val dataPair = runningModePair("rm-400")
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(400, null))
+        // deterministic bad request -> advance immediately, no pointless retries
+        assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isTrue()
+    }
+
+    @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun `a successful UPDATE clears the retry counter and restores the full budget`() = runTest {
+        val dataPair = runningModePair("rm-clear")
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(404, null))
+        repeat(3) { assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isFalse() } // count = 3
+        // a success resets the per-id counter
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(200, null))
+        assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isTrue()
+        // failing again gets the full budget back: 4 more held attempts, then give up
+        whenever(nsAndroidClient.updateTreatment(anyOrNull())).thenReturn(CreateUpdateResponse(404, null))
+        repeat(4) { assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isFalse() }
+        assertThat(sut.nsUpdate("treatments", dataPair, "1/3")).isTrue()
     }
 
     @Test

@@ -267,7 +267,7 @@ fun ProfileActivationScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = stringResource(R.string.timeshift_label) + ": ",
+                                    text = stringResource(app.aaps.core.ui.R.string.timeshift_label) + ": ",
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -290,7 +290,7 @@ fun ProfileActivationScreen(
                             exit = shrinkVertically()
                         ) {
                             NumberInputRow(
-                                labelResId = R.string.timeshift_label,
+                                labelResId = app.aaps.core.ui.R.string.timeshift_label,
                                 value = timeshift,
                                 onValueChange = { timeshift = it },
                                 valueRange = Constants.CPP_MIN_TIMESHIFT.toDouble()..Constants.CPP_MAX_TIMESHIFT.toDouble(),

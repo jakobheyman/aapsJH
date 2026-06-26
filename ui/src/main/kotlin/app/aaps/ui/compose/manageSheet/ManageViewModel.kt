@@ -28,10 +28,12 @@ import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventCustomActionsChanged
 import app.aaps.core.interfaces.rx.events.EventInitializationChanged
+import app.aaps.core.interfaces.sync.NsClient
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.IntKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.objects.extensions.toStringMedium
 import app.aaps.core.objects.extensions.toStringShort
 import app.aaps.core.ui.R
@@ -70,6 +72,8 @@ class ManageViewModel @Inject constructor(
     private val nsSettingStatus: NSSettingsStatus,
     private val preferences: Preferences,
     private val batchExecutor: BatchExecutor,
+    private val nsClient: NsClient,
+    private val visibilityContext: VisibilityContext,
     @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
 
@@ -101,6 +105,9 @@ class ManageViewModel @Inject constructor(
         persistenceLayer.observeChanges(TB::class.java)
             .onEach { refreshState() }.launchIn(viewModelScope)
         rxBus.toFlow(EventCustomActionsChanged::class.java)
+            .onEach { refreshState() }.launchIn(viewModelScope)
+        // Re-evaluate showMutatingActions when the client pairs/unpairs (stable signal, flips rarely).
+        nsClient.masterOrPairedClientFlow
             .onEach { refreshState() }.launchIn(viewModelScope)
     }
 
@@ -182,6 +189,9 @@ class ManageViewModel @Inject constructor(
                     showFill = pumpDescription.isRefillingCapable && isInitialized,
                     showAuthorizedClients = preferences.get(BooleanKey.NsClient3UseWs) && !config.AAPSCLIENT,
                     showPairWithMaster = config.AAPSCLIENT && preferences.get(BooleanKey.NsClient3UseWs),
+                    showMutatingActions = !config.AAPSCLIENT || nsClient.masterOrPairedClientFlow.value,
+                    // General gate: PUMP declares its own visibility (!isClient → full + pumpcontrol, not aapsclient).
+                    showPump = ElementType.PUMP.visibility.isVisible(visibilityContext),
                     cancelTempBasalText = cancelTempBasalText,
                     cancelExtendedBolusText = cancelExtendedBolusText,
                     isPatchPump = pumpDescription.isPatchPump,

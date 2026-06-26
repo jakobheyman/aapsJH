@@ -155,11 +155,15 @@
       `ProfileUtil.fromMgdlToStringWithUnits`) over a bare number. Most such templates already exist
       in
       `:core:ui`; reuse them before adding a new one.
-- **Add translator context to every new string via the `comment="..."` attribute** (not an XML
-  comment).
-  Explain each placeholder and give an example, mirroring existing strings:
-    - ✅
+- **Add a `comment="..."` translator note ONLY when a new string genuinely needs it for correct
+  translation** — i.e. it has placeholders, is short/ambiguous out of context, carries units, or has
+  order-sensitive parts. Do NOT add comments blanket to every string; a plain, self-explanatory
+  sentence needs none. When you do add one, use the `comment="..."` attribute (not an XML comment) and
+  explain each placeholder with an example, mirroring existing strings:
+    - ✅ needs it (placeholders + units):
       `<string name="preference_range_summary" comment="%1$s=current value, %2$s=unit label, %3$s=min, %4$s=max. Example: 5.0 U (0.0 – 10.0)">%1$s%2$s (%3$s – %4$s)</string>`
+    - ❌ does NOT need it (plain, unambiguous sentence — no comment):
+      `<string name="master_control_disabled_banner">Master has disabled remote control. Editing is disabled until it is re-enabled on the master.</string>`
 - **In Compose code, use `stringResource()` not `ResourceHelper`** - Compose has built-in
   `stringResource(R.string.xyz)` function. Only use `ResourceHelper` (rh) in non-Composable contexts
   (ViewModels, regular functions). This keeps Compose code cleaner and more idiomatic.

@@ -157,7 +157,7 @@ fun NSClientScreenContent(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(AapsSpacing.small)
             ) {
-                LabelValueRow(label = stringResource(R.string.status), value = uiState.status)
+                LabelValueRow(label = stringResource(R.string.status_label), value = uiState.status)
                 LabelValueRow(label = stringResource(R.string.queue), value = uiState.queue)
             }
 

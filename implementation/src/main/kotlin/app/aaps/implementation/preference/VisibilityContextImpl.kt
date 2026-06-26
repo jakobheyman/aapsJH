@@ -10,7 +10,8 @@ import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.plugin.ActivePlugin
 import app.aaps.core.interfaces.rx.collectResilient
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.interfaces.sync.NsClient
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.keys.interfaces.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -20,25 +21,31 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of [PreferenceVisibilityContext] that provides runtime context
+ * Implementation of [VisibilityContext] that provides runtime context
  * for evaluating preference visibility conditions.
  *
  * This class bridges the gap between the preference key definitions (which declare
  * visibility conditions) and the runtime state of the app (pump type, BG source, etc.).
  */
 @Singleton
-class PreferenceVisibilityContextImpl @Inject constructor(
+class VisibilityContextImpl @Inject constructor(
     private val activePlugin: ActivePlugin,
     private val persistenceLayer: PersistenceLayer,
     private val constraintsChecker: ConstraintsChecker,
     private val config: Config,
     private val aapsLogger: AAPSLogger,
+    private val nsClient: NsClient,
     @ApplicationScope private val appScope: CoroutineScope,
     override val preferences: Preferences
-) : PreferenceVisibilityContext {
+) : VisibilityContext {
 
     override val isClient: Boolean
         get() = config.AAPSCLIENT
+
+    // Live snapshot of the stable Client-Control pairing signal (always true on a master). Read per
+    // isVisible() evaluation so CLIENT_PAIRED-gated elements appear/disappear the moment pairing flips.
+    override val masterOrPairedClient: Boolean
+        get() = nsClient.masterOrPairedClientFlow.value
 
     // Cached off-main: advancedFilteringSupported is read from Compose preference-screen visibility
     // predicates on the main thread, so it must not hit the DB synchronously. Seeded in init and

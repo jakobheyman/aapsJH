@@ -197,7 +197,7 @@ class SWDefinition @Inject constructor(
             .add(swBreakProvider.get())
             .add(swInfoTextProvider.get().label(R.string.syncinfotext))
             .add(swBreakProvider.get())
-            .add(swEventListenerProvider.get().with(EventSWSyncStatus::class.java).label(R.string.status).initialStatus(nsClient.status))
+            .add(swEventListenerProvider.get().with(EventSWSyncStatus::class.java).label(R.string.status_label).initialStatus(nsClient.status))
             .validator { nsClient.connected && nsClient.hasWritePermission }
 
     private val screenPatientName

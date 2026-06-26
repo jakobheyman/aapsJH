@@ -387,11 +387,11 @@ class NSClientV3Plugin @Inject constructor(
 
     /**
      * WS-push entry for client-control envelopes. NSClientV3Service routes settings-collection
-     * create/update events here. No-op when the master toggle is off so non-master devices ignore
-     * any client-control identifiers that happen to land in their settings stream.
+     * create/update events here. The receiver verifies every envelope and — when the master toggle is off —
+     * rejects cleanly with a signed ACK (one place, also covering the poll fallback) rather than silently
+     * dropping it, which would time a client out into a false "master offline" alarm in the toggle race window.
      */
     fun handleClientControlSettingsEvent(identifier: String, doc: JSONObject) {
-        if (!preferences.get(BooleanKey.NsClientAllowClientControl)) return
         scope.launch {
             runCatching { clientControlReceiver.onSettingsDocChanged(identifier, doc) }
                 .onFailure { aapsLogger.error(LTag.NSCLIENT, "ClientControl WS dispatch failed for $identifier: ${it.message}", it) }
@@ -555,18 +555,45 @@ class NSClientV3Plugin @Inject constructor(
             },
             _lastMasterSignalAt.freshness(thresholdMs = heartbeatStaleMs, scope = reachableScope, tickMs = heartbeatTickMs, pristine = false, now = dateUtil::now),
             preferences.observe(StringNonKey.NsClientControlClientId).map { it.isNotEmpty() },
-            orphanDetector.authorized
-        ) { ws, fresh, paired, authorized ->
-            val reachable = ws && fresh && paired && authorized
+            orphanDetector.authorized,
+            // Master's "allow client control" switch, synced master→client (effective value — see
+            // RunningConfigurationImpl). Off ⇒ master silently drops commands, so block fast here instead.
+            preferences.observe(BooleanKey.NsClientAllowClientControl)
+        ) { ws, fresh, paired, authorized, controlAllowed ->
+            val reachable = ws && fresh && paired && authorized && controlAllowed
             // Diagnostic (lazy — string built only when NSCLIENT logging is on): shows WHICH term gates.
             // heartbeatAgeMs > heartbeatStaleMs (9 min) ⇒ fresh=false.
-            aapsLogger.debug(LTag.NSCLIENT) { "masterReachable=$reachable (ws=$ws fresh=$fresh paired=$paired authorized=$authorized heartbeatAgeMs=${dateUtil.now() - lastDevicestatusReceivedAt.value})" }
+            aapsLogger.debug(LTag.NSCLIENT) { "masterReachable=$reachable (ws=$ws fresh=$fresh paired=$paired authorized=$authorized controlAllowed=$controlAllowed heartbeatAgeMs=${dateUtil.now() - lastDevicestatusReceivedAt.value})" }
             reachable
         }
             // Seed FALSE (fail-closed): before the combine first computes — and on a cold start / WS
             // resubscribe — the client must not momentarily report the master "reachable" and flash edit
             // controls open. The combine settles to the real value within a tick of subscription.
             .stateIn(reachableScope, SharingStarted.WhileSubscribed(5000), false)
+
+    // See [NsClient.pairedFlow]. STABLE pairing marker (flips only on pair/unpair) — kept separate from
+    // the flapping [masterReachable] so persistent chrome (nav tabs, Manage entries, search visibility)
+    // can HIDE mutating UI on an unpaired client without churn. Master: always paired. Client: observe the
+    // canonical NsClientControlClientId marker (same term masterReachable uses on line ~557). Seeded with
+    // the SYNCHRONOUS current value (not false) so a [PreferenceVisibilityContext] read sees the correct
+    // .value even before any collector subscribes.
+    override val masterOrPairedClientFlow: StateFlow<Boolean> =
+        if (!config.AAPSCLIENT) MutableStateFlow(true).asStateFlow()
+        else preferences.observe(StringNonKey.NsClientControlClientId)
+            .map { it.isNotEmpty() }
+            .stateIn(reachableScope, SharingStarted.WhileSubscribed(5000), preferences.get(StringNonKey.NsClientControlClientId).isNotEmpty())
+
+    // See [NsClient.masterControlAllowed]. Master: always true. Client: true unless paired AND the master's
+    // synced "allow client control" switch is off — so an UNPAIRED client shows the generic unreachable banner,
+    // not this one. UI-only (the offline banner picks its message from this); masterReachable folds the raw
+    // synced term in directly. Seed true so the initial/unpaired state never flashes the control-disabled message.
+    override val masterControlAllowed: StateFlow<Boolean> =
+        if (!config.AAPSCLIENT) MutableStateFlow(true).asStateFlow()
+        else combine(
+            preferences.observe(StringNonKey.NsClientControlClientId).map { it.isNotEmpty() },
+            preferences.observe(BooleanKey.NsClientAllowClientControl)
+        ) { paired, control -> !paired || control }
+            .stateIn(reachableScope, SharingStarted.WhileSubscribed(5000), true)
 
     private fun setClient() {
         if (nsAndroidClient == null)
@@ -660,6 +687,42 @@ class NSClientV3Plugin @Inject constructor(
         nsClientV3Service?.handleClearAlarm(originalAlarm, silenceTimeInMilliseconds)
     }
 
+    // --- Bounded retry for transient NS UPDATE failures ---
+    // A 404 on an UPDATE previously fell through to `return true`, advancing the per-collection sync
+    // cursor and permanently dropping the change. Worst case: NS returns 404 to a PATCH issued ~1-2s
+    // after the record's CREATE (NS read-after-write lag — the just-created treatment is briefly not
+    // visible to find-by-identifier), so e.g. a SUSPENDED_BY_PUMP duration-cut is lost and every
+    // follower stays stuck "Pump suspended". Now a 404 on a real UPDATE keeps the cursor in place and
+    // retries on a later sync cycle (by then NS has the record), bounded per nsId so a permanently
+    // failing record can't wedge its collection's cursor. Keyed by nsId (globally-unique), not a
+    // single slot, because doUpload() runs all collections in one pass and several share a handler.
+    // Deliberately NOT retried: 400 (deterministic bad request) and deletions (the NS SDK reports a
+    // successful idempotent delete as 404, see NSAndroidClientImpl.updateXxx).
+    private val failedUpdateCounts = HashMap<String, Int>()
+    private val maxUpdateRetries = 5
+
+    /**
+     * @return true  -> retry: caller must `return false` so the sync cursor is NOT advanced
+     *         false -> nothing to retry (not an UPDATE / a deletion / no id) or retries exhausted:
+     *                  caller proceeds normally and the cursor advances
+     */
+    private fun retryUpdateLater(operation: Operation, id: String?, isDeletion: Boolean): Boolean {
+        if (operation != Operation.UPDATE || isDeletion || id.isNullOrEmpty()) return false
+        val count = (failedUpdateCounts[id] ?: 0) + 1
+        if (count >= maxUpdateRetries) {
+            nsClientRepository.addLog("◄ GIVE_UP", "$id after $count attempts")
+            failedUpdateCounts.remove(id)
+            return false
+        }
+        failedUpdateCounts[id] = count
+        return true
+    }
+
+    /** Clear retry bookkeeping once an UPDATE for [id] finally succeeds. */
+    private fun clearUpdateRetry(operation: Operation, id: String?) {
+        if (operation == Operation.UPDATE && !id.isNullOrEmpty()) failedUpdateCounts.remove(id)
+    }
+
     suspend fun nsAdd(collection: String, dataPair: DataSyncSelector.DataPair, progress: String, profile: Profile? = null): Boolean =
         dbOperation(collection, dataPair, progress, Operation.CREATE, profile)
 
@@ -749,10 +812,19 @@ class NSClientV3Plugin @Inject constructor(
             )
             call?.let { it(data) }?.let { result ->
                 when (result.response) {
-                    200  -> nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                    200  -> {
+                        nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                        clearUpdateRetry(operation, id)
+                    }
+
                     201  -> nsClientRepository.addLog("◄ ADDED", "OK ${dataPair.value.javaClass.simpleName}")
                     400  -> nsClientRepository.addLog("◄ FAIL", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
-                    404  -> nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                    404  -> {
+                        nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                        if (!config.isEnabled(ExternalOptions.IGNORE_NS_V3_ERRORS) &&
+                            retryUpdateLater(operation, id, isDeletion = !dataPair.value.isValid)
+                        ) return false
+                    }
 
                     else -> {
                         nsClientRepository.addLog("◄ ERROR", "${result.errorResponse} ")
@@ -794,10 +866,19 @@ class NSClientV3Plugin @Inject constructor(
             )
             call?.let { it(data) }?.let { result ->
                 when (result.response) {
-                    200  -> nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                    200  -> {
+                        nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                        clearUpdateRetry(operation, id)
+                    }
+
                     201  -> nsClientRepository.addLog("◄ ADDED", "OK ${dataPair.value.javaClass.simpleName}")
                     400  -> nsClientRepository.addLog("◄ FAIL", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
-                    404  -> nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                    404  -> {
+                        nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                        if (!config.isEnabled(ExternalOptions.IGNORE_NS_V3_ERRORS) &&
+                            retryUpdateLater(operation, id, isDeletion = !dataPair.value.isValid)
+                        ) return false
+                    }
 
                     else -> {
                         nsClientRepository.addLog("◄ ERROR", "${result.errorResponse} ")
@@ -839,10 +920,19 @@ class NSClientV3Plugin @Inject constructor(
             )
             call?.let { it(data) }?.let { result ->
                 when (result.response) {
-                    200  -> nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                    200  -> {
+                        nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                        clearUpdateRetry(operation, id)
+                    }
+
                     201  -> nsClientRepository.addLog("◄ ADDED", "OK ${dataPair.value.javaClass.simpleName}")
                     400  -> nsClientRepository.addLog("◄ FAIL", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
-                    404  -> nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                    404  -> {
+                        nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                        if (!config.isEnabled(ExternalOptions.IGNORE_NS_V3_ERRORS) &&
+                            retryUpdateLater(operation, id, isDeletion = !dataPair.value.isValid)
+                        ) return false
+                    }
 
                     else -> {
                         nsClientRepository.addLog("◄ ERROR", "${result.errorResponse}")
@@ -905,10 +995,19 @@ class NSClientV3Plugin @Inject constructor(
                 )
                 call?.let { it(data) }?.let { result ->
                     when (result.response) {
-                        200  -> nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                        200  -> {
+                            nsClientRepository.addLog("◄ UPDATED", "OK ${dataPair.value.javaClass.simpleName}")
+                            clearUpdateRetry(operation, id)
+                        }
+
                         201  -> nsClientRepository.addLog("◄ ADDED", "OK ${dataPair.value.javaClass.simpleName}")
                         400  -> nsClientRepository.addLog("◄ FAIL", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
-                        404  -> nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                        404  -> {
+                            nsClientRepository.addLog("◄ NOT_FOUND", "${dataPair.value.javaClass.simpleName} ${result.errorResponse}")
+                            if (!config.isEnabled(ExternalOptions.IGNORE_NS_V3_ERRORS) &&
+                                retryUpdateLater(operation, id, isDeletion = (dataPair.value as? HasIDs)?.isValid == false)
+                            ) return false
+                        }
 
                         else -> {
                             nsClientRepository.addLog("◄ ERROR", "${result.errorResponse} ")

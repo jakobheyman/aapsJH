@@ -81,6 +81,7 @@ fun OverviewScreenTablet(
     onEndScene: () -> Unit = {},
     onDismissScene: () -> Unit = {},
     endSceneEnabled: Boolean = true,
+    commandsAllowed: Boolean = true,
     formatDuration: (Long) -> String = { ms -> "${(ms / 60000L).toInt()}m" },
     modifier: Modifier = Modifier
 ) {
@@ -175,7 +176,8 @@ fun OverviewScreenTablet(
                             sensitivityUiState = sensitivityUiState,
                             onNavigate = onNavigate,
                             onTbrChipClick = onTbrChipClick,
-                            onIobChipClick = onIobChipClick
+                            onIobChipClick = onIobChipClick,
+                            commandsAllowed = commandsAllowed
                         )
                     }
                 }
@@ -187,6 +189,7 @@ fun OverviewScreenTablet(
                     batteryStatus = statusState.batteryStatus,
                     showFill = statusState.showFill,
                     showPumpBatteryChange = statusState.showPumpBatteryChange,
+                    commandsAllowed = commandsAllowed,
                     onNavigate = onNavigate,
                     statusLightsDef = statusLightsDef,
                     onCopyFromNightscout = { manageViewModel.copyStatusLightsFromNightscout() },

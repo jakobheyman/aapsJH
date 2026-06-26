@@ -1,7 +1,8 @@
-package app.aaps.receivers
+package app.aaps.implementation.receivers
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.VisibleForTesting
 import app.aaps.core.data.pump.defs.TimeChangeType
 import app.aaps.core.interfaces.di.ApplicationScope
 import app.aaps.core.interfaces.logging.AAPSLogger
@@ -36,6 +37,11 @@ class TimeDateOrTZChangeReceiver : DaggerBroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        processIntent(intent)
+    }
+
+    @VisibleForTesting
+    fun processIntent(intent: Intent) {
         val action = intent.action
         val activePump: Pump = activePlugin.activePump
 

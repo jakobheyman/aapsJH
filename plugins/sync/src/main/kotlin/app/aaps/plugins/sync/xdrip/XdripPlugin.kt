@@ -218,7 +218,7 @@ class XdripPlugin @Inject constructor(
     private fun buildStatusLine(profile: Profile): String {
         val status = StringBuilder()
         if (!runBlocking { loop.runningMode() }.isLoopRunning() && config.APS)
-            status.append(rh.gs(R.string.disabled_loop)).append("\n")
+            status.append(rh.gs(app.aaps.core.ui.R.string.disabled_loop)).append("\n")
 
         //Temp basal
         runBlocking { processedTbrEbData.getTempBasalIncludingConvertedExtended(System.currentTimeMillis()) }?.let {

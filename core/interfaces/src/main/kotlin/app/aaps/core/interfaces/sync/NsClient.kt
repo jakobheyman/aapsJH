@@ -55,6 +55,31 @@ interface NsClient : Sync {
         get() = MutableStateFlow(true).asStateFlow()
 
     /**
+     * STABLE pairing signal — distinct from the transient [masterReachable]. True on a master; on a
+     * client true only once a Client-Control pairing exists (NsClientControlClientId non-empty). It
+     * flips only on an explicit pair/unpair, so it is safe to drive persistent chrome (bottom-nav
+     * tabs, Manage entries, search visibility) off it without the flapping that [masterReachable]
+     * exhibits. Mutating/command UI is HIDDEN when this is false because an unpaired client's signed
+     * commands are silently dropped; [masterReachable] then handles the paired-but-offline case by
+     * disabling (not hiding) those controls.
+     *
+     * Default exposes a static always-`true` flow: impls without a pairing concept must never hide UI.
+     */
+    val masterOrPairedClientFlow: StateFlow<Boolean>
+        get() = MutableStateFlow(true).asStateFlow()
+
+    /**
+     * Whether the master currently ALLOWS remote (client-control) commands — its "stop/allow communication"
+     * switch (NsClientAllowClientControl), synced master→client. Always `true` on a master. On a client: `true`
+     * unless it is paired AND the master has the switch off (so an unpaired client shows the generic
+     * unreachable message, not this one). Folded into [masterReachable] so a disabled switch blocks commands
+     * fast instead of letting them silently time out, and surfaced to the UI so the offline banner can show a
+     * distinct "remote control disabled" message. Default always-`true`.
+     */
+    val masterControlAllowed: StateFlow<Boolean>
+        get() = MutableStateFlow(true).asStateFlow()
+
+    /**
      * Actively probe master liveness (and pull any config missed while out of contact). On a client
      * this fires a signed Client-Control ping — whose authenticated ACK ("pong") refreshes
      * [masterReachable] far faster than waiting for the next devicestatus heartbeat — and re-fetches

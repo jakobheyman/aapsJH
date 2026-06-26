@@ -2,7 +2,7 @@ package app.aaps.core.keys
 
 import app.aaps.core.keys.interfaces.BooleanPreferenceKey
 import app.aaps.core.keys.interfaces.PreferenceEnabledCondition
-import app.aaps.core.keys.interfaces.PreferenceVisibility
+import app.aaps.core.keys.interfaces.ElementVisibility
 import app.aaps.core.keys.interfaces.SyncChannel
 import app.aaps.core.keys.interfaces.SyncDirection
 import app.aaps.core.keys.interfaces.SyncSpec
@@ -23,7 +23,7 @@ enum class BooleanKey(
     override val hideParentScreenIfHidden: Boolean = false,
     override val engineeringModeOnly: Boolean = false,
     override val exportable: Boolean = true,
-    override val visibility: PreferenceVisibility = PreferenceVisibility.ALWAYS,
+    override val visibility: ElementVisibility = ElementVisibility.ALWAYS,
     override val enabledCondition: PreferenceEnabledCondition = PreferenceEnabledCondition.ALWAYS,
     override val sync: SyncSpec? = null
 ) : BooleanPreferenceKey {
@@ -78,28 +78,28 @@ enum class BooleanKey(
     ApsUseSmbWithHighTt("enableSMB_with_high_temptarget", false, R.string.pref_title_aps_use_smb_with_high_tt, R.string.pref_summary_aps_use_smb_with_high_tt, defaultedBySM = true, dependency = ApsUseSmb, sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)),
     ApsUseSmbAlways(
         "enableSMB_always", true, R.string.pref_title_aps_use_smb_always, R.string.pref_summary_aps_use_smb_always, defaultedBySM = true, dependency = ApsUseSmb,
-        visibility = PreferenceVisibility.ADVANCED_FILTERING,
+        visibility = ElementVisibility.ADVANCED_FILTERING,
         sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)
     ),
     ApsUseSmbWithCob(
         "enableSMB_with_COB", true, R.string.pref_title_aps_use_smb_with_cob, R.string.pref_summary_aps_use_smb_with_cob, defaultedBySM = true, dependency = ApsUseSmb,
-        visibility = PreferenceVisibility { !it.preferences.get(ApsUseSmbAlways) || !it.advancedFilteringSupported },
+        visibility = ElementVisibility { !it.preferences.get(ApsUseSmbAlways) || !it.advancedFilteringSupported },
         sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)
     ),
     ApsUseSmbWithLowTt(
         "enableSMB_with_temptarget", true, R.string.pref_title_aps_use_smb_with_low_tt, R.string.pref_summary_aps_use_smb_with_low_tt, defaultedBySM = true, dependency = ApsUseSmb,
-        visibility = PreferenceVisibility { !it.preferences.get(ApsUseSmbAlways) || !it.advancedFilteringSupported },
+        visibility = ElementVisibility { !it.preferences.get(ApsUseSmbAlways) || !it.advancedFilteringSupported },
         sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)
     ),
     ApsUseSmbAfterCarbs(
         "enableSMB_after_carbs", true, R.string.pref_title_aps_use_smb_after_carbs, R.string.pref_summary_aps_use_smb_after_carbs, defaultedBySM = true, dependency = ApsUseSmb,
-        visibility = PreferenceVisibility { !it.preferences.get(ApsUseSmbAlways) && it.advancedFilteringSupported },
+        visibility = ElementVisibility { !it.preferences.get(ApsUseSmbAlways) && it.advancedFilteringSupported },
         sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)
     ),
     ApsUseUam("use_uam", true, R.string.pref_title_aps_use_uam, R.string.pref_summary_aps_use_uam, defaultedBySM = true, sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)),
     ApsSensitivityRaisesTarget(
         "sensitivity_raises_target", true, R.string.pref_title_aps_sensitivity_raises_target, R.string.pref_summary_aps_sensitivity_raises_target, defaultedBySM = true,
-        visibility = PreferenceVisibility {
+        visibility = ElementVisibility {
             if (it.preferences.get(ApsUseDynamicSensitivity)) {
                 it.preferences.get(ApsDynIsfAdjustSensitivity)
             } else {
@@ -110,7 +110,7 @@ enum class BooleanKey(
     ),
     ApsResistanceLowersTarget(
         "resistance_lowers_target", true, R.string.pref_title_aps_resistance_lowers_target, R.string.pref_summary_aps_resistance_lowers_target, defaultedBySM = true,
-        visibility = PreferenceVisibility {
+        visibility = ElementVisibility {
             if (it.preferences.get(ApsUseDynamicSensitivity)) {
                 it.preferences.get(ApsDynIsfAdjustSensitivity)
             } else {
@@ -128,7 +128,10 @@ enum class BooleanKey(
     ApsAutoIsfSmbOnEvenTarget("Enable alternative activation of SMB always", false, R.string.pref_title_aps_smb_on_even_target, R.string.pref_summary_aps_smb_on_even_target, defaultedBySM = true, sync = SyncSpec(SyncChannel.Cold, SyncDirection.Bidirectional)),
 
     MaintenanceEnableFabric("enable_fabric2", true, R.string.pref_title_maintenance_enable_fabric, defaultedBySM = true, hideParentScreenIfHidden = true),
-    MaintenanceEnableExportSettingsAutomation("enable_unattended_export", false, R.string.pref_title_maintenance_enable_export_automation, defaultedBySM = false),
+    // Master-only (not a follower client): unattended settings export backs up the local config, which on a
+    // client is derived from the master. showInNsClientMode=false hides it in apsMode + pumpControlMode only;
+    // hideParentScreenIfHidden collapses the now-empty "Unattended Settings Export" subscreen on a client.
+    MaintenanceEnableExportSettingsAutomation("enable_unattended_export", false, R.string.pref_title_maintenance_enable_export_automation, defaultedBySM = false, showInNsClientMode = false, hideParentScreenIfHidden = true),
 
     AutotuneAutoSwitchProfile("autotune_auto", false, R.string.pref_title_autotune_auto_switch_profile, R.string.pref_summary_autotune_auto_switch_profile),
     AutotuneCategorizeUamAsBasal("categorize_uam_as_basal", false, R.string.pref_title_autotune_categorize_uam_as_basal, R.string.pref_summary_autotune_categorize_uam_as_basal),
@@ -167,7 +170,11 @@ enum class BooleanKey(
         R.string.pref_title_ns_allow_client_control, R.string.pref_summary_ns_allow_client_control,
         // No longer on the prefs screen — it's the stop/allow-communication switch on the Authorized clients screen.
         // Default OFF, but ON in simple mode (resolved in PreferencesImpl.calculatedDefaultValue). Hidden on a client.
-        calculatedDefaultValue = true, showInNsClientMode = false
+        calculatedDefaultValue = true, showInNsClientMode = false,
+        // Synced master→client (MasterOnly — the client mirrors, never pushes back) so a paired client knows
+        // whether the master is accepting commands and can gate its UI. buildSyncedPrefs publishes the EFFECTIVE
+        // value for this key (see RunningConfigurationImpl), not the raw default.
+        sync = SyncSpec(SyncChannel.Cold, SyncDirection.MasterOnly)
     ),
     OpenHumansWifiOnly("oh_wifi_only", true, R.string.pref_title_openhumans_wifi_only),
     OpenHumansChargingOnly("oh_charging_only", false, R.string.pref_title_openhumans_charging_only),

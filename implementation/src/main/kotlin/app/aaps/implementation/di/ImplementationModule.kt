@@ -48,7 +48,7 @@ import app.aaps.core.interfaces.utils.HardLimits
 import app.aaps.core.interfaces.utils.Translator
 import app.aaps.core.interfaces.utils.TrendCalculator
 import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.implementation.alerts.LocalAlertUtilsImpl
 import app.aaps.implementation.androidNotification.AlarmSoundPlayerImpl
@@ -67,7 +67,7 @@ import app.aaps.implementation.notifications.NotificationManagerImpl
 import app.aaps.implementation.overview.LastBgDataImpl
 import app.aaps.implementation.overview.OverviewDataImpl
 import app.aaps.implementation.plugin.PluginStore
-import app.aaps.implementation.preference.PreferenceVisibilityContextImpl
+import app.aaps.implementation.preference.VisibilityContextImpl
 import app.aaps.implementation.profile.ProfileFunctionImpl
 import app.aaps.implementation.profile.ProfileRepositoryImpl
 import app.aaps.implementation.profile.ProfileStoreObject
@@ -84,8 +84,11 @@ import app.aaps.implementation.pump.PumpStatusProviderImpl
 import app.aaps.implementation.pump.PumpSyncImplementation
 import app.aaps.implementation.pump.PumpWithConcentrationImpl
 import app.aaps.implementation.pump.TemporaryBasalStorageImpl
+import app.aaps.implementation.receivers.BTReceiver
+import app.aaps.implementation.receivers.ChargingStateReceiver
 import app.aaps.implementation.receivers.NetworkChangeReceiver
 import app.aaps.implementation.receivers.ReceiverStatusStoreImpl
+import app.aaps.implementation.receivers.TimeDateOrTZChangeReceiver
 import app.aaps.implementation.resources.IconsProviderImplementation
 import app.aaps.implementation.resources.ResourceHelperImpl
 import app.aaps.implementation.sharedPreferences.PreferencesImpl
@@ -122,9 +125,12 @@ class ImplementationModule {
     interface Bindings {
 
         @ContributesAndroidInjector fun contributesNetworkChangeReceiver(): NetworkChangeReceiver
+        @ContributesAndroidInjector fun contributesBTReceiver(): BTReceiver
+        @ContributesAndroidInjector fun contributesChargingStateReceiver(): ChargingStateReceiver
+        @ContributesAndroidInjector fun contributesTimeDateOrTZChangeReceiver(): TimeDateOrTZChangeReceiver
 
         @Binds fun bindPreferences(preferencesImpl: PreferencesImpl): Preferences
-        @Binds fun bindPreferenceVisibilityContext(impl: PreferenceVisibilityContextImpl): PreferenceVisibilityContext
+        @Binds fun bindVisibilityContext(impl: VisibilityContextImpl): VisibilityContext
         @Binds fun bindFabricPrivacy(fabricPrivacyImpl: FabricPrivacyImpl): FabricPrivacy
         @Binds fun bindActivePlugin(pluginStore: PluginStore): ActivePlugin
 

@@ -2,6 +2,8 @@ package app.aaps.plugins.sync.nsclientV3.clientcontrol
 
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.RM
+import app.aaps.core.data.model.TE
+import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.bolus.BatchAction
 import app.aaps.core.nssdk.localmodel.clientcontrol.BatchActionDto
 import com.google.common.truth.Truth.assertThat
@@ -64,5 +66,37 @@ class BatchActionMappingTest {
     fun insulinActivateWithUnparseableICfgMapsToNull() {
         // A malformed iCfgJson drops the action (prepareBatch's no-action guard then rejects an insulin-only batch).
         assertThat(BatchActionDto(type = BatchActionDto.TYPE_INSULIN_ACTIVATE, iCfgJson = "{not json").toDomain()).isNull()
+    }
+
+    @Test
+    fun therapyEventBgCheckRoundTrips() {
+        val original = BatchAction.TherapyEvent(
+            teType = TE.Type.FINGER_STICK_BG_VALUE,
+            timestamp = 1_700_000_000_000L,
+            glucoseMgdl = 110.0,
+            glucoseType = TE.MeterType.FINGER,
+            durationMinutes = 30,
+            note = "after lunch",
+            source = Sources.BgCheck
+        )
+        assertThat(original.toDto().toDomain()).isEqualTo(original)
+    }
+
+    @Test
+    fun therapyEventSiteChangeRoundTrips() {
+        val original = BatchAction.TherapyEvent(
+            teType = TE.Type.CANNULA_CHANGE,
+            timestamp = 1_700_000_001_000L,
+            location = TE.Location.SIDE_LEFT_UPPER_ARM,
+            arrow = TE.Arrow.RIGHT,
+            source = Sources.FillDialog
+        )
+        assertThat(original.toDto().toDomain()).isEqualTo(original)
+    }
+
+    @Test
+    fun therapyEventWithUnknownTypeMapsToNull() {
+        // An unknown/unparseable teType drops the action (the master's no-action guard then rejects an empty batch).
+        assertThat(BatchActionDto(type = BatchActionDto.TYPE_THERAPY_EVENT, teType = "NOT_A_TYPE").toDomain()).isNull()
     }
 }

@@ -25,7 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import app.aaps.core.interfaces.plugin.PluginBase
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.ui.compose.AapsTopAppBar
 import app.aaps.core.ui.compose.ComposeScreenContent
 import app.aaps.core.ui.compose.LocalSnackbarHostState
@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PluginPreferencesScreen(
     plugin: PluginBase,
-    visibilityContext: PreferenceVisibilityContext? = null,
+    visibilityContext: VisibilityContext? = null,
     onBackClick: () -> Unit
 ) {
     val preferenceScreenContent = plugin.getPreferenceScreenContent()
@@ -122,7 +122,7 @@ fun PluginPreferencesScreen(
 private fun SinglePluginPreferencesRenderer(
     screen: PreferenceSubScreenDef,
     title: String,
-    visibilityContext: PreferenceVisibilityContext?,
+    visibilityContext: VisibilityContext?,
     onBackClick: () -> Unit
 ) {
     val sectionState = rememberPreferenceSectionState()

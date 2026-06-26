@@ -57,6 +57,8 @@ fun ManageSheetHost(
             showFill = manageState.showFill,
             showAuthorizedClients = manageState.showAuthorizedClients,
             showPairWithMaster = manageState.showPairWithMaster,
+            showMutatingActions = manageState.showMutatingActions,
+            showPump = manageState.showPump,
             cancelTempBasalText = manageState.cancelTempBasalText,
             cancelExtendedBolusText = manageState.cancelExtendedBolusText,
             isPatchPump = manageState.isPatchPump,

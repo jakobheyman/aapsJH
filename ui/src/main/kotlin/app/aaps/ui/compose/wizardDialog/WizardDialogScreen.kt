@@ -188,7 +188,7 @@ fun WizardDialogScreen(
         uiState = uiState,
         decimalFormatter = viewModel.decimalFormatter,
         profileUtil = viewModel.profileUtil,
-        unitsLabel = uiState.units.asText,
+        unitsLabel = uiState.units.displayLabel,
         onBgChange = { viewModel.updateBg(it) },
         onCarbsChange = { viewModel.updateCarbs(it.toInt()) },
         onAddCarbs = viewModel::addCarbs,

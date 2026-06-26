@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import app.aaps.core.ui.R as CoreUiR
+import app.aaps.core.ui.compose.formatMinutesAsDuration
 
 /**
  * Executes scene activation and deactivation.
@@ -133,15 +134,18 @@ class SceneExecutor @Inject constructor(
 
     /** The master-authored confirmation lines for a scene — name + duration + one line per action (authored ONCE here). */
     private fun buildSceneLines(scene: Scene, durationMinutes: Int): List<ConfirmationLine> = buildList {
-        add(ConfirmationLine(ConfirmationRole.PRIMARY, scene.name))
+        add(ConfirmationLine(ConfirmationRole.SCENE, scene.name))
         if (durationMinutes > 0)
-            add(ConfirmationLine(ConfirmationRole.NORMAL, rh.gs(CoreUiR.string.confirmation_line, rh.gs(CoreUiR.string.duration), rh.gs(CoreUiR.string.format_mins, durationMinutes))))
+            add(ConfirmationLine(ConfirmationRole.NORMAL, rh.gs(CoreUiR.string.confirmation_line, rh.gs(CoreUiR.string.duration), formatMinutesAsDuration(durationMinutes, rh))))
         scene.actions.forEach { add(ConfirmationLine(ConfirmationRole.NORMAL, sceneActionLine(it))) }
     }
 
     private fun sceneActionLine(action: SceneAction): String = when (action) {
         is SceneAction.TempTarget      -> rh.gs(CoreUiR.string.scene_action_tt, profileUtil.fromMgdlToStringWithUnits(action.targetMgdl))
-        is SceneAction.ProfileSwitch   -> rh.gs(CoreUiR.string.scene_action_profile, action.profileName, action.percentage)
+        is SceneAction.ProfileSwitch   -> if (action.profileName.isNotEmpty())
+            rh.gs(CoreUiR.string.scene_action_profile, action.profileName, action.percentage)
+        else
+            rh.gs(CoreUiR.string.scene_action_profile_pct_only, action.percentage)
         is SceneAction.SmbToggle       -> if (action.enabled) rh.gs(CoreUiR.string.scene_action_smb_on) else rh.gs(CoreUiR.string.scene_action_smb_off)
         is SceneAction.LoopModeChange  -> rh.gs(CoreUiR.string.scene_action_running_mode, translator.translate(action.mode))
         is SceneAction.CarePortalEvent -> rh.gs(CoreUiR.string.scene_action_careportal, translator.translate(action.type))

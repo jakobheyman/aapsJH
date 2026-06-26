@@ -5,6 +5,7 @@ import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.TE
 import app.aaps.core.data.ue.Sources
 import app.aaps.core.data.ui.ConfirmationLine
+import app.aaps.core.interfaces.rx.weardata.EventData
 
 /**
  * Transport-neutral spine for wizard / quick-wizard bolus **prepare → confirm → deliver**. Owns the
@@ -172,7 +173,8 @@ interface WizardBolusExecutor {
             val bolusId: Long,
             val lines: List<ConfirmationLine> = emptyList(),
             val advisorApplies: Boolean = false,
-            val advisorLines: List<ConfirmationLine> = emptyList()
+            val advisorLines: List<ConfirmationLine> = emptyList(),
+            val wizardDetail: EventData.WizardDetail? = null,
         ) : PrepareResult
 
         data class Error(val message: String) : PrepareResult

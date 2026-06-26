@@ -71,6 +71,8 @@ fun ManageBottomSheet(
     showFill: Boolean,
     showAuthorizedClients: Boolean,
     showPairWithMaster: Boolean,
+    showMutatingActions: Boolean,
+    showPump: Boolean,
     // Cancel text strings
     cancelTempBasalText: String,
     cancelExtendedBolusText: String,
@@ -102,6 +104,8 @@ fun ManageBottomSheet(
             showFill = showFill,
             showAuthorizedClients = showAuthorizedClients,
             showPairWithMaster = showPairWithMaster,
+            showMutatingActions = showMutatingActions,
+            showPump = showPump,
             cancelTempBasalText = cancelTempBasalText,
             cancelExtendedBolusText = cancelExtendedBolusText,
             isPatchPump = isPatchPump,
@@ -128,6 +132,8 @@ internal fun ManageBottomSheetContent(
     showFill: Boolean = false,
     showAuthorizedClients: Boolean = false,
     showPairWithMaster: Boolean = false,
+    showMutatingActions: Boolean = true,
+    showPump: Boolean = true,
     cancelTempBasalText: String,
     cancelExtendedBolusText: String,
     isPatchPump: Boolean = false,
@@ -149,63 +155,67 @@ internal fun ManageBottomSheetContent(
         SectionHeader(stringResource(CoreUiR.string.manage))
 
         GridSection(modifier = Modifier.padding(horizontal = 16.dp)) {
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.PROFILE_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.INSULIN_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            if (showTempTarget) {
+            // Mutating editors ride the signed Client-Control channel — hidden on an unpaired client
+            // (showMutatingActions=false), always shown on a master. SITE_ROTATION (still ungated) below stays.
+            if (showMutatingActions) {
                 add { modifier ->
                     ManageGridItem(
-                        elementType = ElementType.TEMP_TARGET_MANAGEMENT,
+                        elementType = ElementType.PROFILE_MANAGEMENT,
                         onDismiss = onDismiss,
                         onNavigate = onNavigate,
                         modifier = modifier
                     )
                 }
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.QUICK_WIZARD_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.SCENE_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.AUTOMATION_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
-            }
-            add { modifier ->
-                ManageGridItem(
-                    elementType = ElementType.FOOD_MANAGEMENT,
-                    onDismiss = onDismiss,
-                    onNavigate = onNavigate,
-                    modifier = modifier
-                )
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.INSULIN_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                if (showTempTarget) {
+                    add { modifier ->
+                        ManageGridItem(
+                            elementType = ElementType.TEMP_TARGET_MANAGEMENT,
+                            onDismiss = onDismiss,
+                            onNavigate = onNavigate,
+                            modifier = modifier
+                        )
+                    }
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.QUICK_WIZARD_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.SCENE_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.AUTOMATION_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
+                add { modifier ->
+                    ManageGridItem(
+                        elementType = ElementType.FOOD_MANAGEMENT,
+                        onDismiss = onDismiss,
+                        onNavigate = onNavigate,
+                        modifier = modifier
+                    )
+                }
             }
             add { modifier ->
                 ManageGridItem(
@@ -215,7 +225,7 @@ internal fun ManageBottomSheetContent(
                     modifier = modifier
                 )
             }
-            if (pumpPlugin != null) {
+            if (pumpPlugin != null && showPump) {
                 add { modifier ->
                     ManageGridItem(
                         text = stringResource(CoreUiR.string.pump_management),
@@ -250,8 +260,9 @@ internal fun ManageBottomSheetContent(
             }
         }
 
-        // Section: Device maintenance & basal
-        if (showTempBasal || showCancelTempBasal || showExtendedBolus || showCancelExtendedBolus) {
+        // Section: Device maintenance & basal — every item (sensor insert, fill, battery change, TBR/EB) now rides
+        // Client-Control, so the whole section is gated MASTER_OR_PAIRED_CLIENT (hidden on an unpaired client).
+        if (showMutatingActions && (showTempBasal || showCancelTempBasal || showExtendedBolus || showCancelExtendedBolus)) {
             HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -264,7 +275,7 @@ internal fun ManageBottomSheetContent(
                         modifier = modifier
                     )
                 }
-                if (showFill) {
+                if (showFill) { // section already gated by showMutatingActions
                     add { modifier ->
                         ManageGridItem(
                             elementType = ElementType.FILL,
@@ -284,7 +295,7 @@ internal fun ManageBottomSheetContent(
                         )
                     }
                 }
-                if (!isSimpleMode) {
+                if (!isSimpleMode) { // section already gated by showMutatingActions
                     if (showCancelTempBasal) {
                         add { modifier ->
                             ManageGridItem(
@@ -333,8 +344,9 @@ internal fun ManageBottomSheetContent(
             }
         }
 
-        // Section: Careportal (hidden in simple mode, collapsed by default)
-        if (!isSimpleMode) {
+        // Section: Careportal (hidden in simple mode, collapsed by default). Its events now ride Client-Control
+        // (Track B), so the section is also gated MASTER_OR_PAIRED_CLIENT — hidden on an unpaired client.
+        if (!isSimpleMode && showMutatingActions) {
             var careportalExpanded by remember { mutableStateOf(false) }
             val careportalExpandRequester = rememberBringIntoViewOnExpand(careportalExpanded)
             HorizontalDivider(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))

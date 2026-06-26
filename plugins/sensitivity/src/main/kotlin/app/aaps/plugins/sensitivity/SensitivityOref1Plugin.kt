@@ -41,7 +41,7 @@ class SensitivityOref1Plugin @Inject constructor(
         .mainType(PluginType.SENSITIVITY)
         .icon(IcAs)
         .pluginName(R.string.sensitivity_oref1)
-        .shortName(R.string.sensitivity_shortname)
+        .shortName(R.string.sensitivity_plugin_shortname)
         .enableByDefault(true)
         .description(R.string.description_sensitivity_oref1)
         .setDefault(),

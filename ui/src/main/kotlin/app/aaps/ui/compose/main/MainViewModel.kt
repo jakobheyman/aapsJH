@@ -54,6 +54,7 @@ import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.objects.constraints.ConstraintObject
 import app.aaps.core.objects.extensions.toStringFull
 import app.aaps.core.objects.wizard.QuickWizard
@@ -124,6 +125,7 @@ class MainViewModel @Inject constructor(
     private val activeSceneManager: ActiveSceneSync,
     private val rxBus: RxBus,
     private val nsClient: NsClient,
+    private val visibilityContext: VisibilityContext,
     @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
 
@@ -139,20 +141,35 @@ class MainViewModel @Inject constructor(
      */
     val masterReachable: StateFlow<Boolean> = nsClient.masterReachable
 
+    /**
+     * AAPSCLIENT-only STABLE pairing signal — always true on a master, on a client true once paired.
+     * Drives HIDING of the mutating nav buttons (Treatments + Scenes): an unpaired client cannot command
+     * the master, so those entry points are removed entirely (not merely disabled like [masterReachable]).
+     * It flips only on an explicit pair/unpair, so it is safe to drive persistent chrome without the
+     * flapping [masterReachable] exhibits.
+     */
+    val masterOrPairedClient: StateFlow<Boolean> = nsClient.masterOrPairedClientFlow
+
     /** Toolbar items as a separate StateFlow to avoid unnecessary recompositions of the main UI */
     private val _quickLaunchItems = MutableStateFlow<List<ResolvedQuickLaunchItem>>(emptyList())
 
     /**
-     * Public toolbar items, gated by [masterReachable]: scene-action items disable when WS is
-     * down on AAPSCLIENT. The resolver only sees local catalog state, so the dynamic
-     * reachability check has to layer on here. Non-scene items pass through unchanged.
+     * Public toolbar items. Two layered gates: (1) mode VISIBILITY — actions whose backing element isn't visible
+     * now (e.g. MASTER_OR_PAIRED_CLIENT on an unpaired client) are HIDDEN, the same ElementVisibility gate the
+     * QuickLaunch config + search use, so a pre-pinned bolus/carbs/scene drops off an unpaired client's toolbar;
+     * (2) reachability — scene-action items DISABLE (not hide) while WS is down on AAPSCLIENT. The resolver only
+     * sees local catalog state, so both checks layer on here.
      */
     val quickLaunchItems: StateFlow<List<ResolvedQuickLaunchItem>> =
-        combine(_quickLaunchItems, masterReachable) { items, reachable ->
-            if (reachable) items
-            else items.map { item ->
-                if (item.action is QuickLaunchAction.SceneAction) item.copy(enabled = false) else item
-            }
+        combine(_quickLaunchItems, masterReachable, masterOrPairedClient) { items, reachable, _ ->
+            items
+                // (1) Hide mode-gated actions. masterOrPairedClient is combined in only to re-emit on a pairing
+                // flip; the predicate reads the current state through visibilityContext.
+                .filter { it.action.elementType?.visibility?.isVisible(visibilityContext) ?: true }
+                // (2) Scene actions disable while the master is transiently unreachable.
+                .map { item ->
+                    if (!reachable && item.action is QuickLaunchAction.SceneAction) item.copy(enabled = false) else item
+                }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Pending confirmation dialog (automation/TT preset actions) */

@@ -348,7 +348,7 @@ private fun BgSection(
             valueRange = minBg..maxBg,
             step = step,
             valueFormat = format,
-            unitLabel = glucoseUnits.asText
+            unitLabel = glucoseUnits.displayLabel
         )
     }
 }

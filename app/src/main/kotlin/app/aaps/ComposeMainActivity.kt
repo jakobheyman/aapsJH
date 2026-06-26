@@ -104,12 +104,13 @@ import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanKey
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.StringKey
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.crypto.CryptoUtil
 import app.aaps.core.ui.compose.AapsTheme
 import app.aaps.core.ui.compose.LocalConfig
 import app.aaps.core.ui.compose.LocalDateUtil
+import app.aaps.core.ui.compose.LocalMasterControlAllowed
 import app.aaps.core.ui.compose.LocalMasterReachable
 import app.aaps.core.ui.compose.LocalPreferences
 import app.aaps.core.ui.compose.LocalProfileUtil
@@ -196,7 +197,7 @@ class ComposeMainActivity : AppCompatActivity() {
     @Inject lateinit var swDefinition: SWDefinition
     @Inject lateinit var config: Config
     @Inject lateinit var profileUtil: ProfileUtil
-    @Inject lateinit var visibilityContext: PreferenceVisibilityContext
+    @Inject lateinit var visibilityContext: VisibilityContext
     @Inject lateinit var dexcomBoyda: DexcomBoyda
     @Inject lateinit var iobCobCalculator: IobCobCalculator
     @Inject lateinit var persistenceLayer: PersistenceLayer
@@ -307,6 +308,7 @@ class ComposeMainActivity : AppCompatActivity() {
     private fun MainContent() {
         val navController = rememberNavController().also { this.navController = it }
         val masterReachable by nsClient.masterReachable.collectAsStateWithLifecycle()
+        val masterControlAllowed by nsClient.masterControlAllowed.collectAsStateWithLifecycle()
 
         // Global self-heal — event-driven, NOT a poll (a timer would keep the CPU awake). Probe once when
         // we go offline, and again on each navigation while offline, so any screen/dialog the user opens
@@ -327,6 +329,7 @@ class ComposeMainActivity : AppCompatActivity() {
             LocalDateUtil provides dateUtil,
             LocalConfig provides config,
             LocalMasterReachable provides masterReachable,
+            LocalMasterControlAllowed provides masterControlAllowed,
             LocalProfileUtil provides profileUtil,
             LocalCheckPassword provides cryptoUtil::checkPassword,
             LocalHashPassword provides cryptoUtil::hashPassword,

@@ -90,6 +90,16 @@ interface Preferences {
     fun get(key: BooleanNonPreferenceKey): Boolean
 
     /**
+     * Variant for publishing to the cold running-config (sync) doc. With [forSync] = `true`, returns the
+     * persisted value, falling back to the COMPUTED default ([app.aaps.core.keys.interfaces.PreferenceKey.calculatedDefaultValue])
+     * when unset, WITHOUT simple-mode presentation forcing — i.e. the value the device operatively uses, which
+     * is what must travel to clients (a plain raw read would publish the literal default and mis-tell clients
+     * for computed-default keys). Equals the raw value for keys without a computed default (incl. defaultedBySM
+     * keys, whose underlying user setting must travel). Default impl ignores [forSync]; only the real store overrides it.
+     */
+    fun get(key: BooleanNonPreferenceKey, forSync: Boolean): Boolean = get(key)
+
+    /**
      * Get [Boolean] value from [android.content.SharedPreferences] or null if doesn't exist
      *
      * @param key [app.aaps.core.keys.interfaces.BooleanNonPreferenceKey] enum
@@ -387,6 +397,9 @@ interface Preferences {
      * @return value
      */
     fun get(key: IntNonPreferenceKey): Int
+
+    /** Sync variant — see [get] with `forSync` for [BooleanNonPreferenceKey]; same contract for Int keys. */
+    fun get(key: IntNonPreferenceKey, forSync: Boolean): Int = get(key)
 
     /**
      * Get [Int] value from [android.content.SharedPreferences] or null if doesn't exist

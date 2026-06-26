@@ -1,4 +1,4 @@
-package app.aaps.receivers
+package app.aaps.implementation.receivers
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
@@ -20,6 +20,7 @@ import app.aaps.core.interfaces.aps.Loop
 import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.configuration.awaitInitialized
 import app.aaps.core.interfaces.db.PersistenceLayer
+import app.aaps.core.interfaces.dst.DstHelper
 import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.iob.IobCobCalculator
 import app.aaps.core.interfaces.logging.AAPSLogger
@@ -38,7 +39,6 @@ import app.aaps.core.keys.LongNonKey
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.core.objects.profile.ProfileSealed
 import app.aaps.core.objects.workflow.LoggingWorker
-import app.aaps.plugins.constraints.dstHelper.DstHelperPlugin
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -66,7 +66,7 @@ class KeepAliveWorker @AssistedInject constructor(
     private val maintenance: Maintenance,
     private val rh: ResourceHelper,
     private val preferences: Preferences,
-    private val dstHelperPlugin: DstHelperPlugin,
+    private val dstHelper: DstHelper,
     private val workManager: WorkManager,
     private val ch: ConcentrationHelper
 ) : LoggingWorker(context, params, Dispatchers.Default, aapsLogger, fabricPrivacy) {
@@ -146,7 +146,7 @@ class KeepAliveWorker @AssistedInject constructor(
         }
         lastRun = dateUtil.now()
 
-        dstHelperPlugin.dstCheck()
+        dstHelper.dstCheck()
         localAlertUtils.shortenSnoozeInterval()
         localAlertUtils.checkStaleBGAlert()
         checkPump()

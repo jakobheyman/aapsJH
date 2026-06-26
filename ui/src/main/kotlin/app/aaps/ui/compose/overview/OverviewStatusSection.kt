@@ -67,6 +67,9 @@ fun OverviewStatusSection(
     batteryStatus: StatusItem?,
     showFill: Boolean,
     showPumpBatteryChange: Boolean,
+    // The status-row action buttons (fill / sensor insert / battery change) open mutating screens — hidden on an
+    // unpaired client (null callback drops just the button; the status row's age/level stays visible). Same gate as nav/Manage/chips.
+    commandsAllowed: Boolean = true,
     onNavigate: (NavigationRequest) -> Unit,
     statusLightsDef: PreferenceSubScreenDef,
     onCopyFromNightscout: () -> Unit,
@@ -157,14 +160,16 @@ fun OverviewStatusSection(
                         insulinStatus = insulinStatus,
                         cannulaStatus = cannulaStatus,
                         batteryStatus = batteryStatus,
-                        onSensorInsertClick = { onNavigate(NavigationRequest.Element(ElementType.SENSOR_INSERT)) },
-                        onFillClick = if (showFill) {
+                        onSensorInsertClick = if (commandsAllowed) {
+                            { onNavigate(NavigationRequest.Element(ElementType.SENSOR_INSERT)) }
+                        } else null,
+                        onFillClick = if (showFill && commandsAllowed) {
                             { onNavigate(NavigationRequest.Element(ElementType.CANNULA_CHANGE)) }
                         } else null,
-                        onInsulinChangeClick = if (showFill) {
+                        onInsulinChangeClick = if (showFill && commandsAllowed) {
                             { onNavigate(NavigationRequest.Element(ElementType.FILL)) }
                         } else null,
-                        onBatteryChangeClick = if (showPumpBatteryChange) {
+                        onBatteryChangeClick = if (showPumpBatteryChange && commandsAllowed) {
                             { onNavigate(NavigationRequest.Element(ElementType.BATTERY_CHANGE)) }
                         } else null
                     )

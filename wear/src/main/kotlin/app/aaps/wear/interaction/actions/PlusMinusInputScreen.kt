@@ -68,6 +68,7 @@ internal val LoopDisabledColor      = Color(0xFFFF1313)
 internal val LoopDisconnectedColor  = Color(0xFF939393)
 internal val LoopSuperbolusColor    = Color(0xFFFFAE01)
 internal val LoopUnknownColor       = Color(0xFF9E9E9E)
+internal val ScenePurple            = Color(0xFFCE93D8)
 
 private val ButtonBg = Color.White.copy(alpha = 0.15f)
 

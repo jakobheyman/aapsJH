@@ -43,7 +43,7 @@ class SensitivityAAPSPlugin @Inject constructor(
         .mainType(PluginType.SENSITIVITY)
         .icon(IcAs)
         .pluginName(R.string.sensitivity_aaps)
-        .shortName(R.string.sensitivity_shortname)
+        .shortName(R.string.sensitivity_plugin_shortname)
         .description(R.string.description_sensitivity_aaps),
     aapsLogger, rh, preferences
 ) {

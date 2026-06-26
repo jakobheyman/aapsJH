@@ -1,5 +1,6 @@
 package app.aaps.core.utils.extensions
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.os.SystemClock
 
@@ -9,6 +10,7 @@ import android.os.SystemClock
  *
  * @return true if enable was executed or not necessary
  */
+@SuppressLint("MissingPermission")
 fun BluetoothAdapter.safeEnable(waitMilliseconds: Long = 0, after: Runnable? = null): Boolean =
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) false
     else {
@@ -25,6 +27,7 @@ fun BluetoothAdapter.safeEnable(waitMilliseconds: Long = 0, after: Runnable? = n
  *
  * @return true if disable was executed or not necessary
  */
+@SuppressLint("MissingPermission")
 fun BluetoothAdapter.safeDisable(waitMilliseconds: Long = 0): Boolean =
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) false
     else {

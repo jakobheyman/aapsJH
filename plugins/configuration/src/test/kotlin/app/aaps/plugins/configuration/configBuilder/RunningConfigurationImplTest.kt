@@ -158,4 +158,17 @@ internal class RunningConfigurationImplTest {
         sut.applyCold(NSRunningConfiguration())
         verify(pump as VirtualPump, never()).fakeDataDetected = any()
     }
+
+    /**
+     * Pre-init guard: before init completes no pump is selected, and activePump.isInitialized() would throw
+     * "No pump selected" (PluginStore.activePumpInternal). configuration() must short-circuit to an empty doc
+     * without touching the pump — RunningConfigurationPublisher then skips the empty payload and retries.
+     */
+    @Test
+    fun configurationBeforeAppInitializedReturnsEmptyWithoutTouchingPump() {
+        whenever(config.appInitialized).thenReturn(false)
+        val result = sut.configuration()
+        assertEquals(0, result.length())
+        verify(activePlugin, never()).activePump
+    }
 }

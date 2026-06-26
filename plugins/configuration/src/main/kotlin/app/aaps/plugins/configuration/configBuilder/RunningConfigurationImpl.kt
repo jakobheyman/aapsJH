@@ -56,6 +56,11 @@ class RunningConfigurationImpl @Inject constructor(
     // called in AAPS mode only
     override fun configuration(): JSONObject {
         val json = JSONObject()
+        // Before init completes no pump is selected yet, and activePump.isInitialized() would throw
+        // "No pump selected" (PluginStore.activePumpInternal) instead of returning false. Treat
+        // "app not initialized" as an earlier "pump not ready" state and return the empty doc —
+        // RunningConfigurationPublisher skips an empty payload and retries once init completes.
+        if (!config.appInitialized) return json
         val pumpInterface = activePlugin.activePump
 
         if (!pumpInterface.isInitialized()) return json
@@ -116,18 +121,20 @@ class RunningConfigurationImpl @Inject constructor(
     // wire stays a Map<String, String> regardless of the key's underlying type. Boolean/String/Int/
     // UnitDouble are supported (see the `when` below); other types are skipped with a warning.
     //
-    // We sync the RAW persisted value (via the BooleanNonPreferenceKey getter), NOT the mode-adjusted
-    // effective value the BooleanPreferenceKey getter returns. Simple mode / defaultedBySM is a
-    // per-device presentation choice; the persisted user setting is what should travel, and each
-    // device re-applies its own mode logic on read. Do not "fix" this to preferences.get(asPreferenceKey).
+    // Sync the persisted value via get(..., forSync = true): the user's stored setting, falling back to the
+    // COMPUTED default (calculatedDefaultValue) when unset, but WITHOUT simple-mode presentation forcing.
+    // Rationale: simple-mode / defaultedBySM is a per-device presentation choice, so the underlying user setting
+    // must travel and each device re-applies its own mode logic on read — hence NOT the full effective getter.
+    // But a plain raw read would publish the literal default for computed-default keys (NsClientAllowClientControl,
+    // AutosensPeriod, …), mis-telling clients the master's operative value; forSync uses the computed default instead.
     private fun buildSyncedPrefs(): JSONObject {
         val out = JSONObject()
         coldSyncKeys().forEach { key ->
             when (key) {
-                is BooleanNonPreferenceKey -> out.put(key.key, preferences.get(key).toString())
+                is BooleanNonPreferenceKey -> out.put(key.key, preferences.get(key, forSync = true).toString())
                 is StringNonPreferenceKey  -> out.put(key.key, preferences.get(key))
-                is IntNonPreferenceKey     -> out.put(key.key, preferences.get(key).toString())
-                is DoubleNonPreferenceKey  -> out.put(key.key, preferences.get(key).toString())   // raw (DoubleNonPreferenceKey getter, no SM adjust)
+                is IntNonPreferenceKey     -> out.put(key.key, preferences.get(key, forSync = true).toString())
+                is DoubleNonPreferenceKey  -> out.put(key.key, preferences.get(key).toString())   // no computed default → raw
                 is UnitDoublePreferenceKey -> out.put(key.key, preferences.getRaw(key).toString())   // raw mg/dl, 1:1
                 else                       -> aapsLogger.warn(LTag.CORE, "syncedPrefs: unsupported key type for ${key.key}")
             }

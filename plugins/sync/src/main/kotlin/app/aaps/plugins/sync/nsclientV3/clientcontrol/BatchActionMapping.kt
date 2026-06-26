@@ -2,6 +2,8 @@ package app.aaps.plugins.sync.nsclientV3.clientcontrol
 
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.RM
+import app.aaps.core.data.model.TE
+import app.aaps.core.data.ue.Sources
 import app.aaps.core.interfaces.bolus.BatchAction
 import app.aaps.core.nssdk.localmodel.clientcontrol.BatchActionDto
 import app.aaps.core.objects.extensions.fromJsonObject
@@ -49,6 +51,12 @@ internal fun BatchAction.toDto(): BatchActionDto = when (this) {
     is BatchAction.CancelExtendedBolus -> BatchActionDto(type = BatchActionDto.TYPE_CANCEL_EXTENDED_BOLUS)
 
     is BatchAction.InsulinActivate     -> BatchActionDto(type = BatchActionDto.TYPE_INSULIN_ACTIVATE, iCfgJson = iCfg.toJsonObject().toString())
+
+    is BatchAction.TherapyEvent        -> BatchActionDto(
+        type = BatchActionDto.TYPE_THERAPY_EVENT,
+        teType = teType.name, timestamp = timestamp, glucoseMgdl = glucoseMgdl, meterType = glucoseType?.name,
+        durationMinutes = durationMinutes, notes = note ?: "", location = location?.name, arrow = arrow?.name, source = source.name
+    )
 }
 
 /** Wire [BatchActionDto] → domain [BatchAction] (master receive side); null if the type is unknown. */
@@ -68,5 +76,16 @@ internal fun BatchActionDto.toDomain(): BatchAction? = when (type) {
     BatchActionDto.TYPE_CANCEL_EXTENDED_BOLUS -> BatchAction.CancelExtendedBolus
     // null (unparseable iCfg) drops the action — prepareBatch's no-action guard then rejects an insulin-only batch.
     BatchActionDto.TYPE_INSULIN_ACTIVATE      -> iCfgJson?.let { j -> runCatching { (Json.parseToJsonElement(j) as? JsonObject)?.let { ICfg.fromJsonObject(it) } }.getOrNull() }?.let { BatchAction.InsulinActivate(it) }
+    // Unknown/unparseable teType drops the action (the master's no-action guard then rejects an empty batch).
+    BatchActionDto.TYPE_THERAPY_EVENT         -> teType?.let { runCatching { TE.Type.valueOf(it) }.getOrNull() }?.let { type ->
+        BatchAction.TherapyEvent(
+            teType = type, timestamp = timestamp, glucoseMgdl = glucoseMgdl,
+            glucoseType = meterType?.let { runCatching { TE.MeterType.valueOf(it) }.getOrNull() },
+            durationMinutes = durationMinutes, note = notes.ifEmpty { null },
+            location = location?.let { runCatching { TE.Location.valueOf(it) }.getOrNull() },
+            arrow = arrow?.let { runCatching { TE.Arrow.valueOf(it) }.getOrNull() },
+            source = source?.let { runCatching { Sources.valueOf(it) }.getOrNull() } ?: Sources.NSClient
+        )
+    }
     else                                      -> null
 }

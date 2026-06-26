@@ -74,6 +74,15 @@ val LocalConfig = compositionLocalOf<Config> { error("No Config provided") }
 val LocalMasterReachable = compositionLocalOf { true }
 
 /**
+ * Whether the master currently allows remote control (its stop/allow switch, see
+ * `NsClient.masterControlAllowed`). Defaults to `true` (master/previews/unpaired never show the
+ * distinct wording). When `false` on a client the offline banner shows a "remote control disabled"
+ * message instead of the generic "unreachable" one. Editing is already gated via [LocalMasterReachable]
+ * (which folds this in); this local only selects the banner wording.
+ */
+val LocalMasterControlAllowed = compositionLocalOf { true }
+
+/**
  * Whether the user may make changes that need the master *right now*. On a master always `true` (no
  * gating). On a client, `true` only while [LocalMasterReachable] is `true` — i.e. the master is
  * reachable for the signed Client-Control channel that carries both config edits and remote actions.

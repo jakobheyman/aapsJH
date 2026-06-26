@@ -224,7 +224,14 @@ data class BatchActionDto(
     // temp_basal ([rate] = percent or absolute U/h per [isPercent]; reuses [durationMinutes]).
     // extended_bolus reuses [insulin] + [durationMinutes].
     val rate: Double = 0.0,
-    val isPercent: Boolean = false
+    val isPercent: Boolean = false,
+    // therapy_event (careportal): reuses [timestamp], [notes], [durationMinutes]; carries its own glucose/type/site
+    val teType: String? = null,
+    val glucoseMgdl: Double? = null,
+    val meterType: String? = null,
+    val location: String? = null,
+    val arrow: String? = null,
+    val source: String? = null // round-trips for symmetry; the master ignores it (relayed events are logged as Sources.NSClient)
 ) {
 
     companion object {
@@ -242,5 +249,8 @@ data class BatchActionDto(
 
         // insulin_activate reuses [iCfgJson] — the master re-applies its active profile with this insulin config.
         const val TYPE_INSULIN_ACTIVATE = "insulin_activate"
+
+        // therapy_event (careportal): the master persists a TherapyEvent (it is the sole writer; syncs back via NS).
+        const val TYPE_THERAPY_EVENT = "therapy_event"
     }
 }

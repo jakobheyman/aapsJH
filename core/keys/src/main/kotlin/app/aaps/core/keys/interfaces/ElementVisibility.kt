@@ -16,59 +16,58 @@ package app.aaps.core.keys.interfaces
  * SomeKey(..., visibility = PreferenceVisibility { it.preferences.get(BooleanKey.SomeFlag) })
  * ```
  */
-fun interface PreferenceVisibility {
+fun interface ElementVisibility {
 
     /**
-     * Evaluates whether the preference should be visible given the current context.
+     * Evaluates whether the element should be visible given the current context.
      *
      * @param context The visibility context providing access to pump, BG source, and preference state
-     * @return true if the preference should be visible, false otherwise
+     * @return true if the element should be visible, false otherwise
      */
-    fun isVisible(context: PreferenceVisibilityContext): Boolean
+    fun isVisible(context: VisibilityContext): Boolean
 
     companion object {
 
         /**
          * Always visible (default for most preferences)
          */
-        val ALWAYS = PreferenceVisibility { true }
+        val ALWAYS = ElementVisibility { true }
 
         /**
-         * Visible only in client (AAPSCLIENT) mode — e.g. the "pair with master" screen.
+         * Visible everywhere on a master; on a client (AAPSCLIENT) visible only once paired with a
+         * master ([VisibilityContext.masterOrPairedClient]). Gates mutating/command UI whose actions
+         * ride the signed Client-Control channel — an unpaired client's commands are silently dropped,
+         * so those entry points are hidden until pairing exists. Read-only/monitoring UI and the
+         * pairing escape hatch must NOT use this. (`!isClient` short-circuits to always-visible on a master.)
          */
-        val CLIENT_ONLY = PreferenceVisibility { it.isClient }
-
-        /**
-         * Visible only in master (non-AAPSCLIENT) mode — e.g. the "authorized clients" screen.
-         */
-        val MASTER_ONLY = PreferenceVisibility { !it.isClient }
+        val MASTER_OR_PAIRED_CLIENT = ElementVisibility { !it.isClient || it.masterOrPairedClient }
 
         /**
          * Visible only for non-patch pumps (e.g., insulin age preferences)
          */
-        val NON_PATCH_PUMP = PreferenceVisibility { !it.isPatchPump }
+        val NON_PATCH_PUMP = ElementVisibility { !it.isPatchPump }
 
         /**
          * Visible only for patch pumps
          */
-        val PATCH_PUMP_ONLY = PreferenceVisibility { it.isPatchPump }
+        val PATCH_PUMP_ONLY = ElementVisibility { it.isPatchPump }
 
         /**
          * Visible only when pump battery is replaceable or battery change logging is enabled
          */
-        val BATTERY_REPLACEABLE = PreferenceVisibility {
+        val BATTERY_REPLACEABLE = ElementVisibility {
             it.isBatteryReplaceable || it.isBatteryChangeLoggingEnabled
         }
 
         /**
          * Visible only when BG source supports advanced filtering (for certain SMB options)
          */
-        val ADVANCED_FILTERING = PreferenceVisibility { it.advancedFilteringSupported }
+        val ADVANCED_FILTERING = ElementVisibility { it.advancedFilteringSupported }
 
         /**
          * Creates a visibility condition that checks if an IntKey equals a specific value.
          */
-        fun intEquals(key: IntPreferenceKey, value: Int) = PreferenceVisibility { ctx ->
+        fun intEquals(key: IntPreferenceKey, value: Int) = ElementVisibility { ctx ->
             ctx.intEquals(key, value)
         }
 
@@ -76,14 +75,14 @@ fun interface PreferenceVisibility {
          * Creates a visibility condition that checks if an IntKey equals a specific value.
          * Uses a lazy key provider to avoid circular enum class initialization.
          */
-        fun intEquals(keyProvider: () -> IntPreferenceKey, value: Int) = PreferenceVisibility { ctx ->
+        fun intEquals(keyProvider: () -> IntPreferenceKey, value: Int) = ElementVisibility { ctx ->
             ctx.intEquals(keyProvider(), value)
         }
 
         /**
          * Creates a visibility condition that checks if a StringKey is not empty.
          */
-        fun stringNotEmpty(key: StringPreferenceKey) = PreferenceVisibility { ctx ->
+        fun stringNotEmpty(key: StringPreferenceKey) = ElementVisibility { ctx ->
             ctx.preferences.get(key).isNotEmpty()
         }
 
@@ -91,7 +90,7 @@ fun interface PreferenceVisibility {
          * Creates a visibility condition that checks if a StringKey is not empty.
          * Uses a lazy key provider to avoid circular enum class initialization.
          */
-        fun stringNotEmpty(keyProvider: () -> StringPreferenceKey) = PreferenceVisibility { ctx ->
+        fun stringNotEmpty(keyProvider: () -> StringPreferenceKey) = ElementVisibility { ctx ->
             ctx.preferences.get(keyProvider()).isNotEmpty()
         }
     }

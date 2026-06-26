@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -52,8 +53,18 @@ class AuthorizedClientsViewModel @Inject constructor(
         .map { list -> list.sortedByDescending { it.createdAt } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    /** Whether client-control communication is on — the master-wide stop/allow switch, now hosted on this screen. */
-    val clientControlEnabled: StateFlow<Boolean> = preferences.observe(BooleanKey.NsClientAllowClientControl)
+    /**
+     * Whether client-control communication is on — the master-wide stop/allow switch, now hosted on this screen.
+     * Shows the EFFECTIVE value (the master's operative state, applying the simple-mode computed default), not the
+     * raw stored value — so an unset switch in simple mode reads ON, matching what the command gate actually does,
+     * instead of a misleading OFF. Re-read whenever the raw value or simple mode changes.
+     */
+    val clientControlEnabled: StateFlow<Boolean> =
+        combine(
+            preferences.observe(BooleanKey.NsClientAllowClientControl),
+            preferences.observe(BooleanKey.GeneralSimpleMode)
+        ) { _, _ -> preferences.get(BooleanKey.NsClientAllowClientControl) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), preferences.get(BooleanKey.NsClientAllowClientControl))
 
     /** Flip the stop/allow-communication switch. OFF keeps paired clients listed but stops the master accepting anything. */
     fun setClientControlEnabled(enabled: Boolean) = preferences.put(BooleanKey.NsClientAllowClientControl, enabled)

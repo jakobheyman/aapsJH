@@ -34,7 +34,8 @@ import app.aaps.core.ui.R
 fun MasterOfflineBanner(
     editingEnabled: Boolean,
     modifier: Modifier = Modifier,
-    text: String = stringResource(R.string.master_offline_banner)
+    text: String = if (!LocalMasterControlAllowed.current) stringResource(R.string.master_control_disabled_banner)
+    else stringResource(R.string.master_offline_banner)
 ) {
     if (editingEnabled) return
     Surface(

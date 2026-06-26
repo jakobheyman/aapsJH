@@ -2,6 +2,8 @@ package app.aaps.core.interfaces.bolus
 
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.RM
+import app.aaps.core.data.model.TE
+import app.aaps.core.data.ue.Sources
 
 /**
  * One action in a multi-action batch ([WizardBolusExecutor.prepareBatch]) — the dose/carbs a dialog submits
@@ -94,4 +96,25 @@ sealed interface BatchAction {
      * authoritative for the profile it re-applies. ≤1 per batch. Mirrors [ProfileSwitch] (a config activation).
      */
     data class InsulinActivate(val iCfg: ICfg) : BatchAction
+
+    /**
+     * A careportal therapy event (BG check, note, exercise, sensor/site/cartridge change, …): metadata the
+     * master persists (it is the SOLE writer) and that syncs back to the client via NS treatments. Carries no
+     * dose; applied independently in [WizardBolusExecutor.prepareBatch]/confirm. [glucoseMgdl] is canonical
+     * mg/dL (the master sanity-clamps it). Unlike the ≤1 action types, the executor handles these as a list
+     * (defensive — clients currently send one event per batch).
+     */
+    data class TherapyEvent(
+        val teType: TE.Type,
+        val timestamp: Long,
+        val glucoseMgdl: Double? = null,
+        val glucoseType: TE.MeterType? = null,
+        val durationMinutes: Int = 0,
+        val note: String? = null,
+        val location: TE.Location? = null,
+        val arrow: TE.Arrow? = null,
+        // Audit source used as the prepare/commit source on the SENDING device. A relayed (client→master) event is
+        // logged by the master as Sources.NSClient; the master does not read this off the wire (see applyTherapyEvent).
+        val source: Sources
+    ) : BatchAction
 }

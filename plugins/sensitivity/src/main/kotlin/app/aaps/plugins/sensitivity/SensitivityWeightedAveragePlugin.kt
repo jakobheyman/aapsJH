@@ -42,7 +42,7 @@ class SensitivityWeightedAveragePlugin @Inject constructor(
         .mainType(PluginType.SENSITIVITY)
         .icon(IcAs)
         .pluginName(R.string.sensitivity_weighted_average)
-        .shortName(R.string.sensitivity_shortname)
+        .shortName(R.string.sensitivity_plugin_shortname)
         .description(R.string.description_sensitivity_weighted_average),
     aapsLogger, rh, preferences
 ) {

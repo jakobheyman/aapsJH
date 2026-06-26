@@ -283,6 +283,7 @@ class DataLayerListenerServiceWear : WearableListenerService() {
 
         //data keys
         const val KEY_ACTION_DATA = "actionData"
+        const val KEY_WIZARD_DETAIL = "wizardDetail"
 
         // Master-authored confirmation rows (parallel arrays: role name + text) rendered verbatim by AcceptActivity.
         const val KEY_LINE_ROLES = "lineRoles"

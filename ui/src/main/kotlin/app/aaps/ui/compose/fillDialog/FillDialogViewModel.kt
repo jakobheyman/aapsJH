@@ -4,12 +4,9 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.aaps.core.data.model.GlucoseUnit
 import app.aaps.core.data.model.ICfg
 import app.aaps.core.data.model.TE
-import app.aaps.core.data.ue.Action
 import app.aaps.core.data.ue.Sources
-import app.aaps.core.data.ue.ValueWithUnit
 import app.aaps.core.data.ui.ConfirmationLine
 import app.aaps.core.data.ui.ConfirmationRole
 import app.aaps.core.data.ui.confirmationLines
@@ -338,59 +335,46 @@ class FillDialogViewModel @Inject constructor(
             }
         }
 
-        // Site change
+        // Site change → routed through the master via the batch channel (one audited writer), like the prime +
+        // insulin activation above. The master persists CANNULA_CHANGE and re-derives the SITE_CHANGE audit category.
         if (state.siteChange) {
+            val location = state.siteLocation.takeIf { it != TE.Location.NONE }
+            val arrow = state.siteArrow.takeIf { it != TE.Arrow.NONE }
             appScope.launch {
-                try {
-                    val location = state.siteLocation.takeIf { it != TE.Location.NONE }
-                    val arrow = state.siteArrow.takeIf { it != TE.Arrow.NONE }
-                    persistenceLayer.insertPumpTherapyEventIfNewByTimestamp(
-                        therapyEvent = TE(
-                            timestamp = eventTime,
-                            type = TE.Type.CANNULA_CHANGE,
-                            note = notes,
-                            glucoseUnit = GlucoseUnit.MGDL,
-                            location = location,
-                            arrow = arrow
-                        ),
-                        action = Action.SITE_CHANGE, source = Sources.FillDialog,
-                        note = notes,
-                        listValues = listOfNotNull(
-                            ValueWithUnit.Timestamp(eventTime).takeIf { state.eventTimeChanged },
-                            ValueWithUnit.TEType(TE.Type.CANNULA_CHANGE),
-                            location?.let { ValueWithUnit.TELocation(it) },
-                            arrow?.let { ValueWithUnit.TEArrow(it) }
-                        )
+                recordTherapyEvent(
+                    BatchAction.TherapyEvent(
+                        teType = TE.Type.CANNULA_CHANGE, timestamp = eventTime, note = notes.ifEmpty { null },
+                        location = location, arrow = arrow, source = Sources.FillDialog
                     )
-                } catch (e: Exception) {
-                    aapsLogger.error(LTag.UI, "Failed to save site change", e)
-                }
+                )
             }
-
         }
 
-        // Insulin cartridge change (offset by 1 second if site change also recorded)
+        // Insulin cartridge change (offset +1s to avoid the site-change timestamp collision the master dedups on).
         if (state.insulinCartridgeChange) {
             appScope.launch {
-                try {
-                    persistenceLayer.insertPumpTherapyEventIfNewByTimestamp(
-                        therapyEvent = TE(
-                            timestamp = eventTime + 1000,
-                            type = TE.Type.INSULIN_CHANGE,
-                            note = notes,
-                            glucoseUnit = GlucoseUnit.MGDL
-                        ),
-                        action = Action.RESERVOIR_CHANGE, source = Sources.FillDialog,
-                        note = notes,
-                        listValues = listOfNotNull(
-                            ValueWithUnit.Timestamp(eventTime).takeIf { state.eventTimeChanged },
-                            ValueWithUnit.TEType(TE.Type.INSULIN_CHANGE)
-                        )
+                recordTherapyEvent(
+                    BatchAction.TherapyEvent(
+                        teType = TE.Type.INSULIN_CHANGE, timestamp = eventTime + 1000, note = notes.ifEmpty { null },
+                        source = Sources.FillDialog
                     )
-                } catch (e: Exception) {
-                    aapsLogger.error(LTag.UI, "Failed to save insulin change", e)
-                }
+                )
             }
+        }
+    }
+
+    /** Record a careportal therapy event through the master-controlled batch channel (no confirmation UI — prepare→commit). */
+    private suspend fun recordTherapyEvent(action: BatchAction.TherapyEvent) {
+        val label = rh.gs(CoreUiR.string.careportal)
+        when (val prepared = batchExecutor.prepare(listOf(action), action.source, label)) {
+            is ActionProgress.Prepared -> {
+                val committed = batchExecutor.commit(prepared.id, action.source, label)
+                if (committed is ActionProgress.Rejected)
+                    aapsLogger.warn(LTag.UI, "Fill therapy event commit rejected: ${committed.reason} ${committed.detail}")
+            }
+
+            is ActionProgress.Rejected -> aapsLogger.warn(LTag.UI, "Fill therapy event prepare rejected: ${prepared.reason} ${prepared.detail}")
+            else                       -> Unit
         }
     }
 

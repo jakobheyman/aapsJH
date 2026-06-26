@@ -1,6 +1,6 @@
 package app.aaps.ui.search
 
-import app.aaps.core.keys.interfaces.PreferenceVisibilityContext
+import app.aaps.core.keys.interfaces.VisibilityContext
 import app.aaps.core.ui.compose.navigation.ElementType
 import app.aaps.core.ui.search.SearchableItem
 import app.aaps.core.ui.search.SearchableProvider
@@ -17,7 +17,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class DialogSearchables @Inject constructor(
-    private val visibilityContext: PreferenceVisibilityContext
+    private val visibilityContext: VisibilityContext
 ) : SearchableProvider {
 
     override fun getSearchableItems(): List<SearchableItem> =
