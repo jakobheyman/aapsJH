@@ -21,6 +21,7 @@ import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.interfaces.constraints.ConstraintsChecker
 import app.aaps.core.interfaces.db.PersistenceLayer
 import app.aaps.core.interfaces.di.ApplicationScope
+import app.aaps.core.interfaces.insulin.ConcentrationHelper
 import app.aaps.core.interfaces.insulin.Insulin
 import app.aaps.core.interfaces.iob.GlucoseStatusProvider
 import app.aaps.core.interfaces.iob.IobCobCalculator
@@ -33,7 +34,6 @@ import app.aaps.core.interfaces.profile.Profile
 import app.aaps.core.interfaces.profile.ProfileFunction
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.pump.DetailedBolusInfo
-import app.aaps.core.interfaces.pump.defs.determineCorrectBolusStepSize
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventRefreshOverview
@@ -81,6 +81,7 @@ class BolusWizard @Inject constructor(
     private val processedDeviceStatusData: ProcessedDeviceStatusData,
     private val runningModeGuard: RunningModeGuard,
     private val activeInsulin: Insulin,
+    private val ch: ConcentrationHelper,
     private val wizardBolusExecutor: WizardBolusExecutor,
     @ApplicationScope private val appScope: CoroutineScope
 ) {
@@ -120,6 +121,11 @@ class BolusWizard @Inject constructor(
 
     // Result
     var calculatedTotalInsulin: Double = 0.0
+        private set
+    // Raw sum before the negative-total clamp (calculatedTotalInsulin = 0.0 branch); equals
+    // calculatedTotalInsulin when non-negative. Used by the wear correction buttons so they
+    // spend the right number of steps recovering to 0 before going positive.
+    var unclampedCalculatedInsulin: Double = 0.0
         private set
     var totalBeforePercentageAdjustment: Double = 0.0
         private set
@@ -275,6 +281,7 @@ class BolusWizard @Inject constructor(
 
         totalBeforePercentageAdjustment = scaledComponents + unscaledComponents
         calculatedTotalInsulin = scaledComponents * percentage / 100.0 + unscaledComponents
+        var preClamp = calculatedTotalInsulin  // save before constraint calcs or negative clamp
 
         // Percentage adjustment
         if (calculatedTotalInsulin >= 0) {
@@ -284,15 +291,19 @@ class BolusWizard @Inject constructor(
                 calcPercentageWithConstraints()
             if (usePercentage)  //Should be updated after calcCorrectionWithConstraints and calcPercentageWithConstraints to have correct synthesis in WizardInfo
                 this.percentageCorrection = Round.roundTo(totalPercentage, 1.0).toInt()
+            preClamp = calculatedTotalInsulin  // update after constraint calcs (may have changed)
         } else {
             carbsEquivalent = (-calculatedTotalInsulin) * ic
             calculatedTotalInsulin = 0.0
             calculatedPercentage = percentageCorrection
             calculatedCorrection = 0.0
+            // preClamp stays as the original negative value
         }
 
-        val bolusStep = activePlugin.activePump.pumpDescription.bolusStep
+        // Amount-aware (Insight) + concentration-adjusted deliverable step, so the rounded value matches the pump grid.
+        val bolusStep = ch.bolusStep(calculatedTotalInsulin)
         calculatedTotalInsulin = Round.roundTo(calculatedTotalInsulin, bolusStep)
+        unclampedCalculatedInsulin = Round.roundTo(preClamp, bolusStep)
 
         insulinAfterConstraints = constraintChecker.applyBolusConstraints(ConstraintObject(calculatedTotalInsulin, aapsLogger)).value()
 
@@ -419,7 +430,7 @@ class BolusWizard @Inject constructor(
                     line(ConfirmationRole.COB, rh.gs(app.aaps.core.ui.R.string.slowabsorptiondetected_plain, (absorptionRate * 100).toInt()))
                 }
             }
-            if (abs(insulinAfterConstraints - calculatedTotalInsulin) > activePlugin.activePump.pumpDescription.pumpType.determineCorrectBolusStepSize(insulinAfterConstraints)) {
+            if (abs(insulinAfterConstraints - calculatedTotalInsulin) > ch.bolusStep(insulinAfterConstraints)) {
                 line(ConfirmationRole.WARNING, rh.gs(app.aaps.core.ui.R.string.bolus_constraint_applied_warn, calculatedTotalInsulin, insulinAfterConstraints))
             }
             if ((config.AAPSCLIENT || forcedRecordOnly) && insulinAfterConstraints > 0) {
@@ -458,6 +469,7 @@ class BolusWizard @Inject constructor(
         } else null
         return EventData.WizardDetail(
             totalInsulin = calculatedTotalInsulin,
+            unclampedInsulin = unclampedCalculatedInsulin,
             carbs = carbs,
             insulinFromBG = insulinFromBG,
             insulinFromTrend = insulinFromTrend,

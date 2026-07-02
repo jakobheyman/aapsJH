@@ -682,6 +682,11 @@ class ComposeMainActivity : AppCompatActivity() {
                     onSearchResultClick = { entry ->
                         handleSearchResultClick(entry, navController)
                     },
+                    onSearchPluginToggle = { plugin -> searchViewModel.togglePlugin(plugin) },
+                    onConfirmSearchPluginSwitch = { searchViewModel.confirmPluginSwitch() },
+                    onDismissSearchPluginSwitch = { searchViewModel.dismissPluginSwitch() },
+                    onConfirmSearchHardwarePump = { searchViewModel.confirmHardwarePump() },
+                    onDismissSearchHardwarePump = { searchViewModel.dismissHardwarePump() },
                     onMenuClick = { mainViewModel.openDrawer() },
                     onNavigate = { request -> handleNavigationRequest(request, navController) },
                     onDrawerClosed = { mainViewModel.closeDrawer() },
