@@ -28,6 +28,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.any
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -82,7 +85,7 @@ internal class MaintenanceViewModelTest {
     fun `onExportConfirmed moves export state to AskPassword`() {
         sut.onExportConfirmed()
 
-        assertThat(sut.exportState.value).isEqualTo(MaintenanceViewModel.ExportState.AskPassword)
+        assertThat(sut.exportState.value).isEqualTo(MaintenanceViewModel.ExportState.AskPassword())
     }
 
     @Test
@@ -90,6 +93,31 @@ internal class MaintenanceViewModelTest {
         sut.onExportConfirmed()
         sut.cancelExport()
 
+        assertThat(sut.exportState.value).isEqualTo(MaintenanceViewModel.ExportState.Idle)
+    }
+
+    @Test
+    fun `onExportPasswordEntered rejects a password that is not the master password`() {
+        whenever(importExportPrefs.isMasterPasswordCorrect("not-the-master")).thenReturn(false)
+        sut.onExportConfirmed()
+
+        sut.onExportPasswordEntered("not-the-master")
+
+        // The wrong password is NOT cached and NOT used to export; the dialog stays open for a retry.
+        verify(importExportPrefs, never()).cacheExportPassword(any())
+        // The dialog reappears with the inline wrong-password error instead of silently staying open.
+        assertThat(sut.exportState.value).isEqualTo(MaintenanceViewModel.ExportState.AskPassword(wrongPassword = true))
+    }
+
+    @Test
+    fun `onExportPasswordEntered accepts and caches the master password`() {
+        whenever(importExportPrefs.isMasterPasswordCorrect("master")).thenReturn(true)
+        whenever(importExportPrefs.cacheExportPassword("master")).thenReturn("master")
+        sut.onExportConfirmed()
+
+        sut.onExportPasswordEntered("master")
+
+        verify(importExportPrefs).cacheExportPassword("master")
         assertThat(sut.exportState.value).isEqualTo(MaintenanceViewModel.ExportState.Idle)
     }
 }
