@@ -91,12 +91,12 @@ private val BtnV = 57.dp
 internal fun PlusMinusInputScreen(
     value: Double,
     onValueChange: (Double) -> Unit,
-    min: Double,
-    max: Double,
+    valueRange: ClosedFloatingPointRange<Double>,
     stepValues: List<Double>,
     format: DecimalFormat,
     label: String,
     displayText: String? = null,
+    hint: String? = null,
     allowZero: Boolean = false,
     isActive: Boolean = true,
     symmetricLargeSteps: Boolean = false,
@@ -128,7 +128,7 @@ internal fun PlusMinusInputScreen(
 
     fun step(delta: Double) {
         val v = currentValue.value
-        val newValue = (round((v + delta) * roundingFactor) / roundingFactor).coerceIn(min, max)
+        val newValue = (round((v + delta) * roundingFactor) / roundingFactor).coerceIn(valueRange)
         if (newValue != v) {
             currentValue.value = newValue   // update immediately for next step
             onValueChange(newValue)
@@ -200,6 +200,14 @@ internal fun PlusMinusInputScreen(
                         fontSize = labelFontSize,
                         textAlign = TextAlign.Center,
                     )
+                    if (hint != null) {
+                        Text(
+                            text = hint,
+                            color = WearWarningAmber,
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
                 StepButton(step = stepValues[0], isIncrement = true, onStep = ::step, enabled = enabled)
             }
@@ -219,6 +227,14 @@ internal fun PlusMinusInputScreen(
                     fontSize = labelFontSize,
                     textAlign = TextAlign.Center,
                 )
+                if (hint != null) {
+                    Text(
+                        text = hint,
+                        color = WearWarningAmber,
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
 
             // Bottom-left: decrement (fine step)

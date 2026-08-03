@@ -7,30 +7,38 @@ object Constants {
 
     const val MMOLL_TO_MGDL = 18.01559
     const val MGDL_TO_MMOLL = 1 / MMOLL_TO_MGDL
-    const val defaultDIA = 5.0
-    const val notificationID = 556677
+    const val DEFAULT_DIA = 5.0
+    const val NOTIFICATION_ID = 556677
 
     // OpenAPS algorithm
     const val NORMAL_TARGET_MGDL = 99 // 5.5 mmol/l = 99.1 mg/dL; use 99 to ensure consistent behavior across mg/dL and mmol/l units
 
     // SMS COMMUNICATOR
-    const val remoteBolusMinDistance = 15 * 60 * 1000L
+    const val REMOTE_BOLUS_MIN_DISTANCE = 15 * 60 * 1000L
 
     // Circadian Percentage Profile
-    const val CPP_MIN_PERCENTAGE = 10
-    const val CPP_MAX_PERCENTAGE = 1000
-    const val CPP_MIN_TIMESHIFT = -23
-    const val CPP_MAX_TIMESHIFT = 23
-    const val MAX_PROFILE_SWITCH_DURATION = (7 * 24 * 60).toDouble()// [min] ~ 7 days
+    // Ranges are Double because they are mostly used as slider ranges in the UI
+    //val CPP_PERCENTAGE_RANGE = 30.0..250.0
+    val CPP_PERCENTAGE_RANGE = 10.0..1000.0
+    val CPP_TIMESHIFT_RANGE = -23.0..23.0
+
+    /** Duration the user can set for a timed action (profile switch, temp target, ...). [min] up to ~ 7 days */
+    val ACTION_DURATION = 0.0..(7 * 24 * 60).toDouble()
+
+    // Bolus wizard: how much of the calculated bolus may be delivered
+    val WIZARD_PERCENTAGE_RANGE = 10.0..200.0
+
+    // Scenes
+    val SCENE_DURATION = 0.0..(3 * 24 * 60).toDouble() // [min] up to ~ 3 days
 
     //DanaR
-    const val dailyLimitWarning = 0.95
+    const val DAILY_RESERVOIR_LIMIT_WARNING = 0.95
 
     // Temp targets
-    const val MIN_TT_MGDL = 54.0
-    const val MAX_TT_MGDL = 180.0
-    const val MIN_TT_MMOL = 3.0
-    const val MAX_TT_MMOL = 10.0
+    //val TT_RANGE_MGDL = 72.0..180.0
+    val TT_RANGE_MGDL = 54.0..180.0
+    //val TT_RANGE_MMOL = 4.0..10.0
+    val TT_RANGE_MMOL = 3.0..10.0
 
     // Temp target preset defaults (target in mg/dL, duration in minutes)
     const val DEFAULT_TT_EATING_SOON_TARGET = 90.0
@@ -39,13 +47,6 @@ object Constants {
     const val DEFAULT_TT_ACTIVITY_DURATION = 90
     const val DEFAULT_TT_HYPO_TARGET = 160.0
     const val DEFAULT_TT_HYPO_DURATION = 60
-
-    //NSClientInternal
-    const val MAX_LOG_LINES = 90
-
-    //Screen: Threshold for width/height to go into small width/height layout
-    const val SMALL_WIDTH = 320
-    const val SMALL_HEIGHT = 480
 
     //Autosens
     const val DEVIATION_TO_BE_EQUAL = 2.0
@@ -71,7 +72,6 @@ object Constants {
 
     // Local profile
     const val LOCAL_PROFILE = "LocalProfile"
-    const val DEFAULT_PROFILE_ARRAY = "[{\"time\":\"00:00\",\"timeAsSeconds\":0,\"value\":0}]"
 
     // One Time Password
     /**
